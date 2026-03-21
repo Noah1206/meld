@@ -1,0 +1,23 @@
+import type { NextConfig } from "next";
+import path from "path";
+
+const nextConfig: NextConfig = {
+  turbopack: {
+    root: path.resolve(__dirname, "../.."),
+  },
+  // 외부 이미지 도메인 (Figma 이미지 CDN)
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "figma-alpha-api.s3.us-west-2.amazonaws.com",
+      },
+      {
+        protocol: "https",
+        hostname: "s3-alpha.figma.com",
+      },
+    ],
+  },
+};
+
+export default nextConfig;
