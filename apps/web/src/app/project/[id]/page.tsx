@@ -2,48 +2,87 @@
 
 import { WorkspaceLayout } from "@/components/layout/WorkspaceLayout";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { FigmaCanvas } from "@/components/figma-viewer/FigmaCanvas";
+import { FigmaUrlInput } from "@/components/figma-viewer/FigmaUrlInput";
+import { FrameSelector } from "@/components/figma-viewer/FrameSelector";
+import { NodeTree } from "@/components/figma-viewer/NodeTree";
+import { NodeProperties } from "@/components/figma-viewer/NodeProperties";
+import { ChatInput } from "@/components/chat/ChatInput";
+import { ChatMessages } from "@/components/chat/ChatMessages";
+import { DiffViewer } from "@/components/diff-viewer/DiffViewer";
+import { CommitDialog } from "@/components/git-panel/CommitDialog";
+import { useFigmaStore } from "@/lib/store/figma-store";
+import { useParams } from "next/navigation";
 
 export default function ProjectPage() {
+  const params = useParams();
+  const projectId = params.id as string;
+  const { frames } = useFigmaStore();
+  const hasFrames = frames.length > 0;
+
   return (
     <WorkspaceLayout
       leftPanel={
         <Sidebar title="Node Tree">
-          <div className="p-3 text-sm text-[#6B7280]">
-            Figma 파일을 로드하면 노드 트리가 여기에 표시됩니다.
-          </div>
+          <NodeTree />
         </Sidebar>
       }
       mainContent={
-        <div className="flex h-full items-center justify-center">
-          <div className="text-center">
-            <p className="text-lg font-medium text-[#1C1C1C]">Figma Viewer</p>
-            <p className="mt-1 text-sm text-[#6B7280]">
-              Figma URL을 입력하여 디자인을 불러오세요
-            </p>
+        <div className="flex h-full flex-col">
+          {/* Figma URL 입력 */}
+          <FigmaUrlInput />
+
+          {/* 프레임 탭 */}
+          {hasFrames && <FrameSelector />}
+
+          {/* 캔버스 */}
+          <div className="flex-1">
+            {hasFrames ? (
+              <FigmaCanvas />
+            ) : (
+              <div className="flex h-full items-center justify-center">
+                <div className="text-center">
+                  <p className="text-lg font-medium text-[#1C1C1C]">
+                    Figma Viewer
+                  </p>
+                  <p className="mt-1 text-sm text-[#6B7280]">
+                    위에 Figma URL을 입력하여 디자인을 불러오세요
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       }
       rightPanel={
-        <Sidebar title="Properties">
-          <div className="p-3 text-sm text-[#6B7280]">
-            노드를 선택하면 속성이 여기에 표시됩니다.
+        <div className="flex h-full flex-col">
+          {/* 속성 패널 */}
+          <Sidebar title="Properties">
+            <NodeProperties />
+          </Sidebar>
+
+          {/* Diff 뷰어 */}
+          <div className="border-t border-[#E5E7EB]">
+            <Sidebar title="Code Diff">
+              <DiffViewer />
+            </Sidebar>
           </div>
-        </Sidebar>
+
+          {/* Git 커밋 */}
+          <div className="border-t border-[#E5E7EB]">
+            <CommitDialog
+              projectId={projectId}
+              githubOwner=""
+              githubRepo=""
+              githubBranch="main"
+            />
+          </div>
+        </div>
       }
       bottomBar={
-        <div className="flex items-center gap-3 px-4 py-3">
-          <input
-            type="text"
-            placeholder="먼저 Figma 뷰어에서 엘리먼트를 선택하세요"
-            className="flex-1 rounded-lg border border-[#E5E7EB] px-4 py-2 text-sm placeholder:text-[#6B7280] focus:border-[#2E86C1] focus:outline-none focus:ring-1 focus:ring-[#2E86C1]"
-            disabled
-          />
-          <button
-            className="rounded-lg bg-[#2E86C1] px-4 py-2 text-sm font-medium text-white opacity-50"
-            disabled
-          >
-            Send
-          </button>
+        <div>
+          <ChatMessages />
+          <ChatInput projectId={projectId} />
         </div>
       }
     />

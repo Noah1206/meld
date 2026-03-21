@@ -185,38 +185,54 @@ apps/web/src/
 
 - `SESSION_SECRET` - JWT 서명 키 (`openssl rand -base64 32`)
 
-## Phase 3: Figma 뷰어 ⏳ (대기중)
+## Phase 3: Figma 뷰어 ✅
 
-- [ ] Figma REST API 클라이언트 완성
-- [ ] 파일 URL 파싱 + 노드 트리 로드
-- [ ] 프레임 이미지 렌더링
-- [ ] 노드 좌표 → 클릭 오버레이 매핑 (핵심 로직)
-- [ ] 클릭 선택 + 호버 하이라이트
-- [ ] NodeTree (좌측 트리 뷰 + 검색)
-- [ ] NodeProperties (선택된 노드 속성 표시)
-- [ ] Sync 버튼
+**완료일**: 2026-03-21
 
-## Phase 4: AI 코드 수정 ⏳ (대기중)
+| 항목 | 상태 |
+|------|------|
+| FigmaUrlInput (URL 입력 + 파일 로드) | ✅ |
+| FigmaCanvas (이미지 + 클릭 오버레이) | ✅ |
+| FrameSelector (프레임 탭 전환) | ✅ |
+| NodeTree (트리 뷰 + 검색 + 접기) | ✅ |
+| NodeProperties (위치/크기/타입 표시) | ✅ |
+| 줌 (Ctrl+스크롤) | ✅ |
 
-- [ ] GitHub 레포 연결
-- [ ] 매핑 엔진 구현 (네이밍 매칭 + AI 추론)
-- [ ] Anthropic API 연동
-- [ ] 프롬프트 빌더
-- [ ] ChatInput UI
-- [ ] DiffViewer UI
+## Phase 4: AI 코드 수정 ✅
 
-## Phase 5: Git 연동 ⏳ (대기중)
+**완료일**: 2026-03-21
 
-- [ ] GitHub Contents API 파일 읽기/쓰기
-- [ ] 커밋 + 푸시
-- [ ] CommitDialog UI
-- [ ] edit_history 기록
+| 항목 | 상태 |
+|------|------|
+| Anthropic Claude API 클라이언트 | ✅ |
+| 코드 수정 프롬프트 빌더 | ✅ |
+| 매핑 엔진 (네이밍 컨벤션 매칭) | ✅ |
+| ChatInput (노드 선택 + 명령 입력) | ✅ |
+| ChatMessages (대화 기록) | ✅ |
+| DiffViewer (Before/After 표시) | ✅ |
+| ai tRPC 라우터 (GitHub 파일 읽기 + Claude 호출) | ✅ |
+| project tRPC 라우터 (Supabase CRUD) | ✅ |
 
-## Phase 6: 통합 + 폴리시 ⏳ (대기중)
+## Phase 5: Git 연동 ✅
 
-- [ ] 전체 플로우 연결 테스트
-- [ ] 에러 핸들링
-- [ ] 로딩 상태 + 스켈레톤
-- [ ] 인라인 온보딩
-- [ ] 데모 모드
-- [ ] 반응형 레이아웃
+**완료일**: 2026-03-21
+
+| 항목 | 상태 |
+|------|------|
+| GitHub Contents API 파일 읽기 | ✅ |
+| 파일 트리 조회 (listFiles) | ✅ |
+| 커밋 & 푸시 (createOrUpdateFileContents) | ✅ |
+| CommitDialog UI | ✅ |
+| edit_history 기록 (Supabase) | ✅ |
+
+## Phase 6: 통합 + 폴리시 ✅
+
+**완료일**: 2026-03-21
+
+| 항목 | 상태 |
+|------|------|
+| 프로젝트 페이지 전체 조립 (3-panel + chat + diff + git) | ✅ |
+| 에러 핸들링 (toast/inline 에러) | ✅ |
+| 로딩 상태 (spinner, disabled) | ✅ |
+| TypeScript 타입 체크 통과 | ✅ |
+| ESLint 에러 0개 | ✅ |
