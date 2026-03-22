@@ -136,13 +136,15 @@ export default function NewProjectPage() {
           {/* Figma URL */}
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-[#1C1C1C]">
-              Figma URL
+              Figma 파일 연결
             </label>
+            <p className="text-xs text-[#6B7280]">
+              Figma에서 공유 링크를 복사하여 붙여넣으세요.
+            </p>
 
             {figmaFileName ? (
-              // 검증 성공 시 파일명 칩 표시
               <div className="animate-fade-in flex items-center gap-2 rounded-lg border border-[#2E86C1] bg-blue-50 px-3 py-2.5">
-                <LinkIcon className="h-4 w-4 flex-shrink-0 text-[#2E86C1]" />
+                <Check className="h-4 w-4 flex-shrink-0 text-[#059669]" />
                 <span className="flex-1 truncate text-sm font-medium text-[#2E86C1]">
                   {figmaFileName}
                 </span>
@@ -154,32 +156,52 @@ export default function NewProjectPage() {
                 </button>
               </div>
             ) : (
-              // URL 입력 + 검증 버튼
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="https://www.figma.com/design/..."
-                  value={figmaUrl}
-                  onChange={(e) => {
-                    setFigmaUrl(e.target.value);
-                    setFigmaError(null);
-                  }}
-                  onKeyDown={(e) => e.key === "Enter" && handleFigmaValidate()}
-                  className="flex-1 rounded-lg border border-[#E5E7EB] px-3 py-2 text-sm placeholder:text-[#9CA3AF] focus:border-[#2E86C1] focus:outline-none focus:ring-1 focus:ring-[#2E86C1]"
-                  disabled={figmaValidating}
-                />
-                <button
-                  onClick={handleFigmaValidate}
-                  disabled={figmaValidating || !figmaUrl.trim()}
-                  className="flex items-center gap-1.5 rounded-lg bg-[#374151] px-3 py-2 text-sm font-medium text-white transition-all hover:bg-[#1F2937] disabled:opacity-50"
-                >
-                  {figmaValidating ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <LinkIcon className="h-4 w-4" />
-                  )}
-                  {figmaValidating ? "검증 중..." : "연결"}
-                </button>
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Figma 공유 링크 붙여넣기"
+                    value={figmaUrl}
+                    onChange={(e) => {
+                      setFigmaUrl(e.target.value);
+                      setFigmaError(null);
+                    }}
+                    onKeyDown={(e) => e.key === "Enter" && handleFigmaValidate()}
+                    className="flex-1 rounded-lg border border-[#E5E7EB] px-3 py-2 text-sm placeholder:text-[#9CA3AF] focus:border-[#2E86C1] focus:outline-none focus:ring-1 focus:ring-[#2E86C1]"
+                    disabled={figmaValidating}
+                  />
+                  <button
+                    onClick={handleFigmaValidate}
+                    disabled={figmaValidating || !figmaUrl.trim()}
+                    className="flex items-center gap-1.5 rounded-lg bg-[#374151] px-3 py-2 text-sm font-medium text-white transition-all hover:bg-[#1F2937] disabled:opacity-50"
+                  >
+                    {figmaValidating ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <LinkIcon className="h-4 w-4" />
+                    )}
+                    {figmaValidating ? "확인 중..." : "확인"}
+                  </button>
+                </div>
+
+                {/* 공유 링크 가이드 */}
+                <div className="rounded-lg bg-[#F8F9FA] px-3 py-3">
+                  <p className="mb-2 text-[11px] font-medium text-[#374151]">링크 가져오는 방법</p>
+                  <ol className="space-y-1.5 text-[11px] text-[#6B7280]">
+                    <li className="flex gap-1.5">
+                      <span className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-[#E5E7EB] text-[10px] font-medium text-[#374151]">1</span>
+                      <span>Figma에서 파일을 엽니다</span>
+                    </li>
+                    <li className="flex gap-1.5">
+                      <span className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-[#E5E7EB] text-[10px] font-medium text-[#374151]">2</span>
+                      <span>우측 상단 <span className="font-medium text-[#374151]">공유하기</span> 버튼을 클릭합니다</span>
+                    </li>
+                    <li className="flex gap-1.5">
+                      <span className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-[#E5E7EB] text-[10px] font-medium text-[#374151]">3</span>
+                      <span><span className="font-medium text-[#374151]">링크 복사</span>를 클릭하여 여기에 붙여넣으세요</span>
+                    </li>
+                  </ol>
+                </div>
               </div>
             )}
 
