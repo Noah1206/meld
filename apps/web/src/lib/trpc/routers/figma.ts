@@ -1,5 +1,48 @@
 import { router, protectedProcedure, z } from "../server";
 import { FigmaClient } from "@/lib/figma/client";
+import { refreshFigmaToken } from "@/lib/auth/figma";
+import { createAdminClient } from "@/lib/supabase/admin";
+
+/** 토큰 만료 시 refresh → 재시도. 성공하면 새 토큰을 DB에 저장. */
+async function withTokenRefresh<T>(
+  userId: string,
+  token: string,
+  action: (client: FigmaClient) => Promise<T>,
+): Promise<T> {
+  try {
+    return await action(new FigmaClient(token));
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "";
+    if (!msg.includes("접근 권한") && !msg.includes("403")) throw err;
+
+    // DB에서 refresh token 가져오기
+    const supabase = createAdminClient();
+    const { data } = await supabase
+      .from("users")
+      .select("figma_refresh_token")
+      .eq("id", userId)
+      .single();
+
+    if (!data?.figma_refresh_token) {
+      throw new Error("Figma 토큰이 만료되었습니다. Dashboard에서 Figma를 다시 연결해주세요.");
+    }
+
+    // 토큰 갱신
+    const refreshed = await refreshFigmaToken(data.figma_refresh_token);
+
+    // DB 업데이트
+    await supabase
+      .from("users")
+      .update({
+        figma_access_token: refreshed.accessToken,
+        figma_refresh_token: refreshed.refreshToken,
+      })
+      .eq("id", userId);
+
+    // 새 토큰으로 재시도
+    return await action(new FigmaClient(refreshed.accessToken));
+  }
+}
 
 export const figmaRouter = router({
   loadFile: protectedProcedure
@@ -14,8 +57,11 @@ export const figmaRouter = router({
         throw new Error("Figma 계정을 먼저 연결하세요. Dashboard에서 'Figma 연결' 버튼을 클릭하세요.");
       }
 
-      const client = new FigmaClient(ctx.user.figmaAccessToken);
-      const fileData = await client.getFile(parsed.fileKey);
+      const fileData = await withTokenRefresh(
+        ctx.user.id,
+        ctx.user.figmaAccessToken,
+        (client) => client.getFile(parsed.fileKey),
+      );
 
       return {
         fileKey: parsed.fileKey,
@@ -27,8 +73,11 @@ export const figmaRouter = router({
   getImages: protectedProcedure
     .input(z.object({ fileKey: z.string(), nodeIds: z.array(z.string()) }))
     .mutation(async ({ input, ctx }) => {
-      const client = new FigmaClient(ctx.user.figmaAccessToken);
-      const images = await client.getImages(input.fileKey, input.nodeIds);
+      const images = await withTokenRefresh(
+        ctx.user.id,
+        ctx.user.figmaAccessToken,
+        (client) => client.getImages(input.fileKey, input.nodeIds),
+      );
       return { images };
     }),
 
@@ -39,8 +88,11 @@ export const figmaRouter = router({
         throw new Error("Figma 계정을 먼저 연결하세요.");
       }
 
-      const client = new FigmaClient(ctx.user.figmaAccessToken);
-      const fileData = await client.getFile(input.fileKey);
+      const fileData = await withTokenRefresh(
+        ctx.user.id,
+        ctx.user.figmaAccessToken,
+        (client) => client.getFile(input.fileKey),
+      );
 
       return {
         fileKey: input.fileKey,

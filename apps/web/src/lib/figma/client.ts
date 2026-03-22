@@ -16,12 +16,15 @@ export class FigmaClient {
 
   private async request<T>(path: string): Promise<T> {
     const res = await fetch(`${FIGMA_API_BASE}${path}`, {
-      headers: { "X-Figma-Token": this.token },
+      headers: { Authorization: `Bearer ${this.token}` },
     });
 
     if (!res.ok) {
       if (res.status === 429) {
         throw new Error("Figma API rate limit exceeded. Please try again in 30 seconds.");
+      }
+      if (res.status === 403) {
+        throw new Error("Figma 접근 권한이 없습니다. Figma 계정을 다시 연결해주세요.");
       }
       throw new Error(`Figma API error: ${res.status} ${res.statusText}`);
     }
