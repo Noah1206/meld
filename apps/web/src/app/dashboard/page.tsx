@@ -65,7 +65,7 @@ function CopyCommand({ command }: { command: string }) {
   return (
     <button
       onClick={handleCopy}
-      className="group flex w-full items-center gap-2.5 rounded-xl bg-[#1A1A1A] px-4 py-3 text-left font-mono text-[12px] transition-all hover:bg-[#252525] hover:shadow-lg hover:shadow-black/10 active:scale-[0.99]"
+      className="group flex w-full items-center gap-2.5 rounded-xl bg-[#1A1A1A] px-4 py-3 text-left font-mono text-[12px] transition-all hover:bg-[#252525] active:scale-[0.99]"
     >
       <Terminal className="h-3.5 w-3.5 text-[#555] transition-colors group-hover:text-[#34D399]" />
       <span className="flex-1 text-[#A7F3D0]">{command}</span>
@@ -207,7 +207,7 @@ export default function DashboardPage() {
         {/* 메인 카드 */}
         <div className="animate-fade-in-up animation-delay-150 grid gap-5 sm:grid-cols-2">
           {/* 카드 1: Figma 디자인 수정 */}
-          <div className="group relative flex flex-col overflow-hidden rounded-2xl bg-[#F7F7F5] transition-all duration-300 hover:bg-[#F0F0EE] hover:shadow-xl hover:shadow-purple-500/[0.04]">
+          <div className="group relative flex flex-col overflow-hidden rounded-2xl bg-[#F7F7F5] transition-all duration-300 hover:bg-[#F0F0EE]">
             <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br from-[#C4B5FD]/20 to-[#818CF8]/10 opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100" />
 
             <div className="relative flex-1 p-6">
@@ -256,7 +256,7 @@ export default function DashboardPage() {
               {user?.hasFigmaToken ? (
                 <Link
                   href="/project/new"
-                  className="group/btn flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-[13px] font-semibold text-[#7C3AED] shadow-sm transition-all hover:shadow-md active:scale-[0.98]"
+                  className="group/btn flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-[13px] font-semibold text-[#7C3AED] transition-all hover:bg-[#FAFAFA] active:scale-[0.98]"
                 >
                   <Sparkles className="h-4 w-4 transition-transform group-hover/btn:rotate-12" />
                   새 프로젝트 만들기
@@ -265,7 +265,7 @@ export default function DashboardPage() {
               ) : (
                 <a
                   href="/api/auth/figma"
-                  className="group/btn flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-[13px] font-medium text-[#787774] shadow-sm transition-all hover:shadow-md hover:text-[#7C3AED] active:scale-[0.98]"
+                  className="group/btn flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-[13px] font-medium text-[#787774] transition-all hover:bg-[#FAFAFA] hover:text-[#7C3AED] active:scale-[0.98]"
                 >
                   <Figma className="h-3.5 w-3.5" />
                   먼저 Figma를 연결하세요
@@ -276,7 +276,7 @@ export default function DashboardPage() {
           </div>
 
           {/* 카드 2: 로컬 프로젝트 */}
-          <div className="group relative flex flex-col overflow-hidden rounded-2xl bg-[#F7F7F5] transition-all duration-300 hover:bg-[#F0F0EE] hover:shadow-xl hover:shadow-emerald-500/[0.04]">
+          <div className="group relative flex flex-col overflow-hidden rounded-2xl bg-[#F7F7F5] transition-all duration-300 hover:bg-[#F0F0EE]">
             <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br from-[#A7F3D0]/20 to-[#6EE7B7]/10 opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100" />
 
             <div className="relative flex-1 p-6">
@@ -329,7 +329,7 @@ export default function DashboardPage() {
               <CopyCommand command="npx figma-code-bridge" />
               <Link
                 href="/project/local"
-                className="group/btn flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-[13px] font-semibold text-[#059669] shadow-sm transition-all hover:shadow-md active:scale-[0.98]"
+                className="group/btn flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-[13px] font-semibold text-[#059669] transition-all hover:bg-[#FAFAFA] active:scale-[0.98]"
               >
                 <Rocket className="h-4 w-4 transition-transform group-hover/btn:-rotate-12" />
                 로컬 프로젝트 열기
@@ -346,7 +346,7 @@ export default function DashboardPage() {
             <span className="text-[11px] text-[#B4B4B0]">0개</span>
           </div>
           <div className="mt-4 rounded-2xl bg-[#F7F7F5] p-14 text-center transition-colors hover:bg-[#F0F0EE]">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white">
               <span className="text-2xl">📂</span>
             </div>
             <p className="text-[14px] font-medium text-[#787774]">아직 프로젝트가 없어요</p>
@@ -419,7 +419,7 @@ export default function DashboardPage() {
             <Link
               key={resource.title}
               href={resource.href}
-              className="group flex items-center gap-3 rounded-xl bg-[#F7F7F5] p-4 transition-all hover:bg-[#F0F0EE] hover:shadow-md hover:shadow-black/[0.03]"
+              className="group flex items-center gap-3 rounded-xl bg-[#F7F7F5] p-4 transition-all hover:bg-[#F0F0EE]"
             >
               <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: resource.bg }}>
                 <resource.icon className="h-4 w-4" style={{ color: resource.color }} />

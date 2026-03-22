@@ -31,7 +31,7 @@ export default function HomePage() {
             </Link>
             <Link
               href="/dashboard"
-              className="rounded-lg bg-[#F7F7F5] px-4 py-2 text-[13px] font-semibold text-[#1A1A1A] transition-all hover:bg-[#EEEEEC] active:scale-[0.98]"
+              className="rounded-lg bg-[#F7F7F5] px-4 py-2 text-[13px] font-semibold text-[#1A1A1A] transition-colors hover:bg-[#EEEEEC] active:scale-[0.98]"
             >
               무료로 시작하기
             </Link>
@@ -61,14 +61,14 @@ export default function HomePage() {
           <div className="animate-fade-in-up animation-delay-450 mt-10 flex items-center justify-center gap-4">
             <Link
               href="/dashboard"
-              className="group inline-flex items-center gap-2 rounded-xl bg-[#1A1A1A] px-7 py-3.5 text-[14px] font-semibold text-white transition-all hover:bg-[#333] active:scale-[0.98]"
+              className="group inline-flex items-center gap-2 rounded-xl bg-[#1A1A1A] px-7 py-3.5 text-[14px] font-semibold text-white transition-colors hover:bg-[#333] active:scale-[0.98]"
             >
               무료로 시작하기
               <ArrowRight className="h-4 w-4 text-white/50 transition-transform group-hover:translate-x-0.5 group-hover:text-white" />
             </Link>
             <Link
               href="/dashboard"
-              className="inline-flex items-center gap-2 text-[14px] font-medium text-[#787774] underline decoration-[#E0E0DC] underline-offset-4 transition-all hover:text-[#1A1A1A] hover:decoration-[#1A1A1A]"
+              className="text-[14px] font-medium text-[#787774] transition-colors hover:text-[#1A1A1A]"
             >
               데모 보기
             </Link>
@@ -78,15 +78,15 @@ export default function HomePage() {
 
       {/* ===== 프로덕트 목업 ===== */}
       <section className="animate-fade-in-up animation-delay-600 relative mx-auto max-w-5xl px-6 pb-24">
-        <div className="overflow-hidden rounded-2xl bg-[#FAFAFA] shadow-2xl shadow-black/[0.08]">
+        <div className="overflow-hidden rounded-2xl bg-[#F7F7F5]">
           {/* 브라우저 탑바 */}
-          <div className="flex items-center gap-2 bg-[#F0F0EE] px-4 py-3">
+          <div className="flex items-center gap-2 bg-[#EEEEEC] px-4 py-3">
             <div className="flex gap-1.5">
               <div className="h-3 w-3 rounded-full bg-[#D4D4D0]" />
               <div className="h-3 w-3 rounded-full bg-[#D4D4D0]" />
               <div className="h-3 w-3 rounded-full bg-[#D4D4D0]" />
             </div>
-            <div className="ml-3 flex flex-1 items-center gap-2 rounded-md bg-white px-3 py-1 text-[11px] text-[#B4B4B0]">
+            <div className="ml-3 flex flex-1 rounded-md bg-white px-3 py-1 text-[11px] text-[#B4B4B0]">
               figmacodebridge.com/project/new
             </div>
           </div>
@@ -94,13 +94,13 @@ export default function HomePage() {
           {/* 목업 콘텐츠 */}
           <div className="flex h-[420px] sm:h-[480px]">
             {/* 왼쪽: Figma 뷰어 */}
-            <div className="flex-1 bg-[#FAFAFA] p-6 flex flex-col">
+            <div className="flex-1 p-6 flex flex-col">
               <div className="mb-4 flex items-center gap-2">
                 <Figma className="h-4 w-4 text-[#787774]" />
                 <span className="text-[12px] font-medium text-[#787774]">Figma Viewer</span>
               </div>
 
-              <div className="flex-1 rounded-xl bg-white p-4 relative shadow-sm">
+              <div className="flex-1 rounded-xl bg-white p-4 relative">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between rounded-lg bg-[#F7F7F5] p-3">
                     <div className="h-3 w-20 rounded bg-[#E0E0DC]" />
@@ -128,7 +128,6 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                {/* 선택 오버레이 */}
                 <div className="absolute top-[88px] left-[22px] right-[22px] h-[100px] rounded-lg border-2 border-[#34D399] bg-[#34D399]/5 pointer-events-none">
                   <div className="absolute -top-6 left-0 flex items-center gap-1 rounded-md bg-[#1A1A1A] px-2 py-0.5 text-[9px] text-white">
                     <MousePointerClick className="h-2.5 w-2.5" />
@@ -155,7 +154,7 @@ export default function HomePage() {
                 <div className="flex justify-start">
                   <div className="rounded-2xl rounded-bl-md bg-[#F7F7F5] px-3.5 py-2.5 text-[11px] leading-relaxed text-[#1A1A1A] max-w-[240px] space-y-2">
                     <p className="text-[#787774]">Button.tsx의 스타일을 수정합니다:</p>
-                    <div className="rounded-md bg-[#1A1A1A] px-2.5 py-2 font-mono text-[10px] text-[#A7F3D0]">
+                    <div className="rounded-md bg-[#1A1A1A] px-2.5 py-2 font-mono text-[10px]">
                       <span className="text-[#EF4444]">- bg-blue-500</span>
                       <br />
                       <span className="text-[#34D399]">+ bg-emerald-500</span>
@@ -183,7 +182,7 @@ export default function HomePage() {
       </section>
 
       {/* ===== 플로우 인디케이터 ===== */}
-      <section className="bg-[#FAFAFA] py-16">
+      <section className="bg-[#F7F7F5] py-16">
         <div className="mx-auto max-w-4xl px-6">
           <div className="flex items-center justify-center gap-6 sm:gap-10">
             {[
@@ -194,7 +193,7 @@ export default function HomePage() {
             ].map((step, i) => (
               <div key={i} className="flex items-center gap-6 sm:gap-10">
                 <div className="flex flex-col items-center gap-2">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-sm">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white">
                     <step.icon className="h-4.5 w-4.5" style={{ color: step.color }} />
                   </div>
                   <span className="text-[11px] font-medium text-[#787774]">{step.label}</span>
@@ -239,9 +238,9 @@ export default function HomePage() {
           ].map((feature, i) => (
             <div
               key={i}
-              className="rounded-2xl bg-[#F7F7F5] p-6 transition-all hover:bg-[#F0F0EE] hover:shadow-lg hover:shadow-black/[0.03]"
+              className="rounded-2xl bg-[#F7F7F5] p-6 transition-colors hover:bg-[#F0F0EE]"
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-sm">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white">
                 <feature.icon className="h-5 w-5 text-[#1A1A1A]" />
               </div>
               <h3 className="mt-4 text-[15px] font-semibold text-[#1A1A1A]">{feature.title}</h3>
@@ -252,7 +251,7 @@ export default function HomePage() {
       </section>
 
       {/* ===== 하단 CTA ===== */}
-      <section className="bg-[#FAFAFA]">
+      <section className="bg-[#F7F7F5]">
         <div className="mx-auto max-w-4xl px-6 py-20 text-center">
           <h2 className="text-[28px] font-bold tracking-[-0.02em] text-[#1A1A1A]">
             지금 바로 시작하세요
@@ -263,7 +262,7 @@ export default function HomePage() {
           <div className="mt-8">
             <Link
               href="/dashboard"
-              className="group inline-flex items-center gap-2 rounded-xl bg-[#1A1A1A] px-7 py-3.5 text-[14px] font-semibold text-white transition-all hover:bg-[#333] active:scale-[0.98]"
+              className="group inline-flex items-center gap-2 rounded-xl bg-[#1A1A1A] px-7 py-3.5 text-[14px] font-semibold text-white transition-colors hover:bg-[#333] active:scale-[0.98]"
             >
               무료로 시작하기
               <ArrowRight className="h-4 w-4 text-white/50 transition-transform group-hover:translate-x-0.5 group-hover:text-white" />
@@ -273,7 +272,7 @@ export default function HomePage() {
       </section>
 
       {/* ===== 푸터 ===== */}
-      <footer className="bg-[#FAFAFA] pb-6">
+      <footer className="bg-[#F7F7F5] pb-6">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 pt-6">
           <div className="flex items-center gap-2">
             <div className="flex h-5 w-5 items-center justify-center rounded bg-[#1A1A1A]">
