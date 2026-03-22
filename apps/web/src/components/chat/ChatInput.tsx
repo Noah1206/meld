@@ -124,11 +124,11 @@ export function ChatInput({ projectId, mode = "cloud" }: ChatInputProps) {
       {/* 상단: 선택된 노드/파일 + LLM 선택 */}
       <div className="flex items-center gap-2">
         {isLocal ? (
-          <span className="truncate rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700">
+          <span className="truncate rounded-full bg-green-500/10 px-2.5 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-500/20">
             {selectedFilePath ?? "파일을 선택하세요"}
           </span>
         ) : selectedNode ? (
-          <span className="animate-fade-in truncate rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-[#2E86C1]">
+          <span className="animate-fade-in truncate rounded-full bg-[#2E86C1]/10 px-2.5 py-1 text-xs font-medium text-[#2E86C1] ring-1 ring-inset ring-[#2E86C1]/20">
             {selectedNode.name}
           </span>
         ) : (
@@ -139,7 +139,7 @@ export function ChatInput({ projectId, mode = "cloud" }: ChatInputProps) {
           value={provider}
           onChange={(e) => setProvider(e.target.value as LLMProviderType)}
           disabled={isProcessing}
-          className="rounded-md border border-[#E5E7EB] bg-white px-2 py-1 text-xs text-[#374151] focus:border-[#2E86C1] focus:outline-none disabled:opacity-50"
+          className="rounded-full border border-white/60 bg-white/50 px-2.5 py-1 text-xs text-[#374151] shadow-sm backdrop-blur-sm focus:border-[#2E86C1] focus:outline-none disabled:opacity-50"
         >
           {LLM_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -166,14 +166,14 @@ export function ChatInput({ projectId, mode = "cloud" }: ChatInputProps) {
           value={input}
           onChange={handleInput}
           onKeyDown={handleKeyDown}
-          className="flex-1 resize-none rounded-lg border border-[#E5E7EB] px-3 py-2 text-sm placeholder:text-[#9CA3AF] focus:border-[#2E86C1] focus:outline-none focus:ring-1 focus:ring-[#2E86C1] disabled:opacity-50"
+          className="flex-1 resize-none rounded-2xl border border-white/60 bg-white/50 px-4 py-2.5 text-sm shadow-sm backdrop-blur-sm placeholder:text-[#9CA3AF] focus:border-[#2E86C1]/40 focus:outline-none focus:ring-2 focus:ring-[#2E86C1]/20 disabled:opacity-50"
           style={{ maxHeight: 120 }}
           disabled={(isLocal ? !selectedFilePath : !selectedNode) || isProcessing}
         />
         <button
           onClick={handleSend}
           disabled={!canSend || isProcessing}
-          className="flex-shrink-0 rounded-lg bg-[#2E86C1] p-2 text-white transition-all hover:bg-[#2573A8] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+          className="flex-shrink-0 rounded-2xl bg-[#2E86C1] p-2.5 text-white shadow-lg shadow-[#2E86C1]/25 transition-all hover:bg-[#2573A8] hover:shadow-[#2E86C1]/40 hover:scale-[1.04] active:scale-[0.96] disabled:opacity-50 disabled:shadow-none"
         >
           {isProcessing ? (
             <Loader2 className="h-4 w-4 animate-spin" />
