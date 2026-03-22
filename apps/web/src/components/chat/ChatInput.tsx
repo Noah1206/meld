@@ -99,6 +99,8 @@ export function ChatInput({ projectId, mode = "cloud" }: ChatInputProps) {
         role: "assistant",
         content: `오류: ${err instanceof Error ? err.message : "처리 실패"}`,
       });
+    } finally {
+      setProcessing(false);
     }
   }, [canSend, input, isProcessing, isLocal, selectedFilePath, readFileFn, writeFileFn, projectId, selectedNode, provider, addMessage, setProcessing, setError, editCodeMutation]);
 
