@@ -5,7 +5,6 @@ import {
   Figma,
   MousePointerClick,
   GitBranch,
-  Sparkles,
   MessageSquare,
   Eye,
   Zap,
@@ -51,12 +50,6 @@ export default function HomePage() {
         </div>
 
         <div className="relative mx-auto max-w-3xl px-6 text-center">
-          {/* 뱃지 */}
-          <div className="animate-fade-in-up mb-8 inline-flex items-center gap-2 rounded-full border border-[#E8E8E4] bg-[#FAFAFA] px-4 py-1.5">
-            <Sparkles className="h-3.5 w-3.5 text-[#10B981]" />
-            <span className="text-[12px] font-medium text-[#787774]">Figma Plugin 없이, REST API만으로</span>
-          </div>
-
           {/* 메인 타이틀 */}
           <h1 className="animate-fade-in-up animation-delay-150 text-[42px] font-bold leading-[1.15] tracking-[-0.02em] text-[#1A1A1A] sm:text-[56px]">
             디자인 수정을
