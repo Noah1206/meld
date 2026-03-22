@@ -12,16 +12,26 @@ import { ChatMessages } from "@/components/chat/ChatMessages";
 import { DiffViewer } from "@/components/diff-viewer/DiffViewer";
 import { CommitDialog } from "@/components/git-panel/CommitDialog";
 import { useFigmaStore } from "@/lib/store/figma-store";
-import { useParams } from "next/navigation";
+import { trpc } from "@/lib/trpc/client";
+import { useParams, useRouter } from "next/navigation";
+import type { Database } from "@/lib/supabase/types";
+
+type ProjectRow = Database["public"]["Tables"]["projects"]["Row"];
 
 export default function ProjectPage() {
   const params = useParams();
+  const router = useRouter();
   const projectId = params.id as string;
   const { frames } = useFigmaStore();
   const hasFrames = frames.length > 0;
 
+  const { data } = trpc.project.get.useQuery({ id: projectId });
+  const project = data as ProjectRow | null | undefined;
+
   return (
     <WorkspaceLayout
+      projectName={project?.name}
+      onBack={() => router.push("/dashboard")}
       leftPanel={
         <Sidebar title="Node Tree">
           <NodeTree />
@@ -72,8 +82,8 @@ export default function ProjectPage() {
           <div className="border-t border-[#E5E7EB]">
             <CommitDialog
               projectId={projectId}
-              githubOwner=""
-              githubRepo=""
+              githubOwner={project?.github_owner ?? ""}
+              githubRepo={project?.github_repo ?? ""}
               githubBranch="main"
             />
           </div>
