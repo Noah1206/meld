@@ -4,9 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Figma,
-  CheckCircle,
   Github,
-  Monitor,
   ArrowRight,
   Copy,
   Check,
@@ -16,6 +14,19 @@ import {
   LogOut,
   Plus,
   FolderOpen,
+  Sparkles,
+  Zap,
+  MousePointerClick,
+  GitBranch,
+  Terminal,
+  Rocket,
+  BookOpen,
+  MessageCircle,
+  Keyboard,
+  ArrowUpRight,
+  Clock,
+  Shield,
+  Eye,
 } from "lucide-react";
 import { useAuthStore } from "@/lib/store/auth-store";
 
@@ -32,10 +43,10 @@ function DashboardSkeleton() {
         </div>
       </header>
       <main className="mx-auto max-w-4xl px-6 pt-10">
-        <div className="animate-shimmer mb-8 h-6 w-32 rounded" />
+        <div className="animate-shimmer mb-8 h-8 w-48 rounded" />
         <div className="grid gap-4 sm:grid-cols-2">
-          <div className="animate-shimmer h-64 rounded-2xl" />
-          <div className="animate-shimmer h-64 rounded-2xl animation-delay-150" />
+          <div className="animate-shimmer h-80 rounded-2xl" />
+          <div className="animate-shimmer h-80 rounded-2xl animation-delay-150" />
         </div>
       </main>
     </div>
@@ -54,17 +65,28 @@ function CopyCommand({ command }: { command: string }) {
   return (
     <button
       onClick={handleCopy}
-      className="group flex w-full items-center gap-2 rounded-lg bg-[#1A1A1A] px-3 py-2.5 text-left font-mono text-[11px] text-[#999] transition-colors hover:bg-[#252525]"
+      className="group flex w-full items-center gap-2.5 rounded-xl bg-[#1A1A1A] px-4 py-3 text-left font-mono text-[12px] transition-all hover:bg-[#252525] hover:shadow-lg hover:shadow-black/10 active:scale-[0.99]"
     >
-      <span className="text-[#555]">$</span>
-      <span className="flex-1 text-[#ccc]">{command}</span>
+      <Terminal className="h-3.5 w-3.5 text-[#555] transition-colors group-hover:text-[#34D399]" />
+      <span className="flex-1 text-[#A7F3D0]">{command}</span>
       {copied ? (
-        <Check className="h-3.5 w-3.5 text-[#34D399]" />
+        <span className="flex items-center gap-1 text-[10px] text-[#34D399]">
+          <Check className="h-3 w-3" />
+          복사됨!
+        </span>
       ) : (
         <Copy className="h-3.5 w-3.5 text-[#555] transition-colors group-hover:text-[#999]" />
       )}
     </button>
   );
+}
+
+function getGreeting(): { text: string; emoji: string } {
+  const hour = new Date().getHours();
+  if (hour < 6) return { text: "늦은 밤까지 고생하시네요", emoji: "🌙" };
+  if (hour < 12) return { text: "좋은 아침이에요", emoji: "☀️" };
+  if (hour < 18) return { text: "좋은 오후예요", emoji: "🔥" };
+  return { text: "좋은 저녁이에요", emoji: "🌆" };
 }
 
 export default function DashboardPage() {
@@ -78,6 +100,8 @@ export default function DashboardPage() {
     return <DashboardSkeleton />;
   }
 
+  const greeting = getGreeting();
+
   return (
     <div className="animate-fade-in min-h-screen bg-white">
       {/* 헤더 */}
@@ -89,9 +113,14 @@ export default function DashboardPage() {
             </div>
             <span className="text-[15px] font-semibold text-[#1A1A1A]">FigmaCodeBridge</span>
           </Link>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             {user && (
               <>
+                {/* 키보드 단축키 힌트 */}
+                <button className="hidden items-center gap-1.5 rounded-lg border border-[#F0F0EE] px-2.5 py-1.5 text-[11px] text-[#B4B4B0] transition-all hover:border-[#D4D4D0] hover:text-[#787774] sm:flex">
+                  <Keyboard className="h-3 w-3" />
+                  <kbd className="font-mono text-[10px]">⌘K</kbd>
+                </button>
                 <div className="flex items-center gap-2.5">
                   {user.avatarUrl && (
                     <img
@@ -119,59 +148,107 @@ export default function DashboardPage() {
       <main className="mx-auto max-w-4xl px-6 pt-10 pb-20">
         {/* 인사 + 연결 상태 */}
         <div className="animate-fade-in-up mb-10">
-          <h1 className="text-[24px] font-bold tracking-[-0.02em] text-[#1A1A1A]">
-            {user ? `${user.githubUsername}님, 안녕하세요` : "시작하기"}
-          </h1>
-          <p className="mt-1 text-[14px] text-[#787774]">프로젝트를 선택하거나 새로 만드세요.</p>
+          <div className="flex items-center gap-3">
+            <span className="text-3xl">{greeting.emoji}</span>
+            <div>
+              <p className="text-[13px] text-[#787774]">{greeting.text}</p>
+              <h1 className="text-[28px] font-bold tracking-[-0.02em] text-[#1A1A1A]">
+                무엇을 만들어볼까요?
+              </h1>
+            </div>
+          </div>
 
-          {/* 연결 상태 인라인 */}
-          <div className="mt-5 flex items-center gap-4">
-            <div className="flex items-center gap-1.5">
-              <CheckCircle className="h-3.5 w-3.5 text-[#34D399]" />
-              <span className="text-[12px] text-[#787774]">GitHub 연결됨</span>
+          {/* 연결 상태 칩 */}
+          <div className="mt-5 flex items-center gap-2.5">
+            <div className="flex items-center gap-1.5 rounded-full bg-[#F0FDF4] px-3 py-1">
+              <Github className="h-3 w-3 text-[#22C55E]" />
+              <span className="text-[11px] font-medium text-[#16A34A]">GitHub</span>
             </div>
             {user?.hasFigmaToken ? (
-              <div className="flex items-center gap-1.5">
-                <CheckCircle className="h-3.5 w-3.5 text-[#34D399]" />
-                <span className="text-[12px] text-[#787774]">Figma 연결됨</span>
+              <div className="flex items-center gap-1.5 rounded-full bg-[#F0FDF4] px-3 py-1">
+                <Figma className="h-3 w-3 text-[#22C55E]" />
+                <span className="text-[11px] font-medium text-[#16A34A]">Figma</span>
               </div>
             ) : (
               <a
                 href="/api/auth/figma"
-                className="flex items-center gap-1.5 text-[12px] font-medium text-[#1A1A1A] underline decoration-[#E0E0DC] underline-offset-2 transition-colors hover:decoration-[#1A1A1A]"
+                className="group flex items-center gap-1.5 rounded-full border border-dashed border-[#D4D4D0] px-3 py-1 transition-all hover:border-[#1A1A1A] hover:bg-[#FAFAFA]"
               >
-                <Figma className="h-3.5 w-3.5" />
-                Figma 연결하기
+                <Figma className="h-3 w-3 text-[#B4B4B0] transition-colors group-hover:text-[#1A1A1A]" />
+                <span className="text-[11px] font-medium text-[#787774] transition-colors group-hover:text-[#1A1A1A]">Figma 연결</span>
+                <Plus className="h-2.5 w-2.5 text-[#B4B4B0] transition-colors group-hover:text-[#1A1A1A]" />
               </a>
             )}
+            <div className="flex items-center gap-1.5 rounded-full bg-[#F7F7F5] px-3 py-1">
+              <Shield className="h-3 w-3 text-[#787774]" />
+              <span className="text-[11px] font-medium text-[#787774]">무료 플랜</span>
+            </div>
           </div>
         </div>
 
-        {/* 새 프로젝트 카드 */}
-        <div className="animate-fade-in-up animation-delay-150 grid gap-4 sm:grid-cols-2">
+        {/* 퀵 액션 바 */}
+        <div className="animate-fade-in-up animation-delay-75 mb-8 flex items-center gap-2 overflow-x-auto">
+          {[
+            { icon: Plus, label: "새 프로젝트", href: "/project/new", accent: false },
+            { icon: FolderOpen, label: "로컬 연결", href: "/project/local", accent: false },
+            { icon: BookOpen, label: "사용 가이드", href: "#guide", accent: false },
+            { icon: MessageCircle, label: "피드백", href: "#feedback", accent: false },
+          ].map((action) => (
+            <Link
+              key={action.label}
+              href={action.href}
+              className="flex flex-shrink-0 items-center gap-1.5 rounded-lg border border-[#E8E8E4] px-3.5 py-2 text-[12px] font-medium text-[#787774] transition-all hover:border-[#D4D4D0] hover:bg-[#FAFAFA] hover:text-[#1A1A1A] active:scale-[0.98]"
+            >
+              <action.icon className="h-3.5 w-3.5" />
+              {action.label}
+            </Link>
+          ))}
+        </div>
+
+        {/* 메인 카드 */}
+        <div className="animate-fade-in-up animation-delay-150 grid gap-5 sm:grid-cols-2">
           {/* 카드 1: Figma 디자인 수정 */}
-          <div className="group flex flex-col rounded-2xl border border-[#E8E8E4] bg-white transition-all hover:border-[#D4D4D0] hover:shadow-lg hover:shadow-black/[0.04]">
-            <div className="flex-1 p-6">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F7F7F5]">
-                <Paintbrush className="h-5 w-5 text-[#1A1A1A]" />
+          <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-[#E8E8E4] bg-white transition-all duration-300 hover:border-[#C4B5FD] hover:shadow-xl hover:shadow-purple-500/[0.06]">
+            <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br from-[#C4B5FD]/20 to-[#818CF8]/10 opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100" />
+
+            <div className="relative flex-1 p-6">
+              <div className="flex items-start justify-between">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#EDE9FE] to-[#F3E8FF]">
+                  <Paintbrush className="h-5 w-5 text-[#7C3AED]" />
+                </div>
+                <span className="rounded-full bg-[#F5F3FF] px-2.5 py-0.5 text-[10px] font-semibold text-[#7C3AED]">Cloud</span>
               </div>
-              <h3 className="mt-4 text-[16px] font-semibold text-[#1A1A1A]">Figma 디자인 수정</h3>
+
+              <h3 className="mt-5 text-[18px] font-bold text-[#1A1A1A]">Figma 디자인 수정</h3>
               <p className="mt-1.5 text-[13px] leading-relaxed text-[#787774]">
-                Figma URL을 연결하고, 뷰어에서 엘리먼트를 선택하면 AI가 코드를 수정해서 GitHub에 푸시합니다.
+                Figma URL을 붙여넣고 클릭하면 끝.
+                <br />
+                AI가 코드를 수정하고 GitHub에 푸시해요.
               </p>
 
-              <div className="mt-5 space-y-2">
+              {/* 비주얼 플로우 */}
+              <div className="mt-6 flex items-center gap-2 text-[11px]">
                 {[
-                  "Figma 파일 URL 연결",
-                  "뷰어에서 엘리먼트 클릭",
-                  "AI 코드 수정 → GitHub 푸시",
+                  { icon: Figma, label: "URL", color: "#787774" },
+                  { icon: MousePointerClick, label: "선택", color: "#7C3AED" },
+                  { icon: Zap, label: "AI", color: "#F59E0B" },
+                  { icon: GitBranch, label: "Push", color: "#22C55E" },
                 ].map((step, i) => (
-                  <div key={i} className="flex items-center gap-2.5">
-                    <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md bg-[#F7F7F5] text-[10px] font-semibold text-[#787774]">
-                      {i + 1}
-                    </span>
-                    <span className="text-[12px] text-[#787774]">{step}</span>
+                  <div key={i} className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 rounded-lg bg-[#F7F7F5] px-2.5 py-1.5">
+                      <step.icon className="h-3 w-3" style={{ color: step.color }} />
+                      <span className="text-[#787774]">{step.label}</span>
+                    </div>
+                    {i < 3 && <ArrowRight className="h-3 w-3 text-[#D4D4D0]" />}
                   </div>
+                ))}
+              </div>
+
+              {/* 지원 프레임워크 */}
+              <div className="mt-4 flex items-center gap-1.5">
+                <span className="text-[10px] text-[#B4B4B0]">지원:</span>
+                {["React", "Vue", "Next.js", "Angular"].map((fw) => (
+                  <span key={fw} className="rounded bg-[#F7F7F5] px-1.5 py-0.5 text-[10px] text-[#787774]">{fw}</span>
                 ))}
               </div>
             </div>
@@ -180,15 +257,15 @@ export default function DashboardPage() {
               {user?.hasFigmaToken ? (
                 <Link
                   href="/project/new"
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#1A1A1A] px-4 py-2.5 text-[13px] font-semibold text-white transition-all hover:bg-[#333] active:scale-[0.98]"
+                  className="group/btn flex w-full items-center justify-center gap-2 rounded-xl bg-[#7C3AED] px-4 py-3 text-[13px] font-semibold text-white transition-all hover:bg-[#6D28D9] active:scale-[0.98]"
                 >
-                  <Plus className="h-4 w-4" />
-                  새 프로젝트
+                  <Sparkles className="h-4 w-4 transition-transform group-hover/btn:rotate-12" />
+                  새 프로젝트 만들기
                 </Link>
               ) : (
                 <a
                   href="/api/auth/figma"
-                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#E0E0DC] px-4 py-2.5 text-[13px] font-medium text-[#1A1A1A] transition-all hover:bg-[#FAFAFA] active:scale-[0.98]"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#E0E0DC] px-4 py-3 text-[13px] font-medium text-[#1A1A1A] transition-all hover:bg-[#FAFAFA] active:scale-[0.98]"
                 >
                   <Figma className="h-3.5 w-3.5" />
                   먼저 Figma를 연결하세요
@@ -198,29 +275,52 @@ export default function DashboardPage() {
           </div>
 
           {/* 카드 2: 로컬 프로젝트 */}
-          <div className="group flex flex-col rounded-2xl border border-[#E8E8E4] bg-white transition-all hover:border-[#D4D4D0] hover:shadow-lg hover:shadow-black/[0.04]">
-            <div className="flex-1 p-6">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F7F7F5]">
-                <Laptop className="h-5 w-5 text-[#1A1A1A]" />
+          <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-[#E8E8E4] bg-white transition-all duration-300 hover:border-[#6EE7B7] hover:shadow-xl hover:shadow-emerald-500/[0.06]">
+            <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br from-[#A7F3D0]/20 to-[#6EE7B7]/10 opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100" />
+
+            <div className="relative flex-1 p-6">
+              <div className="flex items-start justify-between">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#ECFDF5] to-[#D1FAE5]">
+                  <Laptop className="h-5 w-5 text-[#059669]" />
+                </div>
+                <span className="rounded-full bg-[#ECFDF5] px-2.5 py-0.5 text-[10px] font-semibold text-[#059669]">Local</span>
               </div>
-              <h3 className="mt-4 text-[16px] font-semibold text-[#1A1A1A]">로컬 프로젝트 수정</h3>
+
+              <h3 className="mt-5 text-[18px] font-bold text-[#1A1A1A]">로컬 프로젝트 수정</h3>
               <p className="mt-1.5 text-[13px] leading-relaxed text-[#787774]">
-                터미널에서 에이전트를 실행하면, 웹에서 파일을 선택하고 AI가 로컬 코드를 직접 수정합니다.
+                터미널 한 줄이면 연결 완료.
+                <br />
+                내 컴퓨터의 코드를 AI가 직접 수정해요.
               </p>
 
-              <div className="mt-5 space-y-2">
+              {/* 비주얼 플로우 */}
+              <div className="mt-6 flex items-center gap-2 text-[11px]">
                 {[
-                  "터미널에서 에이전트 실행",
-                  "파일 트리에서 수정할 파일 선택",
-                  "AI 코드 수정 → 로컬 파일 반영",
+                  { icon: Terminal, label: "npx", color: "#787774" },
+                  { icon: FolderOpen, label: "파일", color: "#059669" },
+                  { icon: Zap, label: "AI", color: "#F59E0B" },
+                  { icon: Check, label: "반영", color: "#22C55E" },
                 ].map((step, i) => (
-                  <div key={i} className="flex items-center gap-2.5">
-                    <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md bg-[#F7F7F5] text-[10px] font-semibold text-[#787774]">
-                      {i + 1}
-                    </span>
-                    <span className="text-[12px] text-[#787774]">{step}</span>
+                  <div key={i} className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 rounded-lg bg-[#F7F7F5] px-2.5 py-1.5">
+                      <step.icon className="h-3 w-3" style={{ color: step.color }} />
+                      <span className="text-[#787774]">{step.label}</span>
+                    </div>
+                    {i < 3 && <ArrowRight className="h-3 w-3 text-[#D4D4D0]" />}
                   </div>
                 ))}
+              </div>
+
+              {/* 특징 */}
+              <div className="mt-4 flex items-center gap-3">
+                <div className="flex items-center gap-1 text-[10px] text-[#787774]">
+                  <Eye className="h-3 w-3 text-[#B4B4B0]" />
+                  실시간 프리뷰
+                </div>
+                <div className="flex items-center gap-1 text-[10px] text-[#787774]">
+                  <Zap className="h-3 w-3 text-[#B4B4B0]" />
+                  Hot Reload
+                </div>
               </div>
             </div>
 
@@ -228,9 +328,9 @@ export default function DashboardPage() {
               <CopyCommand command="npx figma-code-bridge" />
               <Link
                 href="/project/local"
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#1A1A1A] px-4 py-2.5 text-[13px] font-semibold text-white transition-all hover:bg-[#333] active:scale-[0.98]"
+                className="group/btn flex w-full items-center justify-center gap-2 rounded-xl bg-[#059669] px-4 py-3 text-[13px] font-semibold text-white transition-all hover:bg-[#047857] active:scale-[0.98]"
               >
-                <FolderOpen className="h-4 w-4" />
+                <Rocket className="h-4 w-4 transition-transform group-hover/btn:-rotate-12" />
                 로컬 프로젝트 열기
               </Link>
             </div>
@@ -238,18 +338,98 @@ export default function DashboardPage() {
         </div>
 
         {/* 내 프로젝트 */}
-        {user?.hasFigmaToken && (
-          <div className="animate-fade-in-up animation-delay-300 mt-14">
+        <div className="animate-fade-in-up animation-delay-300 mt-14">
+          <div className="flex items-center justify-between">
             <h2 className="text-[16px] font-semibold text-[#1A1A1A]">내 프로젝트</h2>
-            <div className="mt-4 rounded-2xl border border-dashed border-[#E8E8E4] p-12 text-center">
-              <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-[#F7F7F5]">
-                <FolderOpen className="h-5 w-5 text-[#B4B4B0]" />
-              </div>
-              <p className="text-[13px] text-[#B4B4B0]">아직 프로젝트가 없습니다</p>
-              <p className="mt-1 text-[12px] text-[#D4D4D0]">위에서 새 프로젝트를 만들어보세요</p>
-            </div>
+            <span className="text-[11px] text-[#B4B4B0]">0개</span>
           </div>
-        )}
+          <div className="mt-4 rounded-2xl border border-dashed border-[#E8E8E4] p-14 text-center transition-colors hover:border-[#D4D4D0] hover:bg-[#FAFAFA]/50">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#F7F7F5]">
+              <span className="text-2xl">📂</span>
+            </div>
+            <p className="text-[14px] font-medium text-[#787774]">아직 프로젝트가 없어요</p>
+            <p className="mt-1 text-[12px] text-[#B4B4B0]">위에서 새 프로젝트를 만들어보세요</p>
+            <Link
+              href="/project/new"
+              className="mt-5 inline-flex items-center gap-1.5 text-[12px] font-medium text-[#1A1A1A] underline decoration-[#E0E0DC] underline-offset-2 transition-colors hover:decoration-[#1A1A1A]"
+            >
+              첫 프로젝트 시작하기
+              <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
+        </div>
+
+        {/* 최근 활동 */}
+        <div className="animate-fade-in-up animation-delay-450 mt-10">
+          <div className="flex items-center justify-between">
+            <h2 className="text-[16px] font-semibold text-[#1A1A1A]">최근 활동</h2>
+            <button className="text-[12px] text-[#787774] transition-colors hover:text-[#1A1A1A]">전체 보기</button>
+          </div>
+          <div className="mt-4 space-y-1">
+            {[
+              { icon: Github, text: "GitHub 계정이 연결되었습니다", time: "방금 전", color: "#22C55E" },
+              { icon: Code2, text: "FigmaCodeBridge에 오신 것을 환영합니다!", time: "방금 전", color: "#7C3AED" },
+            ].map((activity, i) => (
+              <div key={i} className="flex items-center gap-3 rounded-xl px-4 py-3 transition-colors hover:bg-[#FAFAFA]">
+                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-[#F7F7F5]">
+                  <activity.icon className="h-4 w-4" style={{ color: activity.color }} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] text-[#1A1A1A]">{activity.text}</p>
+                </div>
+                <div className="flex items-center gap-1 text-[11px] text-[#B4B4B0]">
+                  <Clock className="h-3 w-3" />
+                  {activity.time}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 하단 리소스 링크 */}
+        <div className="animate-fade-in-up animation-delay-600 mt-14 grid gap-3 sm:grid-cols-3">
+          {[
+            {
+              icon: BookOpen,
+              title: "문서",
+              desc: "시작 가이드와 API 레퍼런스",
+              href: "#docs",
+              color: "#3B82F6",
+              bg: "#EFF6FF",
+            },
+            {
+              icon: Github,
+              title: "GitHub",
+              desc: "소스 코드와 이슈 트래커",
+              href: "#github",
+              color: "#1A1A1A",
+              bg: "#F7F7F5",
+            },
+            {
+              icon: MessageCircle,
+              title: "커뮤니티",
+              desc: "디스코드에서 질문하기",
+              href: "#community",
+              color: "#5865F2",
+              bg: "#EEF2FF",
+            },
+          ].map((resource) => (
+            <Link
+              key={resource.title}
+              href={resource.href}
+              className="group flex items-center gap-3 rounded-xl border border-[#E8E8E4] p-4 transition-all hover:border-[#D4D4D0] hover:shadow-md hover:shadow-black/[0.03]"
+            >
+              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: resource.bg }}>
+                <resource.icon className="h-4 w-4" style={{ color: resource.color }} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[13px] font-semibold text-[#1A1A1A]">{resource.title}</p>
+                <p className="text-[11px] text-[#B4B4B0]">{resource.desc}</p>
+              </div>
+              <ArrowUpRight className="h-3.5 w-3.5 text-[#D4D4D0] transition-colors group-hover:text-[#787774]" />
+            </Link>
+          ))}
+        </div>
       </main>
     </div>
   );
