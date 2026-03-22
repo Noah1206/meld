@@ -8,8 +8,6 @@ import {
   ArrowRight,
   Copy,
   Check,
-  Laptop,
-  Paintbrush,
   Code2,
   LogOut,
   Plus,
@@ -159,14 +157,14 @@ export default function DashboardPage() {
 
           {/* 연결 상태 칩 */}
           <div className="mt-5 flex items-center gap-2.5">
-            <div className="flex items-center gap-1.5 rounded-full bg-[#F0FDF4] px-3 py-1">
-              <Github className="h-3 w-3 text-[#22C55E]" />
-              <span className="text-[11px] font-medium text-[#16A34A]">GitHub</span>
+            <div className="flex items-center gap-1.5 rounded-full bg-[#ECFDF5] px-3 py-1">
+              <Github className="h-3 w-3 text-[#34D399]" />
+              <span className="text-[11px] font-medium text-[#10B981]">GitHub</span>
             </div>
             {user?.hasFigmaToken ? (
-              <div className="flex items-center gap-1.5 rounded-full bg-[#F0FDF4] px-3 py-1">
-                <Figma className="h-3 w-3 text-[#22C55E]" />
-                <span className="text-[11px] font-medium text-[#16A34A]">Figma</span>
+              <div className="flex items-center gap-1.5 rounded-full bg-[#ECFDF5] px-3 py-1">
+                <Figma className="h-3 w-3 text-[#34D399]" />
+                <span className="text-[11px] font-medium text-[#10B981]">Figma</span>
               </div>
             ) : (
               <a
@@ -211,14 +209,7 @@ export default function DashboardPage() {
             <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br from-[#C4B5FD]/20 to-[#818CF8]/10 opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100" />
 
             <div className="relative flex-1 p-6">
-              <div className="flex items-start justify-between">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#EDE9FE] to-[#F3E8FF]">
-                  <Paintbrush className="h-5 w-5 text-[#7C3AED]" />
-                </div>
-                <span className="rounded-full bg-[#F5F3FF] px-2.5 py-0.5 text-[10px] font-semibold text-[#7C3AED]">Cloud</span>
-              </div>
-
-              <h3 className="mt-5 text-[18px] font-bold text-[#1A1A1A]">Figma 디자인 수정</h3>
+              <h3 className="text-[24px] font-bold tracking-[-0.02em] text-[#1A1A1A]">Figma 디자인 수정</h3>
               <p className="mt-1.5 text-[13px] leading-relaxed text-[#787774]">
                 Figma URL을 붙여넣고 클릭하면 끝.
                 <br />
@@ -231,7 +222,7 @@ export default function DashboardPage() {
                   { icon: Figma, label: "URL", color: "#787774" },
                   { icon: MousePointerClick, label: "선택", color: "#7C3AED" },
                   { icon: Zap, label: "AI", color: "#F59E0B" },
-                  { icon: GitBranch, label: "Push", color: "#22C55E" },
+                  { icon: GitBranch, label: "Push", color: "#34D399" },
                 ].map((step, i) => (
                   <div key={i} className="flex items-center gap-2">
                     <div className="flex items-center gap-1.5 rounded-lg bg-white/70 px-2.5 py-1.5">
@@ -280,14 +271,7 @@ export default function DashboardPage() {
             <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br from-[#A7F3D0]/20 to-[#6EE7B7]/10 opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100" />
 
             <div className="relative flex-1 p-6">
-              <div className="flex items-start justify-between">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#ECFDF5] to-[#D1FAE5]">
-                  <Laptop className="h-5 w-5 text-[#059669]" />
-                </div>
-                <span className="rounded-full bg-[#ECFDF5] px-2.5 py-0.5 text-[10px] font-semibold text-[#059669]">Local</span>
-              </div>
-
-              <h3 className="mt-5 text-[18px] font-bold text-[#1A1A1A]">로컬 프로젝트 수정</h3>
+              <h3 className="text-[24px] font-bold tracking-[-0.02em] text-[#1A1A1A]">로컬 프로젝트 수정</h3>
               <p className="mt-1.5 text-[13px] leading-relaxed text-[#787774]">
                 터미널 한 줄이면 연결 완료.
                 <br />
@@ -300,7 +284,7 @@ export default function DashboardPage() {
                   { icon: Terminal, label: "npx", color: "#787774" },
                   { icon: FolderOpen, label: "파일", color: "#059669" },
                   { icon: Zap, label: "AI", color: "#F59E0B" },
-                  { icon: Check, label: "반영", color: "#22C55E" },
+                  { icon: Check, label: "반영", color: "#34D399" },
                 ].map((step, i) => (
                   <div key={i} className="flex items-center gap-2">
                     <div className="flex items-center gap-1.5 rounded-lg bg-white/70 px-2.5 py-1.5">
@@ -369,7 +353,7 @@ export default function DashboardPage() {
           </div>
           <div className="mt-4 space-y-1">
             {[
-              { icon: Github, text: "GitHub 계정이 연결되었습니다", time: "방금 전", color: "#22C55E" },
+              { icon: Github, text: "GitHub 계정이 연결되었습니다", time: "방금 전", color: "#34D399" },
               { icon: Code2, text: "FigmaCodeBridge에 오신 것을 환영합니다!", time: "방금 전", color: "#7C3AED" },
             ].map((activity, i) => (
               <div key={i} className="flex items-center gap-3 rounded-xl px-4 py-3 transition-colors hover:bg-[#F7F7F5]">
