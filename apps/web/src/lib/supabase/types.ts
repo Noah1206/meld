@@ -48,7 +48,7 @@ export interface Database {
           id: string;
           user_id: string;
           name: string;
-          figma_file_key: string;
+          figma_file_key: string | null;
           figma_file_name: string | null;
           github_owner: string | null;
           github_repo: string | null;
@@ -62,7 +62,7 @@ export interface Database {
           id?: string;
           user_id: string;
           name: string;
-          figma_file_key: string;
+          figma_file_key?: string | null;
           figma_file_name?: string | null;
           github_owner?: string | null;
           github_repo?: string | null;

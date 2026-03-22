@@ -10,7 +10,7 @@ async function createContext(req: Request): Promise<Context> {
     user: {
       id: session.userId,
       githubAccessToken: session.githubAccessToken,
-      figmaAccessToken: session.figmaAccessToken ?? "",
+      figmaAccessToken: session.figmaAccessToken || "",
     },
   };
 }

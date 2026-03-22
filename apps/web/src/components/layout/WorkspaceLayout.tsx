@@ -42,17 +42,17 @@ export function WorkspaceLayout({
       {/* Main Content Area */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left Panel - Node Tree */}
-        <aside className="w-[280px] flex-shrink-0 overflow-y-auto border-r border-[#E5E7EB] bg-white">
+        <aside className="animate-slide-in-left w-[280px] flex-shrink-0 overflow-y-auto border-r border-[#E5E7EB] bg-white">
           {leftPanel}
         </aside>
 
         {/* Center - Figma Viewer */}
-        <main className="flex-1 overflow-auto">
+        <main className="animate-fade-in animation-delay-75 flex-1 overflow-auto">
           {mainContent}
         </main>
 
         {/* Right Panel - Properties + Diff + Git */}
-        <aside className="w-[320px] flex-shrink-0 overflow-y-auto border-l border-[#E5E7EB] bg-white">
+        <aside className="animate-slide-in-right w-[320px] flex-shrink-0 overflow-y-auto border-l border-[#E5E7EB] bg-white">
           {rightPanel}
         </aside>
       </div>

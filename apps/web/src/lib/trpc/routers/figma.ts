@@ -10,6 +10,10 @@ export const figmaRouter = router({
         throw new Error("Invalid Figma URL");
       }
 
+      if (!ctx.user.figmaAccessToken) {
+        throw new Error("Figma 계정을 먼저 연결하세요. Dashboard에서 'Figma 연결' 버튼을 클릭하세요.");
+      }
+
       const client = new FigmaClient(ctx.user.figmaAccessToken);
       const fileData = await client.getFile(parsed.fileKey);
 

@@ -13,13 +13,13 @@ export async function GET(req: NextRequest) {
   if (!code) {
     const oauthState = crypto.randomUUID();
     const url = getGitHubAuthUrl(oauthState);
-    const response = Response.redirect(url);
-    // state를 쿠키에 저장해서 CSRF 방지
-    response.headers.append(
-      "Set-Cookie",
-      `oauth_state=${oauthState}; Path=/; HttpOnly; SameSite=Lax; Max-Age=600`
-    );
-    return response;
+    return new Response(null, {
+      status: 302,
+      headers: {
+        Location: url,
+        "Set-Cookie": `oauth_state=${oauthState}; Path=/; HttpOnly; SameSite=Lax; Max-Age=600`,
+      },
+    });
   }
 
   // code가 있으면 콜백 처리
@@ -58,11 +58,11 @@ export async function GET(req: NextRequest) {
     });
 
     // 5. 대시보드로 리다이렉트
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:9000";
     return Response.redirect(`${appUrl}/dashboard`);
   } catch (err) {
     console.error("GitHub OAuth 에러:", err);
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:9000";
     return Response.redirect(
       `${appUrl}/login?error=github_auth_failed`
     );

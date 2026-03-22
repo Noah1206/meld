@@ -13,9 +13,9 @@ export function FrameSelector() {
         <button
           key={frame.nodeId}
           onClick={() => setActiveFrame(frame.nodeId)}
-          className={`whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+          className={`whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium transition-all duration-150 ${
             activeFrameId === frame.nodeId
-              ? "bg-[#2E86C1] text-white"
+              ? "bg-[#2E86C1] text-white shadow-sm"
               : "text-[#6B7280] hover:bg-[#F3F4F6]"
           }`}
         >

@@ -1,5 +1,6 @@
 import { router, protectedProcedure, z } from "../server";
-import { callClaude, buildCodeEditPrompt } from "@/lib/anthropic/client";
+import { buildCodeEditPrompt } from "@/lib/ai/prompts";
+import { createProvider } from "@/lib/ai/provider";
 import { Octokit } from "@octokit/rest";
 
 export const aiRouter = router({
@@ -16,6 +17,7 @@ export const aiRouter = router({
         githubOwner: z.string().optional(),
         githubRepo: z.string().optional(),
         githubBranch: z.string().optional(),
+        provider: z.enum(["claude", "chatgpt", "gemini"]).default("claude"),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -27,7 +29,10 @@ export const aiRouter = router({
         githubOwner,
         githubRepo,
         githubBranch = "main",
+        provider: providerType,
       } = input;
+
+      const llm = createProvider(providerType);
 
       // GitHub 연결이 없으면 AI에게 직접 코드 생성 요청
       if (!githubOwner || !githubRepo || !filePath) {
@@ -39,9 +44,7 @@ export const aiRouter = router({
           filePath ?? "components/Unknown.tsx"
         );
 
-        const response = await callClaude(system, [
-          { role: "user", content: user },
-        ]);
+        const response = await llm.call(system, user);
 
         try {
           return JSON.parse(response);
@@ -74,7 +77,7 @@ export const aiRouter = router({
         currentCode = "// 파일을 찾을 수 없습니다";
       }
 
-      // Claude API 호출
+      // LLM API 호출
       const { system, user } = buildCodeEditPrompt(
         figmaNodeName,
         figmaNodeType,
@@ -83,9 +86,7 @@ export const aiRouter = router({
         filePath
       );
 
-      const response = await callClaude(system, [
-        { role: "user", content: user },
-      ]);
+      const response = await llm.call(system, user);
 
       try {
         return JSON.parse(response);

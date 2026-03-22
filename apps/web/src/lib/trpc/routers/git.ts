@@ -3,6 +3,39 @@ import { Octokit } from "@octokit/rest";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const gitRouter = router({
+  // 유저 레포지토리 목록
+  listRepos: protectedProcedure.query(async ({ ctx }) => {
+    const octokit = new Octokit({ auth: ctx.user.githubAccessToken });
+    const repos: { owner: string; name: string; fullName: string; isPrivate: boolean; updatedAt: string }[] = [];
+    let page = 1;
+
+    // 페이지네이션으로 전체 레포 가져오기 (최대 200개)
+    while (page <= 2) {
+      const { data } = await octokit.repos.listForAuthenticatedUser({
+        sort: "updated",
+        per_page: 100,
+        page,
+      });
+
+      if (data.length === 0) break;
+
+      for (const repo of data) {
+        repos.push({
+          owner: repo.owner.login,
+          name: repo.name,
+          fullName: repo.full_name,
+          isPrivate: repo.private,
+          updatedAt: repo.updated_at ?? "",
+        });
+      }
+
+      if (data.length < 100) break;
+      page++;
+    }
+
+    return repos;
+  }),
+
   // 파일 목록 가져오기 (매핑용)
   listFiles: protectedProcedure
     .input(

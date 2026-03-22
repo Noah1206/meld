@@ -18,7 +18,7 @@ export function getFigmaAuthUrl(state: string): string {
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: redirectUri,
-    scope: "files:read",
+    scope: "file_content:read",
     state,
     response_type: "code",
   });

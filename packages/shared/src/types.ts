@@ -143,7 +143,7 @@ export interface Project {
   id: string;
   userId: string;
   name: string;
-  figmaFileKey: string;
+  figmaFileKey?: string;
   figmaFileName?: string;
   githubOwner?: string;
   githubRepo?: string;

@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { Loader2, Link as LinkIcon } from "lucide-react";
 import { useFigmaStore } from "@/lib/store/figma-store";
+import { useAuthStore } from "@/lib/store/auth-store";
 import { FigmaClient } from "@/lib/figma/client";
 import { extractFrames, buildFrameData } from "@/lib/figma/parser";
 import { trpc } from "@/lib/trpc/client";
@@ -10,9 +12,30 @@ export function FigmaUrlInput() {
   const [url, setUrl] = useState("");
   const { isLoading, setLoading, setError, setFileData, setFrames, error } =
     useFigmaStore();
+  const { user } = useAuthStore();
 
   const loadFileMutation = trpc.figma.loadFile.useMutation();
   const getImagesMutation = trpc.figma.getImages.useMutation();
+
+  // Figma 미연결 시 연결 유도
+  if (user && !user.hasFigmaToken) {
+    return (
+      <div className="animate-fade-in space-y-2 p-4">
+        <div className="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+          <LinkIcon className="h-4 w-4 flex-shrink-0 text-amber-600" />
+          <p className="flex-1 text-sm text-amber-800">
+            Figma 파일을 불러오려면 먼저 Figma 계정을 연결하세요.
+          </p>
+          <a
+            href="/api/auth/figma"
+            className="flex-shrink-0 rounded-md bg-amber-600 px-3 py-1.5 text-xs font-medium text-white transition-all hover:bg-amber-700 hover:scale-[1.02] active:scale-[0.98]"
+          >
+            Figma 연결
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   const handleLoad = async () => {
     const parsed = FigmaClient.extractFileKey(url);
@@ -77,13 +100,20 @@ export function FigmaUrlInput() {
         <button
           onClick={handleLoad}
           disabled={isLoading || !url.trim()}
-          className="rounded-lg bg-[#2E86C1] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#2573A8] disabled:opacity-50"
+          className="flex items-center gap-1.5 rounded-lg bg-[#2E86C1] px-4 py-2 text-sm font-medium text-white transition-all hover:bg-[#2573A8] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
         >
-          {isLoading ? "로딩..." : "Load"}
+          {isLoading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              로딩...
+            </>
+          ) : (
+            "Load"
+          )}
         </button>
       </div>
       {error && (
-        <p className="text-xs text-red-500">{error}</p>
+        <p className="animate-fade-in text-xs text-red-500">{error}</p>
       )}
     </div>
   );

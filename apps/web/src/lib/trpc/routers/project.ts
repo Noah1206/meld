@@ -18,7 +18,7 @@ export const projectRouter = router({
     .input(
       z.object({
         name: z.string(),
-        figmaFileKey: z.string(),
+        figmaFileKey: z.string().optional(),
         figmaFileName: z.string().optional(),
         githubOwner: z.string().optional(),
         githubRepo: z.string().optional(),

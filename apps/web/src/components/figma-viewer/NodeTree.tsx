@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { ChevronRight } from "lucide-react";
 import { useFigmaStore } from "@/lib/store/figma-store";
 import type { FigmaViewerNode } from "@/lib/figma/types";
 import { flattenNodes } from "@/lib/figma/parser";
@@ -143,11 +144,15 @@ function TreeNode({
       <div className="flex items-center">
         {hasChildren && (
           <button
-            className="flex-shrink-0 px-1 text-[10px] text-[#9CA3AF] hover:text-[#6B7280]"
+            className="flex-shrink-0 px-1 text-[#9CA3AF] hover:text-[#6B7280]"
             style={{ marginLeft: indent * 12 }}
             onClick={() => onToggle(node.id)}
           >
-            {isCollapsed ? "▶" : "▼"}
+            <ChevronRight
+              className={`h-3 w-3 transition-transform duration-150 ${
+                isCollapsed ? "" : "rotate-90"
+              }`}
+            />
           </button>
         )}
         <NodeItem

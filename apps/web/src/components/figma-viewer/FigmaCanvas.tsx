@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useState } from "react";
 import { useFigmaStore } from "@/lib/store/figma-store";
 import type { FigmaViewerNode } from "@/lib/figma/types";
 
@@ -9,6 +9,8 @@ import type { FigmaViewerNode } from "@/lib/figma/types";
  */
 export function FigmaCanvas() {
   const containerRef = useRef<HTMLDivElement>(null);
+  // activeFrameId를 키로 사용해 프레임 변경 시 imageLoaded 자동 리셋
+  const [imageLoadedFor, setImageLoadedFor] = useState<string | null>(null);
   const {
     frames,
     activeFrameId,
@@ -21,6 +23,7 @@ export function FigmaCanvas() {
   } = useFigmaStore();
 
   const activeFrame = frames.find((f) => f.nodeId === activeFrameId);
+  const imageLoaded = imageLoadedFor === activeFrameId;
 
   const handleWheel = useCallback(
     (e: React.WheelEvent) => {
@@ -48,19 +51,28 @@ export function FigmaCanvas() {
       onWheel={handleWheel}
     >
       <div
-        className="relative mx-auto my-8"
+        className="relative mx-auto my-8 transition-[width,height] duration-200"
         style={{
           width: activeFrame.width * zoom,
           height: activeFrame.height * zoom,
         }}
       >
+        {/* 이미지 로딩 shimmer */}
+        {!imageLoaded && (
+          <div className="animate-shimmer absolute inset-0 rounded-lg" />
+        )}
+
         {/* 프레임 이미지 */}
         <img
           src={activeFrame.imageUrl}
           alt={activeFrame.name}
-          className="block h-full w-full"
-          style={{ imageRendering: zoom > 2 ? "pixelated" : "auto" }}
+          className="block h-full w-full transition-opacity duration-300"
+          style={{
+            imageRendering: zoom > 2 ? "pixelated" : "auto",
+            opacity: imageLoaded ? 1 : 0,
+          }}
           draggable={false}
+          onLoad={() => setImageLoadedFor(activeFrameId)}
         />
 
         {/* 노드 클릭 오버레이 */}
@@ -94,7 +106,7 @@ function renderOverlays(
       elements.push(
         <div
           key={node.id}
-          className="absolute cursor-pointer transition-colors"
+          className="absolute cursor-pointer transition-all duration-150"
           style={{
             left: x * zoom,
             top: y * zoom,
@@ -127,7 +139,7 @@ function renderOverlays(
         elements.push(
           <div
             key={`${node.id}-label`}
-            className="absolute z-[200] rounded-sm bg-[#2E86C1] px-1.5 py-0.5 text-[10px] font-medium text-white whitespace-nowrap"
+            className="animate-fade-in absolute z-[200] rounded-sm bg-[#2E86C1] px-1.5 py-0.5 text-[10px] font-medium text-white whitespace-nowrap"
             style={{
               left: x * zoom,
               top: y * zoom - 18,

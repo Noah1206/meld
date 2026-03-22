@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Loader2, GitBranch, CheckCircle, XCircle } from "lucide-react";
 import { useChatStore } from "@/lib/store/chat-store";
 import { trpc } from "@/lib/trpc/client";
 
@@ -23,6 +24,14 @@ export function CommitDialog({
   const [result, setResult] = useState<string | null>(null);
 
   const commitMutation = trpc.git.commitAndPush.useMutation();
+
+  // 성공 시 4초 후 자동 dismiss
+  useEffect(() => {
+    if (result && !result.startsWith("에러")) {
+      const timer = setTimeout(() => setResult(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [result]);
 
   // 마지막 코드 편집 결과
   const lastEdit = [...messages]
@@ -64,6 +73,8 @@ export function CommitDialog({
     }
   };
 
+  const isError = result?.startsWith("에러");
+
   return (
     <div className="space-y-3 p-3">
       <div>
@@ -88,16 +99,28 @@ export function CommitDialog({
         <button
           onClick={handlePush}
           disabled={isPushing || !commitMsg.trim()}
-          className="rounded-md bg-[#059669] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#047857] disabled:opacity-50"
+          className="flex items-center gap-1 rounded-md bg-[#059669] px-3 py-1.5 text-xs font-medium text-white transition-all hover:bg-[#047857] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
         >
+          {isPushing ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : (
+            <GitBranch className="h-3 w-3" />
+          )}
           {isPushing ? "..." : "Push"}
         </button>
       </div>
 
       {result && (
         <p
-          className={`text-xs ${result.startsWith("에러") ? "text-red-500" : "text-green-600"}`}
+          className={`animate-fade-in flex items-center gap-1 text-xs ${
+            isError ? "text-red-500" : "text-green-600"
+          }`}
         >
+          {isError ? (
+            <XCircle className="h-3 w-3 flex-shrink-0" />
+          ) : (
+            <CheckCircle className="h-3 w-3 flex-shrink-0" />
+          )}
           {result}
         </p>
       )}

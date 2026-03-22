@@ -1,9 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import { Loader2, Send } from "lucide-react";
 import { useFigmaStore } from "@/lib/store/figma-store";
 import { useChatStore } from "@/lib/store/chat-store";
+import type { LLMProviderType } from "@/lib/store/chat-store";
 import { trpc } from "@/lib/trpc/client";
+
+const LLM_OPTIONS: { value: LLMProviderType; label: string }[] = [
+  { value: "claude", label: "Claude" },
+  { value: "chatgpt", label: "ChatGPT" },
+  { value: "gemini", label: "Gemini" },
+];
 
 interface ChatInputProps {
   projectId: string;
@@ -12,7 +20,8 @@ interface ChatInputProps {
 export function ChatInput({ projectId }: ChatInputProps) {
   const [input, setInput] = useState("");
   const { selectedNode } = useFigmaStore();
-  const { isProcessing, addMessage, setProcessing, setError } = useChatStore();
+  const { isProcessing, provider, addMessage, setProcessing, setError, setProvider } =
+    useChatStore();
 
   const editCodeMutation = trpc.ai.editCode.useMutation();
 
@@ -31,6 +40,7 @@ export function ChatInput({ projectId }: ChatInputProps) {
         projectId,
         figmaNodeId: selectedNode.id,
         command,
+        provider,
       });
 
       // AI 응답 추가
@@ -50,9 +60,21 @@ export function ChatInput({ projectId }: ChatInputProps) {
 
   return (
     <div className="flex items-center gap-3 px-4 py-3">
+      <select
+        value={provider}
+        onChange={(e) => setProvider(e.target.value as LLMProviderType)}
+        disabled={isProcessing}
+        className="flex-shrink-0 rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm text-[#374151] focus:border-[#2E86C1] focus:outline-none focus:ring-1 focus:ring-[#2E86C1] disabled:opacity-50"
+      >
+        {LLM_OPTIONS.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
       <div className="flex-1 flex items-center gap-2">
         {selectedNode && (
-          <span className="flex-shrink-0 rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-[#2E86C1]">
+          <span className="animate-fade-in flex-shrink-0 rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-[#2E86C1]">
             {selectedNode.name}
           </span>
         )}
@@ -73,9 +95,19 @@ export function ChatInput({ projectId }: ChatInputProps) {
       <button
         onClick={handleSend}
         disabled={!selectedNode || !input.trim() || isProcessing}
-        className="rounded-lg bg-[#2E86C1] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#2573A8] disabled:opacity-50"
+        className="flex items-center gap-1.5 rounded-lg bg-[#2E86C1] px-4 py-2 text-sm font-medium text-white transition-all hover:bg-[#2573A8] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
       >
-        {isProcessing ? "처리중..." : "Send"}
+        {isProcessing ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            처리중...
+          </>
+        ) : (
+          <>
+            <Send className="h-4 w-4" />
+            Send
+          </>
+        )}
       </button>
     </div>
   );
