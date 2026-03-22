@@ -32,6 +32,23 @@ export const figmaRouter = router({
       return { images };
     }),
 
+  loadByKey: protectedProcedure
+    .input(z.object({ fileKey: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.user.figmaAccessToken) {
+        throw new Error("Figma 계정을 먼저 연결하세요.");
+      }
+
+      const client = new FigmaClient(ctx.user.figmaAccessToken);
+      const fileData = await client.getFile(input.fileKey);
+
+      return {
+        fileKey: input.fileKey,
+        fileName: fileData.name,
+        document: fileData.document,
+      };
+    }),
+
   sync: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .mutation(async ({ input, ctx }) => {

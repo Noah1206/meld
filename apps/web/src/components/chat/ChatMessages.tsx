@@ -2,6 +2,7 @@
 
 import { useChatStore, type ChatMessage } from "@/lib/store/chat-store";
 import { useEffect, useRef } from "react";
+import { MessageSquare } from "lucide-react";
 
 export function ChatMessages() {
   const { messages, isProcessing } = useChatStore();
@@ -11,10 +12,25 @@ export function ChatMessages() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length, isProcessing]);
 
-  if (messages.length === 0 && !isProcessing) return null;
+  // 빈 상태
+  if (messages.length === 0 && !isProcessing) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <div className="text-center">
+          <MessageSquare className="mx-auto h-8 w-8 text-[#D1D5DB]" />
+          <p className="mt-3 text-sm font-medium text-[#6B7280]">AI 채팅</p>
+          <p className="mt-1 text-xs text-[#9CA3AF]">
+            Figma 뷰어에서 엘리먼트를 선택하고
+            <br />
+            명령을 입력하면 AI가 코드를 수정합니다.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-h-48 overflow-y-auto border-b border-[#E5E7EB] px-4 py-2 space-y-2">
+    <div className="space-y-2 px-4 py-3">
       {messages.map((msg) => (
         <MessageBubble key={msg.id} message={msg} />
       ))}

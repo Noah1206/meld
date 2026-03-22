@@ -18,6 +18,8 @@ export const aiRouter = router({
         githubRepo: z.string().optional(),
         githubBranch: z.string().optional(),
         provider: z.enum(["claude", "chatgpt", "gemini"]).default("claude"),
+        // 로컬 모드: 에이전트에서 읽은 코드를 직접 전달
+        currentCode: z.string().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -30,9 +32,34 @@ export const aiRouter = router({
         githubRepo,
         githubBranch = "main",
         provider: providerType,
+        currentCode: providedCode,
       } = input;
 
       const llm = createProvider(providerType);
+
+      // 로컬 모드: currentCode가 직접 전달된 경우
+      if (providedCode !== undefined && filePath) {
+        const { system, user } = buildCodeEditPrompt(
+          figmaNodeName,
+          figmaNodeType,
+          command,
+          providedCode,
+          filePath,
+        );
+
+        const response = await llm.call(system, user);
+
+        try {
+          return JSON.parse(response);
+        } catch {
+          return {
+            filePath,
+            original: providedCode,
+            modified: response,
+            explanation: "AI 응답을 파싱할 수 없어 원본 응답을 반환합니다.",
+          };
+        }
+      }
 
       // GitHub 연결이 없으면 AI에게 직접 코드 생성 요청
       if (!githubOwner || !githubRepo || !filePath) {
