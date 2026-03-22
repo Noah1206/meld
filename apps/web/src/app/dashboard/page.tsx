@@ -33,7 +33,7 @@ import { useAuthStore } from "@/lib/store/auth-store";
 function DashboardSkeleton() {
   return (
     <div className="min-h-screen bg-white">
-      <header className="border-b border-[#F0F0EE] bg-white px-6 py-3.5">
+      <header className="bg-white px-6 py-3.5">
         <div className="mx-auto flex max-w-4xl items-center justify-between">
           <div className="animate-shimmer h-5 w-28 rounded" />
           <div className="flex items-center gap-3">
@@ -44,7 +44,7 @@ function DashboardSkeleton() {
       </header>
       <main className="mx-auto max-w-4xl px-6 pt-10">
         <div className="animate-shimmer mb-8 h-8 w-48 rounded" />
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-5 sm:grid-cols-2">
           <div className="animate-shimmer h-80 rounded-2xl" />
           <div className="animate-shimmer h-80 rounded-2xl animation-delay-150" />
         </div>
@@ -105,7 +105,7 @@ export default function DashboardPage() {
   return (
     <div className="animate-fade-in min-h-screen bg-white">
       {/* 헤더 */}
-      <header className="border-b border-[#F0F0EE] bg-white/80 backdrop-blur-xl">
+      <header className="bg-white/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-3.5">
           <Link href="/" className="flex items-center gap-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1A1A1A]">
@@ -116,8 +116,7 @@ export default function DashboardPage() {
           <div className="flex items-center gap-3">
             {user && (
               <>
-                {/* 키보드 단축키 힌트 */}
-                <button className="hidden items-center gap-1.5 rounded-lg border border-[#F0F0EE] px-2.5 py-1.5 text-[11px] text-[#B4B4B0] transition-all hover:border-[#D4D4D0] hover:text-[#787774] sm:flex">
+                <button className="hidden items-center gap-1.5 rounded-lg bg-[#F7F7F5] px-2.5 py-1.5 text-[11px] text-[#B4B4B0] transition-all hover:bg-[#EEEEEC] hover:text-[#787774] sm:flex">
                   <Keyboard className="h-3 w-3" />
                   <kbd className="font-mono text-[10px]">⌘K</kbd>
                 </button>
@@ -126,7 +125,7 @@ export default function DashboardPage() {
                     <img
                       src={user.avatarUrl}
                       alt={user.githubUsername}
-                      className="h-6 w-6 rounded-full ring-1 ring-[#F0F0EE]"
+                      className="h-6 w-6 rounded-full"
                     />
                   )}
                   <span className="text-[13px] font-medium text-[#1A1A1A]">
@@ -172,7 +171,7 @@ export default function DashboardPage() {
             ) : (
               <a
                 href="/api/auth/figma"
-                className="group flex items-center gap-1.5 rounded-full border border-dashed border-[#D4D4D0] px-3 py-1 transition-all hover:border-[#1A1A1A] hover:bg-[#FAFAFA]"
+                className="group flex items-center gap-1.5 rounded-full bg-[#F7F7F5] px-3 py-1 transition-all hover:bg-[#EEEEEC]"
               >
                 <Figma className="h-3 w-3 text-[#B4B4B0] transition-colors group-hover:text-[#1A1A1A]" />
                 <span className="text-[11px] font-medium text-[#787774] transition-colors group-hover:text-[#1A1A1A]">Figma 연결</span>
@@ -189,15 +188,15 @@ export default function DashboardPage() {
         {/* 퀵 액션 바 */}
         <div className="animate-fade-in-up animation-delay-75 mb-8 flex items-center gap-2 overflow-x-auto">
           {[
-            { icon: Plus, label: "새 프로젝트", href: "/project/new", accent: false },
-            { icon: FolderOpen, label: "로컬 연결", href: "/project/local", accent: false },
-            { icon: BookOpen, label: "사용 가이드", href: "#guide", accent: false },
-            { icon: MessageCircle, label: "피드백", href: "#feedback", accent: false },
+            { icon: Plus, label: "새 프로젝트", href: "/project/new" },
+            { icon: FolderOpen, label: "로컬 연결", href: "/project/local" },
+            { icon: BookOpen, label: "사용 가이드", href: "#guide" },
+            { icon: MessageCircle, label: "피드백", href: "#feedback" },
           ].map((action) => (
             <Link
               key={action.label}
               href={action.href}
-              className="flex flex-shrink-0 items-center gap-1.5 rounded-lg border border-[#E8E8E4] px-3.5 py-2 text-[12px] font-medium text-[#787774] transition-all hover:border-[#D4D4D0] hover:bg-[#FAFAFA] hover:text-[#1A1A1A] active:scale-[0.98]"
+              className="flex flex-shrink-0 items-center gap-1.5 rounded-lg bg-[#F7F7F5] px-3.5 py-2 text-[12px] font-medium text-[#787774] transition-all hover:bg-[#EEEEEC] hover:text-[#1A1A1A] active:scale-[0.98]"
             >
               <action.icon className="h-3.5 w-3.5" />
               {action.label}
@@ -208,7 +207,7 @@ export default function DashboardPage() {
         {/* 메인 카드 */}
         <div className="animate-fade-in-up animation-delay-150 grid gap-5 sm:grid-cols-2">
           {/* 카드 1: Figma 디자인 수정 */}
-          <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-[#E8E8E4] bg-white transition-all duration-300 hover:border-[#C4B5FD] hover:shadow-xl hover:shadow-purple-500/[0.06]">
+          <div className="group relative flex flex-col overflow-hidden rounded-2xl bg-[#F7F7F5] transition-all duration-300 hover:bg-[#F0F0EE] hover:shadow-xl hover:shadow-purple-500/[0.04]">
             <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br from-[#C4B5FD]/20 to-[#818CF8]/10 opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100" />
 
             <div className="relative flex-1 p-6">
@@ -235,7 +234,7 @@ export default function DashboardPage() {
                   { icon: GitBranch, label: "Push", color: "#22C55E" },
                 ].map((step, i) => (
                   <div key={i} className="flex items-center gap-2">
-                    <div className="flex items-center gap-1.5 rounded-lg bg-[#F7F7F5] px-2.5 py-1.5">
+                    <div className="flex items-center gap-1.5 rounded-lg bg-white/70 px-2.5 py-1.5">
                       <step.icon className="h-3 w-3" style={{ color: step.color }} />
                       <span className="text-[#787774]">{step.label}</span>
                     </div>
@@ -248,16 +247,16 @@ export default function DashboardPage() {
               <div className="mt-4 flex items-center gap-1.5">
                 <span className="text-[10px] text-[#B4B4B0]">지원:</span>
                 {["React", "Vue", "Next.js", "Angular"].map((fw) => (
-                  <span key={fw} className="rounded bg-[#F7F7F5] px-1.5 py-0.5 text-[10px] text-[#787774]">{fw}</span>
+                  <span key={fw} className="rounded bg-white/60 px-1.5 py-0.5 text-[10px] text-[#787774]">{fw}</span>
                 ))}
               </div>
             </div>
 
-            <div className="border-t border-[#F0F0EE] p-4">
+            <div className="px-4 pb-4">
               {user?.hasFigmaToken ? (
                 <Link
                   href="/project/new"
-                  className="group/btn flex w-full items-center justify-center gap-2 rounded-xl border border-[#E0E0DC] px-4 py-3 text-[13px] font-semibold text-[#7C3AED] transition-all hover:border-[#C4B5FD] hover:bg-[#F5F3FF]/50 active:scale-[0.98]"
+                  className="group/btn flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-[13px] font-semibold text-[#7C3AED] shadow-sm transition-all hover:shadow-md active:scale-[0.98]"
                 >
                   <Sparkles className="h-4 w-4 transition-transform group-hover/btn:rotate-12" />
                   새 프로젝트 만들기
@@ -266,18 +265,18 @@ export default function DashboardPage() {
               ) : (
                 <a
                   href="/api/auth/figma"
-                  className="group/btn flex w-full items-center justify-center gap-2 rounded-xl border border-[#E0E0DC] px-4 py-3 text-[13px] font-medium text-[#787774] transition-all hover:border-[#C4B5FD] hover:text-[#7C3AED] active:scale-[0.98]"
+                  className="group/btn flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-[13px] font-medium text-[#787774] shadow-sm transition-all hover:shadow-md hover:text-[#7C3AED] active:scale-[0.98]"
                 >
                   <Figma className="h-3.5 w-3.5" />
                   먼저 Figma를 연결하세요
-                  <ArrowRight className="h-3.5 w-3.5 text-[#D4D4D0] transition-transform group-hover/btn:translate-x-0.5 group-hover/btn:text-[#C4B5FD]" />
+                  <ArrowRight className="h-3.5 w-3.5 text-[#D4D4D0] transition-transform group-hover/btn:translate-x-0.5" />
                 </a>
               )}
             </div>
           </div>
 
           {/* 카드 2: 로컬 프로젝트 */}
-          <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-[#E8E8E4] bg-white transition-all duration-300 hover:border-[#6EE7B7] hover:shadow-xl hover:shadow-emerald-500/[0.06]">
+          <div className="group relative flex flex-col overflow-hidden rounded-2xl bg-[#F7F7F5] transition-all duration-300 hover:bg-[#F0F0EE] hover:shadow-xl hover:shadow-emerald-500/[0.04]">
             <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br from-[#A7F3D0]/20 to-[#6EE7B7]/10 opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100" />
 
             <div className="relative flex-1 p-6">
@@ -304,7 +303,7 @@ export default function DashboardPage() {
                   { icon: Check, label: "반영", color: "#22C55E" },
                 ].map((step, i) => (
                   <div key={i} className="flex items-center gap-2">
-                    <div className="flex items-center gap-1.5 rounded-lg bg-[#F7F7F5] px-2.5 py-1.5">
+                    <div className="flex items-center gap-1.5 rounded-lg bg-white/70 px-2.5 py-1.5">
                       <step.icon className="h-3 w-3" style={{ color: step.color }} />
                       <span className="text-[#787774]">{step.label}</span>
                     </div>
@@ -326,11 +325,11 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="space-y-2.5 border-t border-[#F0F0EE] p-4">
+            <div className="space-y-2.5 px-4 pb-4">
               <CopyCommand command="npx figma-code-bridge" />
               <Link
                 href="/project/local"
-                className="group/btn flex w-full items-center justify-center gap-2 rounded-xl border border-[#E0E0DC] px-4 py-3 text-[13px] font-semibold text-[#059669] transition-all hover:border-[#6EE7B7] hover:bg-[#ECFDF5]/50 active:scale-[0.98]"
+                className="group/btn flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-[13px] font-semibold text-[#059669] shadow-sm transition-all hover:shadow-md active:scale-[0.98]"
               >
                 <Rocket className="h-4 w-4 transition-transform group-hover/btn:-rotate-12" />
                 로컬 프로젝트 열기
@@ -346,8 +345,8 @@ export default function DashboardPage() {
             <h2 className="text-[16px] font-semibold text-[#1A1A1A]">내 프로젝트</h2>
             <span className="text-[11px] text-[#B4B4B0]">0개</span>
           </div>
-          <div className="mt-4 rounded-2xl border border-dashed border-[#E8E8E4] p-14 text-center transition-colors hover:border-[#D4D4D0] hover:bg-[#FAFAFA]/50">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#F7F7F5]">
+          <div className="mt-4 rounded-2xl bg-[#F7F7F5] p-14 text-center transition-colors hover:bg-[#F0F0EE]">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm">
               <span className="text-2xl">📂</span>
             </div>
             <p className="text-[14px] font-medium text-[#787774]">아직 프로젝트가 없어요</p>
@@ -373,7 +372,7 @@ export default function DashboardPage() {
               { icon: Github, text: "GitHub 계정이 연결되었습니다", time: "방금 전", color: "#22C55E" },
               { icon: Code2, text: "FigmaCodeBridge에 오신 것을 환영합니다!", time: "방금 전", color: "#7C3AED" },
             ].map((activity, i) => (
-              <div key={i} className="flex items-center gap-3 rounded-xl px-4 py-3 transition-colors hover:bg-[#FAFAFA]">
+              <div key={i} className="flex items-center gap-3 rounded-xl px-4 py-3 transition-colors hover:bg-[#F7F7F5]">
                 <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-[#F7F7F5]">
                   <activity.icon className="h-4 w-4" style={{ color: activity.color }} />
                 </div>
@@ -420,7 +419,7 @@ export default function DashboardPage() {
             <Link
               key={resource.title}
               href={resource.href}
-              className="group flex items-center gap-3 rounded-xl border border-[#E8E8E4] p-4 transition-all hover:border-[#D4D4D0] hover:shadow-md hover:shadow-black/[0.03]"
+              className="group flex items-center gap-3 rounded-xl bg-[#F7F7F5] p-4 transition-all hover:bg-[#F0F0EE] hover:shadow-md hover:shadow-black/[0.03]"
             >
               <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: resource.bg }}>
                 <resource.icon className="h-4 w-4" style={{ color: resource.color }} />
