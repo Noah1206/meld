@@ -257,18 +257,20 @@ export default function DashboardPage() {
               {user?.hasFigmaToken ? (
                 <Link
                   href="/project/new"
-                  className="group/btn flex w-full items-center justify-center gap-2 rounded-xl bg-[#7C3AED] px-4 py-3 text-[13px] font-semibold text-white transition-all hover:bg-[#6D28D9] active:scale-[0.98]"
+                  className="group/btn flex w-full items-center justify-center gap-2 rounded-xl border border-[#E0E0DC] px-4 py-3 text-[13px] font-semibold text-[#7C3AED] transition-all hover:border-[#C4B5FD] hover:bg-[#F5F3FF]/50 active:scale-[0.98]"
                 >
                   <Sparkles className="h-4 w-4 transition-transform group-hover/btn:rotate-12" />
                   새 프로젝트 만들기
+                  <ArrowRight className="h-3.5 w-3.5 text-[#C4B5FD] transition-transform group-hover/btn:translate-x-0.5" />
                 </Link>
               ) : (
                 <a
                   href="/api/auth/figma"
-                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#E0E0DC] px-4 py-3 text-[13px] font-medium text-[#1A1A1A] transition-all hover:bg-[#FAFAFA] active:scale-[0.98]"
+                  className="group/btn flex w-full items-center justify-center gap-2 rounded-xl border border-[#E0E0DC] px-4 py-3 text-[13px] font-medium text-[#787774] transition-all hover:border-[#C4B5FD] hover:text-[#7C3AED] active:scale-[0.98]"
                 >
                   <Figma className="h-3.5 w-3.5" />
                   먼저 Figma를 연결하세요
+                  <ArrowRight className="h-3.5 w-3.5 text-[#D4D4D0] transition-transform group-hover/btn:translate-x-0.5 group-hover/btn:text-[#C4B5FD]" />
                 </a>
               )}
             </div>
@@ -328,10 +330,11 @@ export default function DashboardPage() {
               <CopyCommand command="npx figma-code-bridge" />
               <Link
                 href="/project/local"
-                className="group/btn flex w-full items-center justify-center gap-2 rounded-xl bg-[#059669] px-4 py-3 text-[13px] font-semibold text-white transition-all hover:bg-[#047857] active:scale-[0.98]"
+                className="group/btn flex w-full items-center justify-center gap-2 rounded-xl border border-[#E0E0DC] px-4 py-3 text-[13px] font-semibold text-[#059669] transition-all hover:border-[#6EE7B7] hover:bg-[#ECFDF5]/50 active:scale-[0.98]"
               >
                 <Rocket className="h-4 w-4 transition-transform group-hover/btn:-rotate-12" />
                 로컬 프로젝트 열기
+                <ArrowRight className="h-3.5 w-3.5 text-[#A7F3D0] transition-transform group-hover/btn:translate-x-0.5" />
               </Link>
             </div>
           </div>

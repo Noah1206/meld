@@ -34,7 +34,7 @@ export default function HomePage() {
             </Link>
             <Link
               href="/dashboard"
-              className="rounded-lg bg-[#1A1A1A] px-4 py-2 text-[13px] font-medium text-white transition-all hover:bg-[#333] active:scale-[0.98]"
+              className="rounded-lg border border-[#E0E0DC] px-4 py-2 text-[13px] font-semibold text-[#1A1A1A] transition-all hover:border-[#1A1A1A] active:scale-[0.98]"
             >
               무료로 시작하기
             </Link>
@@ -65,17 +65,17 @@ export default function HomePage() {
           </p>
 
           {/* CTA 버튼 */}
-          <div className="animate-fade-in-up animation-delay-450 mt-10 flex items-center justify-center gap-3">
+          <div className="animate-fade-in-up animation-delay-450 mt-10 flex items-center justify-center gap-4">
             <Link
               href="/dashboard"
-              className="inline-flex items-center gap-2 rounded-xl bg-[#1A1A1A] px-7 py-3.5 text-[14px] font-semibold text-white transition-all hover:bg-[#333] active:scale-[0.98]"
+              className="group inline-flex items-center gap-2 rounded-xl border border-[#E0E0DC] px-7 py-3.5 text-[14px] font-semibold text-[#1A1A1A] transition-all hover:border-[#1A1A1A] active:scale-[0.98]"
             >
               무료로 시작하기
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-4 w-4 text-[#B4B4B0] transition-transform group-hover:translate-x-0.5 group-hover:text-[#1A1A1A]" />
             </Link>
             <Link
               href="/dashboard"
-              className="inline-flex items-center gap-2 rounded-xl border border-[#E0E0DC] px-7 py-3.5 text-[14px] font-medium text-[#1A1A1A] transition-all hover:bg-[#FAFAFA] active:scale-[0.98]"
+              className="inline-flex items-center gap-2 text-[14px] font-medium text-[#787774] underline decoration-[#E0E0DC] underline-offset-4 transition-all hover:text-[#1A1A1A] hover:decoration-[#1A1A1A]"
             >
               데모 보기
             </Link>
@@ -286,10 +286,10 @@ export default function HomePage() {
           <div className="mt-8 flex items-center justify-center gap-3">
             <Link
               href="/dashboard"
-              className="inline-flex items-center gap-2 rounded-xl bg-[#1A1A1A] px-7 py-3.5 text-[14px] font-semibold text-white transition-all hover:bg-[#333] active:scale-[0.98]"
+              className="group inline-flex items-center gap-2 rounded-xl border border-[#E0E0DC] px-7 py-3.5 text-[14px] font-semibold text-[#1A1A1A] transition-all hover:border-[#1A1A1A] active:scale-[0.98]"
             >
               무료로 시작하기
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-4 w-4 text-[#B4B4B0] transition-transform group-hover:translate-x-0.5 group-hover:text-[#1A1A1A]" />
             </Link>
           </div>
         </div>
