@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { RefreshCw, ExternalLink, Globe, Loader2 } from "lucide-react";
+import { useAgentStore } from "@/lib/store/agent-store";
 
 interface PreviewFrameProps {
   url: string;
@@ -11,6 +12,20 @@ interface PreviewFrameProps {
 export function PreviewFrame({ url, framework }: PreviewFrameProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const lastWriteTimestamp = useAgentStore((s) => s.lastWriteTimestamp);
+
+  // 파일 쓰기 후 자동 리프레시 (HMR이 안 될 경우 대비)
+  useEffect(() => {
+    if (lastWriteTimestamp === 0) return;
+    const timer = setTimeout(() => {
+      if (iframeRef.current) {
+        setIsLoading(true);
+        const separator = url.includes("?") ? "&" : "?";
+        iframeRef.current.src = `${url}${separator}_t=${lastWriteTimestamp}`;
+      }
+    }, 500); // HMR이 먼저 처리되도록 약간 딜레이
+    return () => clearTimeout(timer);
+  }, [lastWriteTimestamp, url]);
 
   const handleRefresh = () => {
     if (iframeRef.current) {

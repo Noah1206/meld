@@ -16,7 +16,15 @@ function LocalProjectContent() {
 
   const agent = useAgentConnection(agentUrl);
   const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
-  const { setHandlers, setSelectedFilePath: setStoreFilePath } = useAgentStore();
+  const {
+    setHandlers,
+    setSelectedFilePath: setStoreFilePath,
+    setConnected,
+    setFileTree,
+    setProjectName,
+    setDevServerUrl,
+    setDevServerFramework,
+  } = useAgentStore();
 
   useEffect(() => {
     setHandlers(agent.readFile, agent.writeFile);
@@ -25,6 +33,27 @@ function LocalProjectContent() {
   useEffect(() => {
     setStoreFilePath(selectedFilePath);
   }, [selectedFilePath, setStoreFilePath]);
+
+  // 에이전트 상태를 store에 동기화
+  useEffect(() => {
+    setConnected(agent.connected);
+  }, [agent.connected, setConnected]);
+
+  useEffect(() => {
+    setFileTree(agent.fileTree);
+  }, [agent.fileTree, setFileTree]);
+
+  useEffect(() => {
+    setProjectName(agent.projectName);
+  }, [agent.projectName, setProjectName]);
+
+  useEffect(() => {
+    setDevServerUrl(agent.devServerUrl);
+  }, [agent.devServerUrl, setDevServerUrl]);
+
+  useEffect(() => {
+    setDevServerFramework(agent.devServerFramework);
+  }, [agent.devServerFramework, setDevServerFramework]);
 
   return (
     <WorkspaceLayout

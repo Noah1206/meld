@@ -134,6 +134,12 @@ function handleMessage(ws: WebSocket, msg: ReturnType<typeof parseMessage>, root
       break;
     }
 
+    case "getFileTree": {
+      const files = scanProject(rootDir);
+      ws.send(JSON.stringify(createMessage("fileTree", { files })));
+      break;
+    }
+
     case "writeFile": {
       const filePath = payload.path as string;
       const content = payload.content as string;

@@ -32,9 +32,6 @@ export function useAgentConnection(wsUrl: string | null): UseAgentConnectionRetu
   const wsRef = useRef<WebSocket | null>(null);
   const pendingReads = useRef<Map<string, { resolve: (v: string) => void; reject: (e: Error) => void }>>(new Map());
   const pendingWrites = useRef<Map<string, { resolve: (v: boolean) => void; reject: (e: Error) => void }>>(new Map());
-  // refreshTree 트리거용 카운터
-  const [connectTrigger, setConnectTrigger] = useState(0);
-
   useEffect(() => {
     if (!wsUrl) return;
 
@@ -80,6 +77,10 @@ export function useAgentConnection(wsUrl: string | null): UseAgentConnectionRetu
             break;
           }
           case "fileChanged": {
+            // 파일 변경 시 최신 트리 재요청
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({ type: "getFileTree", id: crypto.randomUUID(), payload: {} }));
+            }
             break;
           }
           case "fileContent": {
@@ -138,7 +139,7 @@ export function useAgentConnection(wsUrl: string | null): UseAgentConnectionRetu
       wsRef.current?.close();
       wsRef.current = null;
     };
-  }, [wsUrl, connectTrigger]);
+  }, [wsUrl]);
 
   const sendMessage = useCallback((type: string, payload: unknown) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -191,9 +192,8 @@ export function useAgentConnection(wsUrl: string | null): UseAgentConnectionRetu
   );
 
   const refreshTree = useCallback(() => {
-    wsRef.current?.close();
-    setConnectTrigger((c) => c + 1);
-  }, []);
+    sendMessage("getFileTree", {});
+  }, [sendMessage]);
 
   return {
     ...state,

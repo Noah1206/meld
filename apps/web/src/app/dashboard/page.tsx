@@ -404,55 +404,94 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* 연결 상태 칩 */}
-          <div className="mt-5 flex items-center gap-2.5">
-            <div className="flex items-center gap-1.5 rounded-full bg-[#F7F7F5] px-3 py-1">
-              <Github className="h-3 w-3 text-[#787774]" />
-              <span className="text-[11px] font-medium text-[#787774]">GitHub</span>
+          {/* 온보딩 체크리스트 */}
+          <div className="mt-5 flex flex-col gap-2">
+            {/* GitHub — 항상 연결 상태 (GitHub OAuth로 로그인했으므로) */}
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-green-100">
+                <Check className="h-3 w-3 text-green-600" />
+              </div>
+              <Github className="h-3.5 w-3.5 text-[#787774]" />
+              <span className="text-[12px] font-medium text-[#787774]">GitHub 연결 완료</span>
             </div>
+
+            {/* Figma */}
             {user?.hasFigmaToken ? (
-              <div className="flex items-center gap-1.5 rounded-full bg-[#F7F7F5] px-3 py-1">
-                <Figma className="h-3 w-3 text-[#787774]" />
-                <span className="text-[11px] font-medium text-[#787774]">Figma</span>
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-green-100">
+                  <Check className="h-3 w-3 text-green-600" />
+                </div>
+                <Figma className="h-3.5 w-3.5 text-[#787774]" />
+                <span className="text-[12px] font-medium text-[#787774]">Figma 연결 완료</span>
               </div>
             ) : (
-              <a
-                href="/api/auth/figma"
-                className="group flex items-center gap-1.5 rounded-full bg-[#F7F7F5] px-3 py-1 transition-all hover:bg-[#EEEEEC]"
-              >
-                <Figma className="h-3 w-3 text-[#B4B4B0] transition-colors group-hover:text-[#1A1A1A]" />
-                <span className="text-[11px] font-medium text-[#787774] transition-colors group-hover:text-[#1A1A1A]">Figma 연결</span>
-                <Plus className="h-2.5 w-2.5 text-[#B4B4B0] transition-colors group-hover:text-[#1A1A1A]" />
-              </a>
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-100">
+                  <Zap className="h-3 w-3 text-amber-600" />
+                </div>
+                <Figma className="h-3.5 w-3.5 text-[#B4B4B0]" />
+                <span className="text-[12px] text-[#787774]">Figma 연결 필요</span>
+                <a
+                  href="/api/auth/figma"
+                  className="rounded-lg bg-[#1A1A1A] px-2.5 py-1 text-[11px] font-medium text-white transition-colors hover:bg-[#333]"
+                >
+                  지금 연결하기
+                </a>
+              </div>
             )}
-            <div className="flex items-center gap-1.5 rounded-full bg-[#F7F7F5] px-3 py-1">
-              <Shield className="h-3 w-3 text-[#787774]" />
-              <span className="text-[11px] font-medium text-[#787774]">무료 플랜</span>
+
+            {/* 로컬 에이전트 안내 */}
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-100">
+                <Terminal className="h-3 w-3 text-blue-600" />
+              </div>
+              <Terminal className="h-3.5 w-3.5 text-[#B4B4B0]" />
+              <span className="text-[12px] text-[#787774]">로컬 에이전트</span>
+              <code className="rounded bg-[#F7F7F5] px-1.5 py-0.5 text-[10px] text-[#787774]">npx figma-code-bridge</code>
             </div>
           </div>
         </div>
 
         {/* 퀵 액션 바 */}
         <div className="animate-fade-in-up animation-delay-75 mb-8 flex items-center gap-2 overflow-x-auto">
-          {[
-            { icon: Plus, label: "새 프로젝트", href: "/project/new" },
-            { icon: FolderOpen, label: "로컬 연결", href: "/project/local" },
-          ].map((action) => (
-            <Link
-              key={action.label}
-              href={action.href}
-              className="flex flex-shrink-0 items-center gap-1.5 rounded-lg bg-[#F7F7F5] px-3.5 py-2 text-[12px] font-medium text-[#787774] transition-all hover:bg-[#EEEEEC] hover:text-[#1A1A1A] active:scale-[0.98]"
+          {!user?.hasFigmaToken && (
+            <a
+              href="/api/auth/figma"
+              className="flex flex-shrink-0 items-center gap-1.5 rounded-lg bg-[#1A1A1A] px-3.5 py-2 text-[12px] font-medium text-white transition-all hover:bg-[#333] active:scale-[0.98]"
             >
-              <action.icon className="h-3.5 w-3.5" />
-              {action.label}
-            </Link>
-          ))}
+              <Figma className="h-3.5 w-3.5" />
+              Figma 연결하기
+            </a>
+          )}
+          <Link
+            href="/project/new"
+            className="flex flex-shrink-0 items-center gap-1.5 rounded-lg bg-[#F7F7F5] px-3.5 py-2 text-[12px] font-medium text-[#787774] transition-all hover:bg-[#EEEEEC] hover:text-[#1A1A1A] active:scale-[0.98]"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            새 프로젝트
+          </Link>
+          <Link
+            href="/project/local"
+            className="flex flex-shrink-0 items-center gap-1.5 rounded-lg bg-[#F7F7F5] px-3.5 py-2 text-[12px] font-medium text-[#787774] transition-all hover:bg-[#EEEEEC] hover:text-[#1A1A1A] active:scale-[0.98]"
+          >
+            <FolderOpen className="h-3.5 w-3.5" />
+            로컬 연결
+          </Link>
         </div>
 
         {/* 메인 카드 */}
         <div className="animate-fade-in-up animation-delay-150 grid gap-5 sm:grid-cols-2">
           {/* 카드 1: Figma 디자인 수정 */}
           <div className="group relative flex flex-col overflow-hidden rounded-2xl bg-[#F7F7F5] ring-1 ring-black/[0.04] transition-all duration-300 hover:bg-[#F0F0EE] hover:ring-black/[0.06]">
+            {!user?.hasFigmaToken && (
+              <div className="flex items-center gap-2 bg-amber-50 px-4 py-2.5 text-[11px] text-amber-700">
+                <Figma className="h-3 w-3 flex-shrink-0" />
+                <span>Figma 연결이 필요합니다 —</span>
+                <a href="/api/auth/figma" className="font-semibold underline underline-offset-2 hover:text-amber-900">
+                  연결하기
+                </a>
+              </div>
+            )}
             <div className="relative flex-1 p-6">
               <h3 className="text-[24px] font-bold tracking-[-0.02em] text-[#1A1A1A]">Figma 디자인 수정</h3>
               <p className="mt-1.5 text-[13px] leading-relaxed text-[#787774]">

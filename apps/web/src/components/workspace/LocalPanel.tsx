@@ -1,12 +1,65 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { FolderOpen, Eye, Code, Loader2, Terminal } from "lucide-react";
+import { FolderOpen, Eye, Code, Loader2, Terminal, Copy, Check } from "lucide-react";
 import { FileTreeBrowser } from "./FileTreeBrowser";
 import { PreviewFrame } from "./PreviewFrame";
 import type { FileEntry } from "@figma-code-bridge/shared";
 
 type LeftTab = "files" | "preview";
+
+function AgentDisconnectedGuide() {
+  const [copied, setCopied] = useState(false);
+  const command = "npx figma-code-bridge";
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(command);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="flex h-full items-center justify-center bg-white p-6">
+      <div className="animate-fade-in max-w-xs space-y-5 text-center">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F7F7F5]">
+          <Terminal className="h-5 w-5 text-[#787774]" />
+        </div>
+
+        <div>
+          <p className="text-[15px] font-semibold text-[#1A1A1A]">에이전트 연결 대기 중</p>
+          <p className="mt-1.5 text-[12px] leading-relaxed text-[#787774]">
+            프로젝트 폴더에서 아래 명령어를 실행하세요.
+            <br />
+            에이전트가 파일 시스템에 접근합니다.
+          </p>
+        </div>
+
+        {/* 복사 가능한 명령어 */}
+        <button
+          onClick={handleCopy}
+          className="group flex w-full items-center gap-2.5 rounded-xl bg-[#1A1A1A] px-4 py-3 text-left font-mono text-[12px] transition-all hover:bg-[#252525] active:scale-[0.99]"
+        >
+          <span className="text-[#666]">$</span>
+          <span className="flex-1 text-[#ccc]">{command}</span>
+          {copied ? (
+            <span className="flex items-center gap-1 text-[10px] text-green-400">
+              <Check className="h-3 w-3" />
+              복사됨
+            </span>
+          ) : (
+            <Copy className="h-3.5 w-3.5 text-[#555] transition-colors group-hover:text-[#999]" />
+          )}
+        </button>
+
+        {/* 연결 상태 */}
+        <div className="flex items-center justify-center gap-2">
+          <Loader2 className="h-3 w-3 animate-spin text-[#B4B4B0]" />
+          <span className="text-[11px] text-[#B4B4B0]">연결 대기 중...</span>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 interface LocalPanelProps {
   connected: boolean;
@@ -51,25 +104,7 @@ export function LocalPanel({
 
   // 미연결 상태
   if (!connected) {
-    return (
-      <div className="flex h-full items-center justify-center bg-white">
-        <div className="animate-fade-in space-y-4 text-center">
-          <Loader2 className="mx-auto h-6 w-6 animate-spin text-[#787774]" />
-          <div>
-            <p className="text-[14px] font-semibold text-[#1A1A1A]">에이전트 연결 대기 중</p>
-            <p className="mt-1 text-[13px] text-[#787774]">
-              로컬에서 에이전트를 실행하세요
-            </p>
-          </div>
-          <div className="rounded-xl bg-[#1A1A1A] px-5 py-3 font-mono text-[12px]">
-            <div className="flex items-center gap-2">
-              <Terminal className="h-3.5 w-3.5 text-[#555]" />
-              <span className="text-[#999]">npx figma-code-bridge</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <AgentDisconnectedGuide />;
   }
 
   const TABS: { id: LeftTab; label: string; icon: React.ReactNode; disabled?: boolean }[] = [
@@ -110,11 +145,22 @@ export function LocalPanel({
         {activeTab === "files" && (
           <div className="flex flex-1 flex-col overflow-hidden">
             <div className={`overflow-hidden ${selectedFilePath ? "h-1/2" : "flex-1"}`}>
-              <FileTreeBrowser
-                files={fileTree}
-                selectedPath={selectedFilePath}
-                onSelectFile={handleSelectFile}
-              />
+              {fileTree.length === 0 ? (
+                <div className="flex h-full items-center justify-center p-6">
+                  <div className="text-center">
+                    <FolderOpen className="mx-auto h-5 w-5 text-[#D4D4D0]" />
+                    <p className="mt-2 text-[12px] text-[#B4B4B0]">
+                      프로젝트 파일이 스캔되면 여기에 표시됩니다
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <FileTreeBrowser
+                  files={fileTree}
+                  selectedPath={selectedFilePath}
+                  onSelectFile={handleSelectFile}
+                />
+              )}
             </div>
 
             {selectedFilePath && (

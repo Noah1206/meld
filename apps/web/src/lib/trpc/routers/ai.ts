@@ -12,14 +12,15 @@ export const aiRouter = router({
         figmaNodeName: z.string().optional(),
         figmaNodeType: z.string().optional(),
         command: z.string(),
-        // 직접 파일 경로를 전달할 수도 있음
         filePath: z.string().optional(),
         githubOwner: z.string().optional(),
         githubRepo: z.string().optional(),
         githubBranch: z.string().optional(),
         provider: z.enum(["claude", "chatgpt", "gemini"]).default("claude"),
-        // 로컬 모드: 에이전트에서 읽은 코드를 직접 전달
         currentCode: z.string().optional(),
+        // Phase 4: 프레임워크/의존성 컨텍스트
+        framework: z.string().optional(),
+        dependencies: z.array(z.string()).optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -33,9 +34,15 @@ export const aiRouter = router({
         githubBranch = "main",
         provider: providerType,
         currentCode: providedCode,
+        framework,
+        dependencies,
       } = input;
 
       const llm = createProvider(providerType);
+
+      const promptContext = (framework || dependencies?.length)
+        ? { framework, dependencies }
+        : undefined;
 
       // 로컬 모드: currentCode가 직접 전달된 경우
       if (providedCode !== undefined && filePath) {
@@ -45,6 +52,7 @@ export const aiRouter = router({
           command,
           providedCode,
           filePath,
+          promptContext,
         );
 
         const response = await llm.call(system, user);
@@ -68,7 +76,8 @@ export const aiRouter = router({
           figmaNodeType,
           command,
           "// 파일이 아직 연결되지 않았습니다",
-          filePath ?? "components/Unknown.tsx"
+          filePath ?? "components/Unknown.tsx",
+          promptContext,
         );
 
         const response = await llm.call(system, user);
@@ -104,13 +113,48 @@ export const aiRouter = router({
         currentCode = "// 파일을 찾을 수 없습니다";
       }
 
+      // GitHub 모드: package.json에서 프레임워크/의존성 자동 추출
+      let ghContext = promptContext;
+      if (!ghContext) {
+        try {
+          const { data: pkgData } = await octokit.repos.getContent({
+            owner: githubOwner,
+            repo: githubRepo,
+            path: "package.json",
+            ref: githubBranch,
+          });
+          if ("content" in pkgData && pkgData.content) {
+            const pkgJson = JSON.parse(Buffer.from(pkgData.content, "base64").toString("utf-8"));
+            const allDeps = { ...pkgJson.dependencies, ...pkgJson.devDependencies };
+            const depNames = Object.keys(allDeps);
+
+            let detectedFramework = "unknown";
+            if (allDeps["next"]) detectedFramework = "Next.js";
+            else if (allDeps["react"]) detectedFramework = "React";
+            else if (allDeps["vue"]) detectedFramework = "Vue";
+            else if (allDeps["@angular/core"]) detectedFramework = "Angular";
+            else if (allDeps["svelte"]) detectedFramework = "Svelte";
+
+            // 주요 UI/유틸 라이브러리만 추출 (너무 많으면 토큰 낭비)
+            const keyDeps = depNames.filter(d =>
+              !d.startsWith("@types/") && !d.startsWith("eslint")
+            ).slice(0, 20);
+
+            ghContext = { framework: detectedFramework, dependencies: keyDeps };
+          }
+        } catch {
+          // package.json을 못 읽으면 무시
+        }
+      }
+
       // LLM API 호출
       const { system, user } = buildCodeEditPrompt(
         figmaNodeName,
         figmaNodeType,
         command,
         currentCode,
-        filePath
+        filePath,
+        ghContext,
       );
 
       const response = await llm.call(system, user);
