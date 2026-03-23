@@ -416,8 +416,30 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ===== 호환성 ===== */}
+      {/* ===== 숫자들 ===== */}
       <section className="relative z-10">
+        <div className="mx-auto max-w-[1440px] px-6 lg:px-16 py-24 lg:py-32">
+          <div className="grid gap-px overflow-hidden rounded-xl bg-black/[0.04] ring-1 ring-black/[0.04] sm:grid-cols-4">
+            {[
+              { value: "7", label: "지원 프레임워크", sub: "Next.js · React · Vue · Angular 등" },
+              { value: "3", label: "AI 모델", sub: "Claude · GPT-4o · Gemini" },
+              { value: "95%+", label: "매칭 정확도", sub: "디자인 → 코드 자동 연결" },
+              { value: "0", label: "플러그인 설치", sub: "브라우저만 있으면 충분" },
+            ].map((stat) => (
+              <div key={stat.label} className="bg-white p-6 text-center lg:p-10">
+                <div className="font-mono text-[32px] font-bold tracking-[-0.03em] text-[#1A1A1A] lg:text-[40px]">
+                  {stat.value}
+                </div>
+                <div className="mt-1 text-[13px] font-medium text-[#1A1A1A]">{stat.label}</div>
+                <div className="mt-0.5 text-[11px] text-[#CCC]">{stat.sub}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== 호환성 ===== */}
+      <section className="relative z-10 bg-[#FAFAFA]">
         <div className="mx-auto max-w-[1440px] px-6 lg:px-16 py-24 lg:py-32">
           <div className="text-center">
             <p className="mb-2 font-mono text-[12px] tracking-wider text-[#CCC]">COMPATIBLE WITH</p>
@@ -492,31 +514,9 @@ export default function HomePage() {
                 desc: "Next.js, React, Vue, Angular, Svelte, Vite, Astro — 프레임워크를 자동으로 감지하고 맞춰서 수정합니다.",
               },
             ].map((item) => (
-              <div key={item.title} className="rounded-xl bg-[#FAFAFA] p-6 ring-1 ring-black/[0.04]">
+              <div key={item.title} className="rounded-xl bg-white p-6 ring-1 ring-black/[0.04]">
                 <h3 className="text-[15px] font-semibold text-[#1A1A1A]">{item.title}</h3>
                 <p className="mt-2 text-[13px] leading-relaxed text-[#999]">{item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ===== 숫자들 ===== */}
-      <section className="relative z-10">
-        <div className="mx-auto max-w-[1440px] px-6 lg:px-16 py-24 lg:py-32">
-          <div className="grid gap-px overflow-hidden rounded-xl bg-black/[0.04] ring-1 ring-black/[0.04] sm:grid-cols-4">
-            {[
-              { value: "7", label: "지원 프레임워크", sub: "Next.js · React · Vue · Angular 등" },
-              { value: "3", label: "AI 모델", sub: "Claude · GPT-4o · Gemini" },
-              { value: "95%+", label: "매칭 정확도", sub: "디자인 → 코드 자동 연결" },
-              { value: "0", label: "플러그인 설치", sub: "브라우저만 있으면 충분" },
-            ].map((stat) => (
-              <div key={stat.label} className="bg-white p-6 text-center lg:p-10">
-                <div className="font-mono text-[32px] font-bold tracking-[-0.03em] text-[#1A1A1A] lg:text-[40px]">
-                  {stat.value}
-                </div>
-                <div className="mt-1 text-[13px] font-medium text-[#1A1A1A]">{stat.label}</div>
-                <div className="mt-0.5 text-[11px] text-[#CCC]">{stat.sub}</div>
               </div>
             ))}
           </div>
