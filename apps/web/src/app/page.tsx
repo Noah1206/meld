@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -173,9 +173,34 @@ const translations = {
 
 type Lang = keyof typeof translations;
 
+function useTypewriter(text: string, speed = 40) {
+  const [displayed, setDisplayed] = useState("");
+  const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    setDisplayed("");
+    setDone(false);
+    let i = 0;
+    const timer = setInterval(() => {
+      i++;
+      setDisplayed(text.slice(0, i));
+      if (i >= text.length) {
+        clearInterval(timer);
+        setDone(true);
+      }
+    }, speed);
+    return () => clearInterval(timer);
+  }, [text, speed]);
+
+  return { displayed, done };
+}
+
 export default function HomePage() {
   const [lang, setLang] = useState<Lang>("en");
   const t = translations[lang];
+
+  const { displayed: title1, done: title1Done } = useTypewriter(t.heroTitle1, 50);
+  const { displayed: title2 } = useTypewriter(title1Done ? t.heroTitle2 : "", 50);
 
   return (
     <div className="min-h-screen bg-white selection:bg-[#1A1A1A] selection:text-white">
@@ -207,12 +232,6 @@ export default function HomePage() {
             <Link href="/github" className="text-[13px] text-[#999] transition-colors hover:text-[#1A1A1A]">
               {t.navGitHub}
             </Link>
-            <button
-              onClick={() => setLang(lang === "en" ? "ko" : "en")}
-              className="text-[13px] text-[#999] transition-colors hover:text-[#1A1A1A]"
-            >
-              {lang === "en" ? "KO" : "EN"}
-            </button>
             <Link
               href="/dashboard"
               className="rounded-lg bg-[#F5F0E8] px-4 py-1.5 text-[13px] font-semibold text-[#1A1A1A] transition-colors hover:bg-[#EDE7DB]"
@@ -226,18 +245,16 @@ export default function HomePage() {
       {/* ===== 히어로 ===== */}
       <section className="relative z-10 pt-28 pb-6 lg:pt-32 lg:pb-10">
         <div className="mx-auto max-w-[1440px] px-6 lg:px-16">
-          <h1 className="animate-fade-in-up text-[48px] font-bold leading-[1.05] tracking-[-0.04em] text-[#1A1A1A] sm:text-[64px] lg:text-[76px] xl:text-[88px]">
-            {lang === "ko" ? (
+          <h1 className="text-[48px] font-bold leading-[1.05] tracking-[-0.04em] text-[#1A1A1A] sm:text-[64px] lg:text-[76px] xl:text-[88px]">
+            {title1}
+            {!title1Done && <span className="inline-block w-[3px] h-[0.9em] bg-[#1A1A1A] align-middle ml-1 animate-blink" />}
+            {title1Done && (
               <>
-                {t.heroTitle1}
                 <br />
-                <span className="text-[#CCC]">{t.heroTitle2}</span>
-              </>
-            ) : (
-              <>
-                {t.heroTitle1}
-                <br />
-                <span className="text-[#CCC]">{t.heroTitle2}</span>
+                <span className="text-[#CCC]">
+                  {title2}
+                  {title2 !== t.heroTitle2 && <span className="inline-block w-[3px] h-[0.9em] bg-[#CCC] align-middle ml-1 animate-blink" />}
+                </span>
               </>
             )}
           </h1>
@@ -673,6 +690,14 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
+
+      {/* ===== 언어 토글 (고정) ===== */}
+      <button
+        onClick={() => setLang(lang === "en" ? "ko" : "en")}
+        className="fixed bottom-6 right-6 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-white text-[12px] font-semibold text-[#1A1A1A] shadow-lg ring-1 ring-black/[0.08] transition-all hover:scale-105 hover:shadow-xl active:scale-95"
+      >
+        {lang === "en" ? "KO" : "EN"}
+      </button>
     </div>
   );
 }

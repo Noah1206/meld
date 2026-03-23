@@ -130,6 +130,11 @@ body {
   50% { opacity: 0.8; }
 }
 
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
 /* === Utility Classes === */
 .animate-fade-in-up {
   animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -172,6 +177,10 @@ body {
 
 .animate-pulse-glow {
   animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-blink {
+  animation: blink 0.8s step-end infinite;
 }
 
 /* === Stagger Delay Helpers === */
