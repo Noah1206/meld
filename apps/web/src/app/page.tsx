@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -17,7 +20,163 @@ import {
   Check,
 } from "lucide-react";
 
+const translations = {
+  en: {
+    // Nav
+    navDocs: "Docs",
+    navGitHub: "GitHub",
+    navCta: "Get Started",
+
+    // Hero
+    heroTitle1: "The perfect design IDE",
+    heroTitle2: "for one person",
+    heroDesc1: "We don't generate new code.",
+    heroDesc2: "We automatically link design elements to code files,",
+    heroDesc3: "and modify your existing code in place.",
+    heroCta: "Get Started",
+    heroCtaSecondary: "Open in Browser",
+
+    // Product mockup
+    mockupChat1: "Change the CTA button in this hero section to mint color",
+    mockupChat2: "Modifying HeroSection.tsx:",
+    mockupCommit: "Committed to main",
+    mockupInput: "Enter your edit request...",
+
+    // Logo strip
+    logoSubtitle: "Connect various AI models and tools freely in one workspace",
+
+    // How it works
+    howLabel: "HOW IT WORKS",
+    howTitle: "Done in 30 seconds",
+    howStep1Title: "Paste a Figma link",
+    howStep1Desc: "Copy and paste a share link from Figma to load your design as-is. No plugins needed.",
+    howStep1Detail: "Just a share link is all you need",
+    howStep2Title: "Click the element to change",
+    howStep2Desc: "Click the design element you want to modify, and AI will automatically find the corresponding code file.",
+    howStep2Detail: "95%+ accuracy",
+    howStep3Title: "Review and apply",
+    howStep3Desc: "AI shows you a preview of the code changes. After review, apply to GitHub with one click.",
+    howStep3Detail: "Change preview provided",
+
+    // Modes
+    modesLabel: "MODES",
+    modesTitle: "Anywhere, your way",
+    modesSubtitle: "Choose the method that fits your situation. The result is the same either way.",
+    cloudTitle: "Cloud",
+    cloudDesc: "Just connect your GitHub account to edit and save code right in your browser. Nothing to install.",
+    cloudTags: ["GitHub Sync", "Figma Sync", "One-click Save"],
+    localTitle: "Local",
+    localDesc: "Run one command in your terminal to apply changes directly to files on your machine. Save and your dev server refreshes instantly.",
+    sandboxTitle: "Sandbox",
+    sandboxDesc: "No installation needed. A dev environment is set up automatically in your browser, and you can see results right away.",
+    sandboxTags: ["No Install", "Live Preview", "Auto Refresh"],
+
+    // Diff preview
+    diffLabel: "DIFF PREVIEW",
+    diffTitle: "Modifies your existing code",
+    diffDesc: "AI highlights only the parts it changed. See exactly what code was modified at a glance, and apply it with one approval.",
+    diffCheck1: "Preserves your existing code style",
+    diffCheck2: "Choose from Claude · GPT-4o · Gemini",
+    diffCheck3: "Before/after comparison preview",
+
+    // Stats
+    statFrameworkLabel: "Supported Frameworks",
+    statFrameworkSub: "Next.js · React · Vue · Angular & more",
+    statAiLabel: "AI Models",
+    statAiSub: "Claude · GPT-4o · Gemini",
+    statAccuracyLabel: "Matching Accuracy",
+    statAccuracySub: "Design → Code auto-linking",
+    statPluginLabel: "Plugin Installs",
+    statPluginSub: "A browser is all you need",
+
+    // Bottom CTA
+    bottomTitle: "Get started now",
+    bottomDesc: "It's free. No installation. Just a browser.",
+    bottomCta: "Get Started",
+    bottomCtaSecondary: "Open in Browser",
+  },
+  ko: {
+    // Nav
+    navDocs: "Docs",
+    navGitHub: "GitHub",
+    navCta: "시작하기",
+
+    // Hero
+    heroTitle1: "한 사람을 위한",
+    heroTitle2: "완벽한 디자인 IDE",
+    heroDesc1: "새 코드를 만들지 않습니다.",
+    heroDesc2: "디자인 요소와 코드 파일을 자동으로 연결해서,",
+    heroDesc3: "이미 작성된 코드 위에서 수정합니다.",
+    heroCta: "시작하기",
+    heroCtaSecondary: "브라우저에서 열기",
+
+    // Product mockup
+    mockupChat1: "이 히어로 섹션의 CTA 버튼을 민트색으로 바꿔줘",
+    mockupChat2: "HeroSection.tsx를 수정합니다:",
+    mockupCommit: "main에 커밋 완료",
+    mockupInput: "수정 요청을 입력하세요...",
+
+    // Logo strip
+    logoSubtitle: "다양한 AI 모델과 도구를 하나의 워크스페이스에서 자유롭게 연결하세요",
+
+    // How it works
+    howLabel: "HOW IT WORKS",
+    howTitle: "30초면 끝납니다",
+    howStep1Title: "Figma 링크를 붙여넣으세요",
+    howStep1Desc: "Figma에서 공유 링크를 복사해 붙여넣으면, 디자인을 그대로 불러옵니다. 플러그인은 필요 없습니다.",
+    howStep1Detail: "공유 링크만 있으면 끝",
+    howStep2Title: "바꿀 요소를 클릭하세요",
+    howStep2Desc: "수정하고 싶은 디자인 요소를 클릭하면, AI가 해당하는 코드 파일을 자동으로 찾아줍니다.",
+    howStep2Detail: "95% 이상 정확도",
+    howStep3Title: "확인하고 반영하세요",
+    howStep3Desc: "AI가 수정한 코드의 변경 내역을 미리 보여줍니다. 확인 후 한 클릭으로 GitHub에 반영됩니다.",
+    howStep3Detail: "변경 사항 미리보기 제공",
+
+    // Modes
+    modesLabel: "MODES",
+    modesTitle: "어디서든, 원하는 방식으로",
+    modesSubtitle: "상황에 맞는 방식을 선택하세요. 어떤 방식이든 결과는 같습니다.",
+    cloudTitle: "Cloud",
+    cloudDesc: "GitHub 계정만 연결하면 브라우저에서 바로 코드를 수정하고 저장할 수 있습니다. 설치할 것이 없습니다.",
+    cloudTags: ["GitHub 연동", "Figma 연동", "원클릭 저장"],
+    localTitle: "Local",
+    localDesc: "터미널에서 한 줄만 실행하면 내 컴퓨터의 파일에 직접 반영됩니다. 저장하면 개발 서버가 바로 새로고침됩니다.",
+    sandboxTitle: "Sandbox",
+    sandboxDesc: "아무것도 설치하지 않아도 됩니다. 브라우저 안에서 개발 환경이 자동으로 세팅되고, 결과를 바로 확인할 수 있습니다.",
+    sandboxTags: ["설치 불필요", "실시간 미리보기", "자동 새로고침"],
+
+    // Diff preview
+    diffLabel: "DIFF PREVIEW",
+    diffTitle: "기존 코드를 수정합니다",
+    diffDesc: "AI가 수정한 부분만 하이라이트로 보여줍니다. 어떤 코드가 바뀌었는지 한눈에 확인하고, 승인하면 바로 반영됩니다.",
+    diffCheck1: "기존 코드 스타일 그대로 유지",
+    diffCheck2: "Claude · GPT-4o · Gemini 중 선택",
+    diffCheck3: "변경 전/후 비교 미리보기",
+
+    // Stats
+    statFrameworkLabel: "지원 프레임워크",
+    statFrameworkSub: "Next.js · React · Vue · Angular 등",
+    statAiLabel: "AI 모델",
+    statAiSub: "Claude · GPT-4o · Gemini",
+    statAccuracyLabel: "매칭 정확도",
+    statAccuracySub: "디자인 → 코드 자동 연결",
+    statPluginLabel: "플러그인 설치",
+    statPluginSub: "브라우저만 있으면 충분",
+
+    // Bottom CTA
+    bottomTitle: "지금 시작하세요",
+    bottomDesc: "무료입니다. 설치도 없습니다. 브라우저만 있으면 됩니다.",
+    bottomCta: "시작하기",
+    bottomCtaSecondary: "브라우저에서 열기",
+  },
+} as const;
+
+type Lang = keyof typeof translations;
+
 export default function HomePage() {
+  const [lang, setLang] = useState<Lang>("en");
+  const t = translations[lang];
+
   return (
     <div className="min-h-screen bg-white selection:bg-[#1A1A1A] selection:text-white">
       {/* ===== 그리드 배경 ===== */}
@@ -43,16 +202,22 @@ export default function HomePage() {
           </Link>
           <div className="flex items-center gap-5">
             <Link href="/docs" className="text-[13px] text-[#999] transition-colors hover:text-[#1A1A1A]">
-              Docs
+              {t.navDocs}
             </Link>
             <Link href="/github" className="text-[13px] text-[#999] transition-colors hover:text-[#1A1A1A]">
-              GitHub
+              {t.navGitHub}
             </Link>
+            <button
+              onClick={() => setLang(lang === "en" ? "ko" : "en")}
+              className="text-[13px] text-[#999] transition-colors hover:text-[#1A1A1A]"
+            >
+              {lang === "en" ? "KO" : "EN"}
+            </button>
             <Link
               href="/dashboard"
               className="rounded-lg bg-[#F5F0E8] px-4 py-1.5 text-[13px] font-semibold text-[#1A1A1A] transition-colors hover:bg-[#EDE7DB]"
             >
-              시작하기
+              {t.navCta}
             </Link>
           </div>
         </div>
@@ -62,17 +227,27 @@ export default function HomePage() {
       <section className="relative z-10 pt-28 pb-6 lg:pt-32 lg:pb-10">
         <div className="mx-auto max-w-[1440px] px-6 lg:px-16">
           <h1 className="animate-fade-in-up text-[48px] font-bold leading-[1.05] tracking-[-0.04em] text-[#1A1A1A] sm:text-[64px] lg:text-[76px] xl:text-[88px]">
-            한 사람을 위한
-            <br />
-            <span className="text-[#CCC]">완벽한 디자인 IDE</span>
+            {lang === "ko" ? (
+              <>
+                {t.heroTitle1}
+                <br />
+                <span className="text-[#CCC]">{t.heroTitle2}</span>
+              </>
+            ) : (
+              <>
+                {t.heroTitle1}
+                <br />
+                <span className="text-[#CCC]">{t.heroTitle2}</span>
+              </>
+            )}
           </h1>
 
           <p className="animate-fade-in-up animation-delay-150 mt-6 max-w-lg text-[17px] leading-[1.7] text-[#999]">
-            새 코드를 만들지 않습니다.
+            {t.heroDesc1}
             <br />
-            디자인 요소와 코드 파일을 자동으로 연결해서,
+            {t.heroDesc2}
             <br />
-            이미 작성된 코드 위에서 수정합니다.
+            {t.heroDesc3}
           </p>
 
           {/* CTA */}
@@ -81,13 +256,13 @@ export default function HomePage() {
               href="/dashboard"
               className="inline-flex items-center rounded-xl bg-[#F5F0E8] px-7 py-3.5 text-[15px] font-semibold text-[#1A1A1A] transition-all hover:bg-[#EDE7DB] active:scale-[0.98]"
             >
-              시작하기
+              {t.heroCta}
             </Link>
             <Link
               href="/dashboard"
               className="group inline-flex items-center gap-1.5 text-[15px] text-[#999] transition-colors hover:text-[#1A1A1A]"
             >
-              브라우저에서 열기
+              {t.heroCtaSecondary}
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
           </div>
@@ -187,13 +362,13 @@ export default function HomePage() {
                   {/* 유저 */}
                   <div className="flex justify-end">
                     <div className="max-w-[200px] rounded-2xl rounded-br-sm bg-[#1A1A1A] px-3 py-2 text-[11px] leading-relaxed text-white">
-                      이 히어로 섹션의 CTA 버튼을 민트색으로 바꿔줘
+                      {t.mockupChat1}
                     </div>
                   </div>
                   {/* AI */}
                   <div className="flex justify-start">
                     <div className="max-w-[220px] space-y-2 rounded-2xl rounded-bl-sm bg-[#FAFAFA] px-3 py-2.5 text-[11px] leading-relaxed text-[#666] ring-1 ring-black/[0.04]">
-                      <p>HeroSection.tsx를 수정합니다:</p>
+                      <p>{t.mockupChat2}</p>
                       {/* 코드 diff */}
                       <div className="overflow-hidden rounded-md bg-[#1A1A1A] font-mono text-[10px]">
                         <div className="bg-[#FEE2E2]/10 px-2.5 py-1 text-[#F87171]">
@@ -209,13 +384,13 @@ export default function HomePage() {
                   <div className="flex justify-start">
                     <div className="flex items-center gap-1.5 rounded-full bg-[#F0FDF4] px-3 py-1.5 text-[10px] font-medium text-[#16A34A] ring-1 ring-[#16A34A]/10">
                       <Check className="h-3 w-3" />
-                      main에 커밋 완료
+                      {t.mockupCommit}
                     </div>
                   </div>
                 </div>
                 {/* 인풋 */}
                 <div className="mt-2 flex items-center gap-2 rounded-xl bg-[#FAFAFA] px-3 py-2 ring-1 ring-black/[0.04]">
-                  <span className="flex-1 text-[11px] text-[#CCC]">수정 요청을 입력하세요...</span>
+                  <span className="flex-1 text-[11px] text-[#CCC]">{t.mockupInput}</span>
                   <div className="flex h-5 w-5 items-center justify-center rounded-md bg-[#1A1A1A]">
                     <ArrowRight className="h-2.5 w-2.5 text-white" />
                   </div>
@@ -230,7 +405,7 @@ export default function HomePage() {
       <section className="relative z-10 border-y border-black/[0.04] bg-[#FAFAFA]">
         <div className="mx-auto max-w-[1440px] px-6 lg:px-16 py-14 lg:py-20">
           <p className="mb-10 text-center text-[13px] text-[#B4B4B0]">
-            다양한 AI 모델과 도구를 하나의 워크스페이스에서 자유롭게 연결하세요
+            {t.logoSubtitle}
           </p>
 
           {/* 로고 스트립 */}
@@ -258,9 +433,9 @@ export default function HomePage() {
       {/* ===== "이렇게 동작합니다" ===== */}
       <section className="relative z-10 bg-[#FAFAFA]">
         <div className="mx-auto max-w-[1440px] px-6 lg:px-16 py-24 lg:py-32">
-          <p className="mb-2 font-mono text-[12px] tracking-wider text-[#CCC]">HOW IT WORKS</p>
+          <p className="mb-2 font-mono text-[12px] tracking-wider text-[#CCC]">{t.howLabel}</p>
           <h2 className="text-[32px] font-bold tracking-[-0.03em] text-[#1A1A1A] sm:text-[40px] lg:text-[48px]">
-            30초면 끝납니다
+            {t.howTitle}
           </h2>
 
           <div className="mt-14 grid gap-8 sm:grid-cols-3">
@@ -268,23 +443,23 @@ export default function HomePage() {
               {
                 step: "01",
                 icon: Figma,
-                title: "Figma 링크를 붙여넣으세요",
-                desc: "Figma에서 공유 링크를 복사해 붙여넣으면, 디자인을 그대로 불러옵니다. 플러그인은 필요 없습니다.",
-                detail: "공유 링크만 있으면 끝",
+                title: t.howStep1Title,
+                desc: t.howStep1Desc,
+                detail: t.howStep1Detail,
               },
               {
                 step: "02",
                 icon: MousePointerClick,
-                title: "바꿀 요소를 클릭하세요",
-                desc: "수정하고 싶은 디자인 요소를 클릭하면, AI가 해당하는 코드 파일을 자동으로 찾아줍니다.",
-                detail: "95% 이상 정확도",
+                title: t.howStep2Title,
+                desc: t.howStep2Desc,
+                detail: t.howStep2Detail,
               },
               {
                 step: "03",
                 icon: GitBranch,
-                title: "확인하고 반영하세요",
-                desc: "AI가 수정한 코드의 변경 내역을 미리 보여줍니다. 확인 후 한 클릭으로 GitHub에 반영됩니다.",
-                detail: "변경 사항 미리보기 제공",
+                title: t.howStep3Title,
+                desc: t.howStep3Desc,
+                detail: t.howStep3Detail,
               },
             ].map((item) => (
               <div key={item.step} className="group">
@@ -308,12 +483,12 @@ export default function HomePage() {
       {/* ===== 3가지 모드 ===== */}
       <section className="relative z-10">
         <div className="mx-auto max-w-[1440px] px-6 lg:px-16 py-24 lg:py-32">
-          <p className="mb-2 font-mono text-[12px] tracking-wider text-[#CCC]">MODES</p>
+          <p className="mb-2 font-mono text-[12px] tracking-wider text-[#CCC]">{t.modesLabel}</p>
           <h2 className="text-[32px] font-bold tracking-[-0.03em] text-[#1A1A1A] sm:text-[40px] lg:text-[48px]">
-            어디서든, 원하는 방식으로
+            {t.modesTitle}
           </h2>
           <p className="mt-3 max-w-md text-[15px] text-[#999]">
-            상황에 맞는 방식을 선택하세요. 어떤 방식이든 결과는 같습니다.
+            {t.modesSubtitle}
           </p>
 
           <div className="mt-14 grid gap-4 sm:grid-cols-3">
@@ -322,12 +497,12 @@ export default function HomePage() {
               <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-white ring-1 ring-black/[0.06]">
                 <Globe className="h-5 w-5 text-[#1A1A1A]" />
               </div>
-              <h3 className="text-[15px] font-semibold text-[#1A1A1A]">Cloud</h3>
+              <h3 className="text-[15px] font-semibold text-[#1A1A1A]">{t.cloudTitle}</h3>
               <p className="mt-1.5 flex-1 text-[13px] leading-relaxed text-[#999]">
-                GitHub 계정만 연결하면 브라우저에서 바로 코드를 수정하고 저장할 수 있습니다. 설치할 것이 없습니다.
+                {t.cloudDesc}
               </p>
               <div className="mt-4 flex flex-wrap gap-1.5">
-                {["GitHub 연동", "Figma 연동", "원클릭 저장"].map((tag) => (
+                {t.cloudTags.map((tag) => (
                   <span key={tag} className="rounded-full bg-white px-2 py-0.5 text-[10px] text-[#999] ring-1 ring-black/[0.04]">
                     {tag}
                   </span>
@@ -340,9 +515,9 @@ export default function HomePage() {
               <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-white ring-1 ring-black/[0.06]">
                 <Terminal className="h-5 w-5 text-[#1A1A1A]" />
               </div>
-              <h3 className="text-[15px] font-semibold text-[#1A1A1A]">Local</h3>
+              <h3 className="text-[15px] font-semibold text-[#1A1A1A]">{t.localTitle}</h3>
               <p className="mt-1.5 flex-1 text-[13px] leading-relaxed text-[#999]">
-                터미널에서 한 줄만 실행하면 내 컴퓨터의 파일에 직접 반영됩니다. 저장하면 개발 서버가 바로 새로고침됩니다.
+                {t.localDesc}
               </p>
               <div className="mt-4 overflow-hidden rounded-md bg-[#1A1A1A] px-3 py-2 font-mono text-[11px]">
                 <span className="text-[#666]">$</span>
@@ -355,12 +530,12 @@ export default function HomePage() {
               <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-white ring-1 ring-black/[0.06]">
                 <Monitor className="h-5 w-5 text-[#1A1A1A]" />
               </div>
-              <h3 className="text-[15px] font-semibold text-[#1A1A1A]">Sandbox</h3>
+              <h3 className="text-[15px] font-semibold text-[#1A1A1A]">{t.sandboxTitle}</h3>
               <p className="mt-1.5 flex-1 text-[13px] leading-relaxed text-[#999]">
-                아무것도 설치하지 않아도 됩니다. 브라우저 안에서 개발 환경이 자동으로 세팅되고, 결과를 바로 확인할 수 있습니다.
+                {t.sandboxDesc}
               </p>
               <div className="mt-4 flex flex-wrap gap-1.5">
-                {["설치 불필요", "실시간 미리보기", "자동 새로고침"].map((tag) => (
+                {t.sandboxTags.map((tag) => (
                   <span key={tag} className="rounded-full bg-white px-2 py-0.5 text-[10px] text-[#999] ring-1 ring-black/[0.04]">
                     {tag}
                   </span>
@@ -376,20 +551,15 @@ export default function HomePage() {
         <div className="mx-auto max-w-[1440px] px-6 lg:px-16 py-24 lg:py-32">
           <div className="grid items-center gap-12 sm:grid-cols-2 lg:gap-20">
             <div>
-              <p className="mb-2 font-mono text-[12px] tracking-wider text-[#CCC]">DIFF PREVIEW</p>
+              <p className="mb-2 font-mono text-[12px] tracking-wider text-[#CCC]">{t.diffLabel}</p>
               <h2 className="text-[32px] font-bold tracking-[-0.03em] text-[#1A1A1A] sm:text-[36px] lg:text-[44px]">
-                기존 코드를 수정합니다
+                {t.diffTitle}
               </h2>
               <p className="mt-3 text-[15px] leading-relaxed text-[#999]">
-                AI가 수정한 부분만 하이라이트로 보여줍니다.
-                어떤 코드가 바뀌었는지 한눈에 확인하고, 승인하면 바로 반영됩니다.
+                {t.diffDesc}
               </p>
               <div className="mt-6 space-y-3 text-[13px] text-[#999]">
-                {[
-                  "기존 코드 스타일 그대로 유지",
-                  "Claude · GPT-4o · Gemini 중 선택",
-                  "변경 전/후 비교 미리보기",
-                ].map((item) => (
+                {[t.diffCheck1, t.diffCheck2, t.diffCheck3].map((item) => (
                   <div key={item} className="flex items-center gap-2">
                     <Check className="h-3.5 w-3.5 text-[#1A1A1A]" />
                     {item}
@@ -444,10 +614,10 @@ export default function HomePage() {
         <div className="mx-auto max-w-[1440px] px-6 lg:px-16 py-24 lg:py-32">
           <div className="grid gap-px overflow-hidden rounded-xl bg-black/[0.04] ring-1 ring-black/[0.04] sm:grid-cols-4">
             {[
-              { value: "7", label: "지원 프레임워크", sub: "Next.js · React · Vue · Angular 등" },
-              { value: "3", label: "AI 모델", sub: "Claude · GPT-4o · Gemini" },
-              { value: "95%+", label: "매칭 정확도", sub: "디자인 → 코드 자동 연결" },
-              { value: "0", label: "플러그인 설치", sub: "브라우저만 있으면 충분" },
+              { value: "7", label: t.statFrameworkLabel, sub: t.statFrameworkSub },
+              { value: "3", label: t.statAiLabel, sub: t.statAiSub },
+              { value: "95%+", label: t.statAccuracyLabel, sub: t.statAccuracySub },
+              { value: "0", label: t.statPluginLabel, sub: t.statPluginSub },
             ].map((stat) => (
               <div key={stat.label} className="bg-white p-6 text-center lg:p-10">
                 <div className="font-mono text-[32px] font-bold tracking-[-0.03em] text-[#1A1A1A] lg:text-[40px]">
@@ -465,23 +635,23 @@ export default function HomePage() {
       <section className="relative z-10 bg-[#1A1A1A]">
         <div className="mx-auto max-w-[1440px] px-6 lg:px-16 py-24 lg:py-32">
           <h2 className="text-[36px] font-bold leading-[1.1] tracking-[-0.03em] text-white sm:text-[48px] lg:text-[56px]">
-            지금 시작하세요
+            {t.bottomTitle}
           </h2>
           <p className="mt-3 text-[16px] text-[#666]">
-            무료입니다. 설치도 없습니다. 브라우저만 있으면 됩니다.
+            {t.bottomDesc}
           </p>
           <div className="mt-10 flex items-center gap-6">
             <Link
               href="/dashboard"
               className="inline-flex items-center rounded-xl bg-[#F5F0E8] px-7 py-3.5 text-[15px] font-semibold text-[#1A1A1A] transition-all hover:bg-[#EDE7DB] active:scale-[0.98]"
             >
-              시작하기
+              {t.bottomCta}
             </Link>
             <Link
               href="/dashboard"
               className="group inline-flex items-center gap-1.5 text-[15px] text-[#666] transition-colors hover:text-white"
             >
-              브라우저에서 열기
+              {t.bottomCtaSecondary}
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
           </div>
