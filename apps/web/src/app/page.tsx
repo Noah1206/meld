@@ -50,7 +50,7 @@ export default function HomePage() {
             </Link>
             <Link
               href="/dashboard"
-              className="rounded-full bg-[#1A1A1A] px-4 py-1.5 text-[13px] font-medium text-white transition-colors hover:bg-[#333]"
+              className="rounded-lg bg-[#F5F0E8] px-4 py-1.5 text-[13px] font-semibold text-[#1A1A1A] transition-colors hover:bg-[#EDE7DB]"
             >
               시작하기
             </Link>
@@ -82,18 +82,20 @@ export default function HomePage() {
           </p>
 
           {/* CTA */}
-          <div className="animate-fade-in-up animation-delay-300 mt-10 flex items-center gap-5">
+          <div className="animate-fade-in-up animation-delay-300 mt-10 flex items-center gap-6">
             <Link
               href="/dashboard"
-              className="group inline-flex items-center gap-2 rounded-full bg-[#1A1A1A] px-6 py-3 text-[14px] font-medium text-white transition-all hover:bg-[#333] active:scale-[0.98]"
+              className="inline-flex items-center rounded-xl bg-[#F5F0E8] px-7 py-3.5 text-[15px] font-semibold text-[#1A1A1A] transition-all hover:bg-[#EDE7DB] active:scale-[0.98]"
             >
-              무료로 시작하기
-              <ArrowRight className="h-3.5 w-3.5 text-white/40 transition-transform group-hover:translate-x-0.5 group-hover:text-white" />
+              시작하기
             </Link>
-            <div className="hidden items-center gap-2 rounded-full bg-[#FAFAFA] px-4 py-2.5 font-mono text-[13px] text-[#999] ring-1 ring-black/[0.06] sm:flex">
-              <Terminal className="h-3.5 w-3.5 text-[#CCC]" />
-              npx figma-code-bridge
-            </div>
+            <Link
+              href="/dashboard"
+              className="group inline-flex items-center gap-1.5 text-[15px] text-[#999] transition-colors hover:text-[#1A1A1A]"
+            >
+              브라우저에서 열기
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            </Link>
           </div>
 
           {/* 프레임워크 태그 */}
@@ -445,20 +447,19 @@ export default function HomePage() {
           <p className="mt-3 text-[16px] text-[#666]">
             무료입니다. 설치도 없습니다. 브라우저만 있으면 됩니다.
           </p>
-          <div className="mt-10 flex items-center gap-5">
+          <div className="mt-10 flex items-center gap-6">
             <Link
               href="/dashboard"
-              className="group inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-[14px] font-medium text-[#1A1A1A] transition-all hover:bg-[#F0F0F0] active:scale-[0.98]"
+              className="inline-flex items-center rounded-xl bg-[#F5F0E8] px-7 py-3.5 text-[15px] font-semibold text-[#1A1A1A] transition-all hover:bg-[#EDE7DB] active:scale-[0.98]"
             >
-              무료로 시작하기
-              <ArrowRight className="h-3.5 w-3.5 text-[#999] transition-transform group-hover:translate-x-0.5 group-hover:text-[#1A1A1A]" />
+              시작하기
             </Link>
             <Link
-              href="/docs"
-              className="group inline-flex items-center gap-1.5 text-[14px] text-[#666] transition-colors hover:text-white"
+              href="/dashboard"
+              className="group inline-flex items-center gap-1.5 text-[15px] text-[#666] transition-colors hover:text-white"
             >
-              문서 보기
-              <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+              브라우저에서 열기
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
           </div>
         </div>
