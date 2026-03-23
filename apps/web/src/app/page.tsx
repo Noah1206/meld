@@ -64,21 +64,21 @@ export default function HomePage() {
           {/* 뱃지 */}
           <div className="animate-fade-in mb-6 inline-flex items-center gap-2 rounded-full bg-[#F5F5F5] px-3 py-1 font-mono text-[12px] text-[#999]">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#34D399]" />
-            v1.0 — No plugin required
+            Figma REST API only — 플러그인 필요 없음
           </div>
 
           <h1 className="animate-fade-in-up text-[48px] font-bold leading-[1.05] tracking-[-0.04em] text-[#1A1A1A] sm:text-[64px] lg:text-[76px]">
             Figma에서 클릭하면
             <br />
-            <span className="text-[#CCC]">AI가 코드를 고칩니다</span>
+            <span className="text-[#CCC]">AI가 기존 코드를 수정합니다</span>
           </h1>
 
           <p className="animate-fade-in-up animation-delay-150 mt-6 max-w-lg text-[17px] leading-[1.7] text-[#999]">
             새 코드를 생성하지 않습니다.
             <br />
-            프로젝트의 기존 패턴과 컨벤션을 이해하고,
+            네이밍 컨벤션 매칭 → AI 추론 → 캐시,
             <br />
-            그 위에서 수정합니다.
+            3단계 매핑으로 기존 코드 파일을 찾아 수정합니다.
           </p>
 
           {/* CTA */}
@@ -98,7 +98,7 @@ export default function HomePage() {
 
           {/* 프레임워크 태그 */}
           <div className="animate-fade-in animation-delay-450 mt-8 flex items-center gap-2 text-[12px] text-[#CCC]">
-            {["React", "Vue", "Next.js", "Angular", "Svelte"].map((fw) => (
+            {["Next.js", "React", "Vue", "Angular", "Svelte", "Vite", "Astro"].map((fw) => (
               <span key={fw} className="rounded-full bg-[#FAFAFA] px-2.5 py-0.5 ring-1 ring-black/[0.04]">
                 {fw}
               </span>
@@ -197,7 +197,7 @@ export default function HomePage() {
                   {/* AI */}
                   <div className="flex justify-start">
                     <div className="max-w-[220px] space-y-2 rounded-2xl rounded-bl-sm bg-[#FAFAFA] px-3 py-2.5 text-[11px] leading-relaxed text-[#666] ring-1 ring-black/[0.04]">
-                      <p>Hero.tsx를 수정합니다:</p>
+                      <p>HeroSection.tsx를 수정합니다:</p>
                       {/* 코드 diff */}
                       <div className="overflow-hidden rounded-md bg-[#1A1A1A] font-mono text-[10px]">
                         <div className="bg-[#FEE2E2]/10 px-2.5 py-1 text-[#F87171]">
@@ -244,22 +244,22 @@ export default function HomePage() {
                 step: "01",
                 icon: Figma,
                 title: "URL을 붙여넣으세요",
-                desc: "Figma 공유 링크만 있으면 됩니다. 플러그인 설치 없이, REST API로 디자인 데이터를 가져옵니다.",
-                detail: "figma.com/design/ABC123...",
+                desc: "Figma 공유 링크만 있으면 됩니다. REST API /v1/files로 노드 트리와 이미지를 가져와 웹에서 렌더링합니다.",
+                detail: "/v1/files/{key} · /v1/images/{key}",
               },
               {
                 step: "02",
                 icon: MousePointerClick,
                 title: "엘리먼트를 클릭하세요",
-                desc: "수정하고 싶은 요소를 클릭하면, AI가 3단계 매핑 엔진으로 해당 코드 파일을 자동 매칭합니다.",
-                detail: "95%+ 매핑 정확도",
+                desc: "클릭한 요소의 이름과 구조로 코드 파일을 매칭합니다. 네이밍 매칭 → AI 추론 → 캐시, 3단계 폴백.",
+                detail: "confidence 0.7~0.95",
               },
               {
                 step: "03",
                 icon: GitBranch,
                 title: "수정이 푸시됩니다",
-                desc: "AI가 기존 코드 스타일을 유지하며 수정합니다. Diff를 확인하고, 한 클릭으로 GitHub에 커밋.",
-                detail: "git push origin main ✓",
+                desc: "AI가 JSON으로 { filePath, original, modified }를 반환합니다. Diff 확인 후 Octokit으로 GitHub 커밋.",
+                detail: "octokit.createOrUpdateFileContents()",
               },
             ].map((item) => (
               <div key={item.step} className="group">
@@ -299,10 +299,10 @@ export default function HomePage() {
               </div>
               <h3 className="text-[15px] font-semibold text-[#1A1A1A]">Cloud</h3>
               <p className="mt-1.5 flex-1 text-[13px] leading-relaxed text-[#999]">
-                GitHub 레포에 연결해서 브라우저에서 바로 수정하고 커밋합니다. 설치할 것이 없습니다.
+                GitHub OAuth + Figma OAuth로 인증합니다. Octokit으로 레포 파일을 읽고, 수정 후 바로 커밋합니다.
               </p>
               <div className="mt-4 flex flex-wrap gap-1.5">
-                {["GitHub OAuth", "Figma API", "원클릭 푸시"].map((tag) => (
+                {["GitHub OAuth", "Figma OAuth", "Octokit"].map((tag) => (
                   <span key={tag} className="rounded-full bg-white px-2 py-0.5 text-[10px] text-[#999] ring-1 ring-black/[0.04]">
                     {tag}
                   </span>
@@ -317,11 +317,11 @@ export default function HomePage() {
               </div>
               <h3 className="text-[15px] font-semibold text-[#1A1A1A]">Local</h3>
               <p className="mt-1.5 flex-1 text-[13px] leading-relaxed text-[#999]">
-                로컬 에이전트가 WebSocket으로 연결합니다. 파일에 직접 반영되고, 데브 서버가 즉시 리로드합니다.
+                npx로 에이전트를 실행하면 WebSocket(포트 3100)으로 연결됩니다. chokidar가 파일 변경을 감지하고 실시간 동기화합니다.
               </p>
               <div className="mt-4 overflow-hidden rounded-md bg-[#1A1A1A] px-3 py-2 font-mono text-[11px]">
                 <span className="text-[#666]">$</span>
-                <span className="text-[#999]"> npx figma-code-bridge</span>
+                <span className="text-[#999]"> npx figma-code-bridge --port 3100</span>
               </div>
             </div>
 
@@ -332,10 +332,10 @@ export default function HomePage() {
               </div>
               <h3 className="text-[15px] font-semibold text-[#1A1A1A]">Sandbox</h3>
               <p className="mt-1.5 flex-1 text-[13px] leading-relaxed text-[#999]">
-                WebContainer로 브라우저 안에서 Node.js가 실행됩니다. GitHub 레포를 열면 5초 안에 부팅합니다.
+                WebContainer API로 브라우저 안에서 Node.js가 실행됩니다. GitHub 레포를 마운트하고 npm install → dev server를 자동 부팅합니다.
               </p>
               <div className="mt-4 flex flex-wrap gap-1.5">
-                {["WebContainer", "실시간 프리뷰", "Hot Reload"].map((tag) => (
+                {["WebContainer API", "iframe 프리뷰", "HMR"].map((tag) => (
                   <span key={tag} className="rounded-full bg-white px-2 py-0.5 text-[10px] text-[#999] ring-1 ring-black/[0.04]">
                     {tag}
                   </span>
@@ -356,14 +356,14 @@ export default function HomePage() {
                 새 코드가 아닙니다
               </h2>
               <p className="mt-3 text-[15px] leading-relaxed text-[#999]">
-                AI가 프로젝트의 기존 컨벤션을 이해하고, 최소한의 변경만 적용합니다.
-                Diff를 확인하고 승인하면 바로 커밋됩니다.
+                AI가 JSON으로 {"{ filePath, original, modified, explanation }"}을 반환합니다.
+                original과 modified를 비교해 Diff를 보여주고, 승인하면 커밋됩니다.
               </p>
               <div className="mt-6 space-y-3 text-[13px] text-[#999]">
                 {[
-                  "기존 코드 패턴 유지",
-                  "최소 변경 원칙 (Minimal Diff)",
-                  "Claude, GPT-4o, Gemini 지원",
+                  "기존 코드 패턴 유지 (max_tokens 4096)",
+                  "Claude Sonnet 4.6 · GPT-4o · Gemini 2.5 Flash",
+                  "tRPC ai.generateEdit 프로시저",
                 ].map((item) => (
                   <div key={item} className="flex items-center gap-2">
                     <Check className="h-3.5 w-3.5 text-[#1A1A1A]" />
@@ -376,7 +376,7 @@ export default function HomePage() {
             {/* 코드 블록 */}
             <div className="overflow-hidden rounded-xl bg-[#1A1A1A] ring-1 ring-black/[0.1]">
               <div className="flex items-center justify-between px-4 py-2.5">
-                <span className="font-mono text-[11px] text-[#555]">Hero.tsx</span>
+                <span className="font-mono text-[11px] text-[#555]">HeroSection.tsx</span>
                 <span className="rounded bg-[#333] px-2 py-0.5 text-[10px] text-[#888]">modified</span>
               </div>
               <div className="border-t border-white/[0.06] font-mono text-[12px] leading-[1.8]">
@@ -419,10 +419,10 @@ export default function HomePage() {
         <div className="mx-auto max-w-[1100px] px-6 py-24">
           <div className="grid gap-px overflow-hidden rounded-xl bg-black/[0.04] ring-1 ring-black/[0.04] sm:grid-cols-4">
             {[
-              { value: "95%+", label: "매핑 정확도", sub: "3단계 AI 매핑 엔진" },
-              { value: "<5s", label: "샌드박스 부팅", sub: "WebContainer" },
-              { value: "3", label: "AI 프로바이더", sub: "Claude · GPT-4o · Gemini" },
-              { value: "0", label: "설치 필요", sub: "브라우저만 있으면 충분" },
+              { value: "7", label: "프레임워크 지원", sub: "Next.js · React · Vue · Angular · Svelte · Vite · Astro" },
+              { value: "3", label: "AI 프로바이더", sub: "Claude Sonnet 4.6 · GPT-4o · Gemini 2.5 Flash" },
+              { value: "12", label: "tRPC 프로시저", sub: "figma 4 · ai 1 · git 4 · project 3" },
+              { value: "0", label: "플러그인 설치", sub: "Figma REST API만 사용" },
             ].map((stat) => (
               <div key={stat.label} className="bg-white p-6 text-center">
                 <div className="font-mono text-[32px] font-bold tracking-[-0.03em] text-[#1A1A1A]">
