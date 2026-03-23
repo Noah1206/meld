@@ -39,7 +39,7 @@ export default function HomePage() {
             <div className="flex h-6 w-6 items-center justify-center rounded-md bg-[#1A1A1A]">
               <Code2 className="h-3 w-3 text-white" />
             </div>
-            <span className="text-[14px] font-semibold text-[#1A1A1A]">FigmaCodeBridge</span>
+            <span className="text-[14px] font-semibold text-[#1A1A1A]">Meld</span>
           </Link>
           <div className="flex items-center gap-5">
             <Link href="/docs" className="text-[13px] text-[#999] transition-colors hover:text-[#1A1A1A]">
@@ -59,14 +59,8 @@ export default function HomePage() {
       </nav>
 
       {/* ===== 히어로 ===== */}
-      <section className="relative z-10 pt-32 pb-6 lg:pt-40 lg:pb-10">
+      <section className="relative z-10 pt-28 pb-6 lg:pt-32 lg:pb-10">
         <div className="mx-auto max-w-[1440px] px-6 lg:px-16">
-          {/* 뱃지 */}
-          <div className="animate-fade-in mb-6 inline-flex items-center gap-2 rounded-full bg-[#F5F5F5] px-3 py-1 font-mono text-[12px] text-[#999]">
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#34D399]" />
-            플러그인 설치 없이 바로 사용
-          </div>
-
           <h1 className="animate-fade-in-up text-[48px] font-bold leading-[1.05] tracking-[-0.04em] text-[#1A1A1A] sm:text-[64px] lg:text-[76px] xl:text-[88px]">
             한 사람을 위한
             <br />
@@ -119,7 +113,7 @@ export default function HomePage() {
               <div className="h-2.5 w-2.5 rounded-full bg-[#E0E0E0]" />
               <div className="h-2.5 w-2.5 rounded-full bg-[#E0E0E0]" />
             </div>
-            <div className="mx-auto text-[11px] text-[#CCC]">figmacodebridge.com</div>
+            <div className="mx-auto text-[11px] text-[#CCC]">meld.dev</div>
           </div>
 
           {/* 3-패널 앱 목업 */}
@@ -503,9 +497,9 @@ export default function HomePage() {
               <div className="flex h-5 w-5 items-center justify-center rounded bg-white">
                 <Code2 className="h-2.5 w-2.5 text-[#1A1A1A]" />
               </div>
-              <span className="text-[12px] text-[#555]">FigmaCodeBridge</span>
+              <span className="text-[12px] text-[#555]">Meld</span>
             </div>
-            <p className="font-mono text-[11px] text-[#444]">Design to Code, without plugins.</p>
+            <p className="font-mono text-[11px] text-[#444]">Design to Code, seamlessly.</p>
           </div>
         </div>
       </footer>
