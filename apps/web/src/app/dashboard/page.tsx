@@ -9,7 +9,7 @@ import {
   ArrowRight,
   Copy,
   Check,
-  Code2,
+  Blend,
   LogOut,
   Plus,
   FolderOpen,
@@ -39,8 +39,8 @@ import { trpc } from "@/lib/trpc/client";
 function DashboardSkeleton() {
   return (
     <div className="min-h-screen bg-white">
-      <header className="bg-white px-6 py-3.5">
-        <div className="mx-auto flex max-w-4xl items-center justify-between">
+      <header className="bg-white px-6 lg:px-16 py-3.5">
+        <div className="mx-auto flex max-w-[1440px] items-center justify-between">
           <div className="animate-shimmer h-5 w-28 rounded" />
           <div className="flex items-center gap-3">
             <div className="animate-shimmer h-6 w-6 rounded-full" />
@@ -48,7 +48,7 @@ function DashboardSkeleton() {
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-4xl px-6 pt-10">
+      <main className="mx-auto max-w-[1440px] px-6 lg:px-16 pt-10">
         <div className="animate-shimmer mb-8 h-8 w-48 rounded" />
         <div className="grid gap-5 sm:grid-cols-2">
           <div className="animate-shimmer h-80 rounded-2xl" />
@@ -353,10 +353,10 @@ export default function DashboardPage() {
     <div className="animate-fade-in min-h-screen bg-white">
       {/* 헤더 */}
       <header className="bg-white/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-3.5">
+        <div className="mx-auto flex max-w-[1440px] items-center justify-between px-6 lg:px-16 py-3.5">
           <Link href="/" className="flex items-center gap-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1A1A1A]">
-              <Code2 className="h-3.5 w-3.5 text-white" />
+              <Blend className="h-3.5 w-3.5 text-white" />
             </div>
             <span className="text-[15px] font-semibold text-[#1A1A1A]">FigmaCodeBridge</span>
           </Link>
@@ -391,7 +391,7 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-4xl px-6 pt-10 pb-20">
+      <main className="mx-auto max-w-[1440px] px-6 lg:px-16 pt-10 pb-20">
         {/* 인사 + 연결 상태 */}
         <div className="animate-fade-in-up mb-10">
           <div className="flex items-center gap-3">

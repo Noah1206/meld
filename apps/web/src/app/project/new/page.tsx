@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Loader2, Search, Lock, Check, Link as LinkIcon, X, Code2 } from "lucide-react";
+import { ArrowLeft, Loader2, Search, Lock, Check, Link as LinkIcon, X, Blend } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import { FigmaClient } from "@/lib/figma/client";
 
@@ -87,7 +87,7 @@ export default function NewProjectPage() {
     <div className="min-h-screen bg-white">
       {/* 헤더 */}
       <header className="bg-white/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-2xl items-center justify-between px-6 py-3.5">
+        <div className="mx-auto flex max-w-[1440px] items-center justify-between px-6 lg:px-16 py-3.5">
           <button
             onClick={() => router.back()}
             className="flex items-center gap-1.5 text-[13px] text-[#787774] transition-colors hover:text-[#1A1A1A]"
@@ -97,7 +97,7 @@ export default function NewProjectPage() {
           </button>
           <Link href="/" className="flex items-center gap-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1A1A1A]">
-              <Code2 className="h-3.5 w-3.5 text-white" />
+              <Blend className="h-3.5 w-3.5 text-white" />
             </div>
           </Link>
           <button
@@ -114,7 +114,7 @@ export default function NewProjectPage() {
       </header>
 
       {/* 폼 */}
-      <main className="mx-auto max-w-2xl px-6 pt-10 pb-20">
+      <main className="mx-auto max-w-[1440px] px-6 lg:px-16 pt-10 pb-20">
         <div className="animate-fade-in-up mb-8">
           <h1 className="text-[28px] font-bold tracking-[-0.02em] text-[#1A1A1A]">
             새 프로젝트

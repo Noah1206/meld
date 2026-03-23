@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
-  Code2,
+  Blend,
   Figma,
   MousePointerClick,
   GitBranch,
@@ -221,7 +221,7 @@ export default function HomePage() {
         <div className="mx-auto flex max-w-[1440px] items-center justify-between px-6 lg:px-16 py-4">
           <Link href="/" className="flex items-center gap-2">
             <div className="flex h-6 w-6 items-center justify-center rounded-md bg-[#1A1A1A]">
-              <Code2 className="h-3 w-3 text-white" />
+              <Blend className="h-3 w-3 text-white" />
             </div>
             <span className="text-[14px] font-semibold text-[#1A1A1A]">Meld</span>
           </Link>
@@ -682,7 +682,7 @@ export default function HomePage() {
           <div className="mt-6 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="flex h-5 w-5 items-center justify-center rounded bg-white">
-                <Code2 className="h-2.5 w-2.5 text-[#1A1A1A]" />
+                <Blend className="h-2.5 w-2.5 text-[#1A1A1A]" />
               </div>
               <span className="text-[12px] text-[#555]">Meld</span>
             </div>
