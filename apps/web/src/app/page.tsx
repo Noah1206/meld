@@ -34,7 +34,7 @@ export default function HomePage() {
 
       {/* ===== 네비게이션 ===== */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-[1100px] items-center justify-between px-6 py-4">
+        <div className="mx-auto flex max-w-[1440px] items-center justify-between px-6 lg:px-16 py-4">
           <Link href="/" className="flex items-center gap-2">
             <div className="flex h-6 w-6 items-center justify-center rounded-md bg-[#1A1A1A]">
               <Code2 className="h-3 w-3 text-white" />
@@ -59,15 +59,15 @@ export default function HomePage() {
       </nav>
 
       {/* ===== 히어로 ===== */}
-      <section className="relative z-10 pt-32 pb-6">
-        <div className="mx-auto max-w-[1100px] px-6">
+      <section className="relative z-10 pt-32 pb-6 lg:pt-40 lg:pb-10">
+        <div className="mx-auto max-w-[1440px] px-6 lg:px-16">
           {/* 뱃지 */}
           <div className="animate-fade-in mb-6 inline-flex items-center gap-2 rounded-full bg-[#F5F5F5] px-3 py-1 font-mono text-[12px] text-[#999]">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#34D399]" />
             Figma REST API only — 플러그인 필요 없음
           </div>
 
-          <h1 className="animate-fade-in-up text-[48px] font-bold leading-[1.05] tracking-[-0.04em] text-[#1A1A1A] sm:text-[64px] lg:text-[76px]">
+          <h1 className="animate-fade-in-up text-[48px] font-bold leading-[1.05] tracking-[-0.04em] text-[#1A1A1A] sm:text-[64px] lg:text-[76px] xl:text-[88px]">
             Figma에서 클릭하면
             <br />
             <span className="text-[#CCC]">AI가 기존 코드를 수정합니다</span>
@@ -110,7 +110,7 @@ export default function HomePage() {
       </section>
 
       {/* ===== 프로덕트 목업 ===== */}
-      <section className="animate-fade-in-up animation-delay-600 relative z-10 mx-auto max-w-[1100px] px-6 pt-10 pb-24">
+      <section className="animate-fade-in-up animation-delay-600 relative z-10 mx-auto max-w-[1440px] px-6 lg:px-16 pt-10 pb-24 lg:pb-32">
         <div className="overflow-hidden rounded-xl ring-1 ring-black/[0.08]">
           {/* 브라우저 바 */}
           <div className="flex items-center bg-[#FAFAFA] px-4 py-2.5">
@@ -123,7 +123,7 @@ export default function HomePage() {
           </div>
 
           {/* 3-패널 앱 목업 */}
-          <div className="flex h-[400px] bg-white sm:h-[460px]">
+          <div className="flex h-[400px] bg-white sm:h-[460px] lg:h-[540px]">
             {/* 좌: Figma 뷰어 */}
             <div className="flex flex-1 flex-col">
               <div className="flex items-center gap-2 bg-[#FAFAFA] px-4 py-2">
@@ -183,7 +183,7 @@ export default function HomePage() {
             <div className="w-px bg-black/[0.06]" />
 
             {/* 우: AI 채팅 */}
-            <div className="hidden w-[300px] flex-col sm:flex">
+            <div className="hidden w-[300px] flex-col sm:flex lg:w-[360px]">
               <div className="flex items-center gap-2 bg-[#FAFAFA] px-4 py-2">
                 <MessageSquare className="h-3.5 w-3.5 text-[#999]" />
                 <span className="text-[11px] font-medium text-[#999]">AI Chat</span>
@@ -234,9 +234,9 @@ export default function HomePage() {
 
       {/* ===== "이렇게 동작합니다" ===== */}
       <section className="relative z-10 bg-[#FAFAFA]">
-        <div className="mx-auto max-w-[1100px] px-6 py-24">
+        <div className="mx-auto max-w-[1440px] px-6 lg:px-16 py-24 lg:py-32">
           <p className="mb-2 font-mono text-[12px] tracking-wider text-[#CCC]">HOW IT WORKS</p>
-          <h2 className="text-[32px] font-bold tracking-[-0.03em] text-[#1A1A1A] sm:text-[40px]">
+          <h2 className="text-[32px] font-bold tracking-[-0.03em] text-[#1A1A1A] sm:text-[40px] lg:text-[48px]">
             30초면 끝납니다
           </h2>
 
@@ -284,9 +284,9 @@ export default function HomePage() {
 
       {/* ===== 3가지 모드 ===== */}
       <section className="relative z-10">
-        <div className="mx-auto max-w-[1100px] px-6 py-24">
+        <div className="mx-auto max-w-[1440px] px-6 lg:px-16 py-24 lg:py-32">
           <p className="mb-2 font-mono text-[12px] tracking-wider text-[#CCC]">MODES</p>
-          <h2 className="text-[32px] font-bold tracking-[-0.03em] text-[#1A1A1A] sm:text-[40px]">
+          <h2 className="text-[32px] font-bold tracking-[-0.03em] text-[#1A1A1A] sm:text-[40px] lg:text-[48px]">
             어디서든, 원하는 방식으로
           </h2>
           <p className="mt-3 max-w-md text-[15px] text-[#999]">
@@ -350,11 +350,11 @@ export default function HomePage() {
 
       {/* ===== 코드 디프 예시 ===== */}
       <section className="relative z-10 bg-[#FAFAFA]">
-        <div className="mx-auto max-w-[1100px] px-6 py-24">
-          <div className="grid items-center gap-12 sm:grid-cols-2">
+        <div className="mx-auto max-w-[1440px] px-6 lg:px-16 py-24 lg:py-32">
+          <div className="grid items-center gap-12 sm:grid-cols-2 lg:gap-20">
             <div>
               <p className="mb-2 font-mono text-[12px] tracking-wider text-[#CCC]">DIFF PREVIEW</p>
-              <h2 className="text-[32px] font-bold tracking-[-0.03em] text-[#1A1A1A] sm:text-[36px]">
+              <h2 className="text-[32px] font-bold tracking-[-0.03em] text-[#1A1A1A] sm:text-[36px] lg:text-[44px]">
                 새 코드가 아닙니다
               </h2>
               <p className="mt-3 text-[15px] leading-relaxed text-[#999]">
@@ -418,7 +418,7 @@ export default function HomePage() {
 
       {/* ===== 숫자들 ===== */}
       <section className="relative z-10">
-        <div className="mx-auto max-w-[1100px] px-6 py-24">
+        <div className="mx-auto max-w-[1440px] px-6 lg:px-16 py-24 lg:py-32">
           <div className="grid gap-px overflow-hidden rounded-xl bg-black/[0.04] ring-1 ring-black/[0.04] sm:grid-cols-4">
             {[
               { value: "7", label: "프레임워크 지원", sub: "Next.js · React · Vue · Angular · Svelte · Vite · Astro" },
@@ -426,8 +426,8 @@ export default function HomePage() {
               { value: "12", label: "tRPC 프로시저", sub: "figma 4 · ai 1 · git 4 · project 3" },
               { value: "0", label: "플러그인 설치", sub: "Figma REST API만 사용" },
             ].map((stat) => (
-              <div key={stat.label} className="bg-white p-6 text-center">
-                <div className="font-mono text-[32px] font-bold tracking-[-0.03em] text-[#1A1A1A]">
+              <div key={stat.label} className="bg-white p-6 text-center lg:p-10">
+                <div className="font-mono text-[32px] font-bold tracking-[-0.03em] text-[#1A1A1A] lg:text-[40px]">
                   {stat.value}
                 </div>
                 <div className="mt-1 text-[13px] font-medium text-[#1A1A1A]">{stat.label}</div>
@@ -440,8 +440,8 @@ export default function HomePage() {
 
       {/* ===== 하단 CTA ===== */}
       <section className="relative z-10 bg-[#1A1A1A]">
-        <div className="mx-auto max-w-[1100px] px-6 py-24">
-          <h2 className="text-[36px] font-bold leading-[1.1] tracking-[-0.03em] text-white sm:text-[48px]">
+        <div className="mx-auto max-w-[1440px] px-6 lg:px-16 py-24 lg:py-32">
+          <h2 className="text-[36px] font-bold leading-[1.1] tracking-[-0.03em] text-white sm:text-[48px] lg:text-[56px]">
             지금 시작하세요
           </h2>
           <p className="mt-3 text-[16px] text-[#666]">
@@ -467,7 +467,7 @@ export default function HomePage() {
 
       {/* ===== 푸터 ===== */}
       <footer className="relative z-10 bg-[#1A1A1A]">
-        <div className="mx-auto max-w-[1100px] px-6 pb-8">
+        <div className="mx-auto max-w-[1440px] px-6 lg:px-16 pb-8">
           <div className="h-px w-full bg-white/[0.06]" />
           <div className="mt-6 flex items-center justify-between">
             <div className="flex items-center gap-2">
