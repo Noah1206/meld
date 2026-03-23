@@ -2,7 +2,8 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Loader2, Search, Lock, Check, Link as LinkIcon, X } from "lucide-react";
+import Link from "next/link";
+import { ArrowLeft, Loader2, Search, Lock, Check, Link as LinkIcon, X, Code2 } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import { FigmaClient } from "@/lib/figma/client";
 
@@ -13,7 +14,6 @@ export default function NewProjectPage() {
   const [repoSearch, setRepoSearch] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  // Figma URL 관련
   const [figmaUrl, setFigmaUrl] = useState("");
   const [figmaFileKey, setFigmaFileKey] = useState<string | null>(null);
   const [figmaFileName, setFigmaFileName] = useState<string | null>(null);
@@ -35,7 +35,6 @@ export default function NewProjectPage() {
 
   const canSave = name.trim();
 
-  // Figma URL 검증
   const handleFigmaValidate = async () => {
     const parsed = FigmaClient.extractFileKey(figmaUrl);
     if (!parsed) {
@@ -85,25 +84,29 @@ export default function NewProjectPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA]">
+    <div className="min-h-screen bg-white">
       {/* 헤더 */}
-      <header className="border-b border-[#E5E7EB] bg-white px-6 py-4">
-        <div className="mx-auto flex max-w-2xl items-center justify-between">
+      <header className="bg-white/80 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-2xl items-center justify-between px-6 py-3.5">
           <button
             onClick={() => router.back()}
-            className="flex items-center gap-1.5 text-sm text-[#6B7280] transition-colors hover:text-[#1C1C1C]"
+            className="flex items-center gap-1.5 text-[13px] text-[#787774] transition-colors hover:text-[#1A1A1A]"
           >
             <ArrowLeft className="h-4 w-4" />
             뒤로
           </button>
-          <h1 className="text-sm font-bold text-[#1C1C1C]">새 프로젝트</h1>
+          <Link href="/" className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1A1A1A]">
+              <Code2 className="h-3.5 w-3.5 text-white" />
+            </div>
+          </Link>
           <button
             onClick={handleSave}
             disabled={!canSave || createMutation.isPending}
-            className="flex items-center gap-1.5 rounded-lg bg-[#2E86C1] px-4 py-2 text-sm font-medium text-white transition-all hover:bg-[#2573A8] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-xl bg-[#1A1A1A] px-5 py-2 text-[13px] font-semibold text-white transition-all hover:bg-[#333] active:scale-[0.98] disabled:opacity-40"
           >
             {createMutation.isPending && (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
             )}
             저장
           </button>
@@ -111,52 +114,61 @@ export default function NewProjectPage() {
       </header>
 
       {/* 폼 */}
-      <main className="mx-auto max-w-2xl p-6">
-        <div className="animate-fade-in-up space-y-6 rounded-xl border border-[#E5E7EB] bg-white p-6">
+      <main className="mx-auto max-w-2xl px-6 pt-10 pb-20">
+        <div className="animate-fade-in-up mb-8">
+          <h1 className="text-[28px] font-bold tracking-[-0.02em] text-[#1A1A1A]">
+            새 프로젝트
+          </h1>
+          <p className="mt-1.5 text-[14px] text-[#787774]">
+            Figma 파일과 GitHub 레포를 연결하세요
+          </p>
+        </div>
+
+        <div className="space-y-8">
           {error && (
-            <div className="animate-fade-in rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+            <div className="animate-fade-in rounded-xl bg-[#FEF2F2] px-4 py-3 text-[13px] text-[#DC2626]">
               {error}
             </div>
           )}
 
           {/* 프로젝트 이름 */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-[#1C1C1C]">
-              프로젝트 이름 <span className="text-red-500">*</span>
+          <div className="space-y-2">
+            <label className="text-[13px] font-semibold text-[#1A1A1A]">
+              프로젝트 이름
             </label>
             <input
               type="text"
               placeholder="예: 랜딩 페이지 리디자인"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-lg border border-[#E5E7EB] px-3 py-2 text-sm placeholder:text-[#9CA3AF] focus:border-[#2E86C1] focus:outline-none focus:ring-1 focus:ring-[#2E86C1]"
+              className="w-full rounded-xl bg-[#F7F7F5] px-4 py-3 text-[14px] text-[#1A1A1A] placeholder:text-[#B4B4B0] focus:bg-[#EEEEEC] focus:outline-none transition-colors"
             />
           </div>
 
           {/* Figma URL */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-[#1C1C1C]">
+          <div className="space-y-2">
+            <label className="text-[13px] font-semibold text-[#1A1A1A]">
               Figma 파일 연결
             </label>
-            <p className="text-xs text-[#6B7280]">
-              Figma에서 공유 링크를 복사하여 붙여넣으세요.
+            <p className="text-[12px] text-[#B4B4B0]">
+              Figma에서 공유 링크를 복사하여 붙여넣으세요
             </p>
 
             {figmaFileName ? (
-              <div className="animate-fade-in flex items-center gap-2 rounded-lg border border-[#2E86C1] bg-blue-50 px-3 py-2.5">
-                <Check className="h-4 w-4 flex-shrink-0 text-[#059669]" />
-                <span className="flex-1 truncate text-sm font-medium text-[#2E86C1]">
+              <div className="animate-fade-in flex items-center gap-2.5 rounded-xl bg-[#F7F7F5] px-4 py-3">
+                <Check className="h-4 w-4 flex-shrink-0 text-[#787774]" />
+                <span className="flex-1 truncate text-[14px] font-medium text-[#1A1A1A]">
                   {figmaFileName}
                 </span>
                 <button
                   onClick={clearFigma}
-                  className="flex-shrink-0 rounded-md p-0.5 text-[#2E86C1] hover:bg-blue-100"
+                  className="flex-shrink-0 rounded-lg p-1 text-[#B4B4B0] transition-colors hover:bg-[#EEEEEC] hover:text-[#787774]"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -167,38 +179,38 @@ export default function NewProjectPage() {
                       setFigmaError(null);
                     }}
                     onKeyDown={(e) => e.key === "Enter" && handleFigmaValidate()}
-                    className="flex-1 rounded-lg border border-[#E5E7EB] px-3 py-2 text-sm placeholder:text-[#9CA3AF] focus:border-[#2E86C1] focus:outline-none focus:ring-1 focus:ring-[#2E86C1]"
+                    className="flex-1 rounded-xl bg-[#F7F7F5] px-4 py-3 text-[14px] text-[#1A1A1A] placeholder:text-[#B4B4B0] focus:bg-[#EEEEEC] focus:outline-none transition-colors"
                     disabled={figmaValidating}
                   />
                   <button
                     onClick={handleFigmaValidate}
                     disabled={figmaValidating || !figmaUrl.trim()}
-                    className="flex items-center gap-1.5 rounded-lg bg-[#374151] px-3 py-2 text-sm font-medium text-white transition-all hover:bg-[#1F2937] disabled:opacity-50"
+                    className="flex items-center gap-1.5 rounded-xl bg-[#1A1A1A] px-4 py-3 text-[13px] font-medium text-white transition-all hover:bg-[#333] active:scale-[0.98] disabled:opacity-40"
                   >
                     {figmaValidating ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
-                      <LinkIcon className="h-4 w-4" />
+                      <LinkIcon className="h-3.5 w-3.5" />
                     )}
-                    {figmaValidating ? "확인 중..." : "확인"}
+                    {figmaValidating ? "확인 중" : "확인"}
                   </button>
                 </div>
 
-                {/* 공유 링크 가이드 */}
-                <div className="rounded-lg bg-[#F8F9FA] px-3 py-3">
-                  <p className="mb-2 text-[11px] font-medium text-[#374151]">링크 가져오는 방법</p>
-                  <ol className="space-y-1.5 text-[11px] text-[#6B7280]">
-                    <li className="flex gap-1.5">
-                      <span className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-[#E5E7EB] text-[10px] font-medium text-[#374151]">1</span>
+                {/* 가이드 */}
+                <div className="rounded-xl bg-[#F7F7F5] px-4 py-3.5">
+                  <p className="mb-2.5 text-[12px] font-semibold text-[#1A1A1A]">링크 가져오는 방법</p>
+                  <ol className="space-y-2 text-[12px] text-[#787774]">
+                    <li className="flex gap-2">
+                      <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-lg bg-[#EEEEEC] text-[10px] font-semibold text-[#787774]">1</span>
                       <span>Figma에서 파일을 엽니다</span>
                     </li>
-                    <li className="flex gap-1.5">
-                      <span className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-[#E5E7EB] text-[10px] font-medium text-[#374151]">2</span>
-                      <span>우측 상단 <span className="font-medium text-[#374151]">공유하기</span> 버튼을 클릭합니다</span>
+                    <li className="flex gap-2">
+                      <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-lg bg-[#EEEEEC] text-[10px] font-semibold text-[#787774]">2</span>
+                      <span>우측 상단 <span className="font-medium text-[#1A1A1A]">공유하기</span> 버튼 클릭</span>
                     </li>
-                    <li className="flex gap-1.5">
-                      <span className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-[#E5E7EB] text-[10px] font-medium text-[#374151]">3</span>
-                      <span><span className="font-medium text-[#374151]">링크 복사</span>를 클릭하여 여기에 붙여넣으세요</span>
+                    <li className="flex gap-2">
+                      <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-lg bg-[#EEEEEC] text-[10px] font-semibold text-[#787774]">3</span>
+                      <span><span className="font-medium text-[#1A1A1A]">링크 복사</span>를 눌러 여기에 붙여넣기</span>
                     </li>
                   </ol>
                 </div>
@@ -206,79 +218,80 @@ export default function NewProjectPage() {
             )}
 
             {figmaError && (
-              <p className="animate-fade-in text-xs text-red-500">{figmaError}</p>
+              <p className="animate-fade-in text-[12px] text-[#DC2626]">{figmaError}</p>
             )}
           </div>
 
           {/* GitHub 레포지토리 선택 */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-[#1C1C1C]">
+              <label className="text-[13px] font-semibold text-[#1A1A1A]">
                 GitHub 레포지토리
               </label>
               {selectedRepo && (
                 <button
                   onClick={() => setSelectedRepo(null)}
-                  className="text-xs text-[#6B7280] hover:text-[#1C1C1C]"
+                  className="text-[12px] text-[#B4B4B0] transition-colors hover:text-[#787774]"
                 >
                   선택 해제
                 </button>
               )}
             </div>
 
-            {/* 선택된 레포 표시 */}
             {selectedRepo && (
-              <div className="animate-fade-in flex items-center gap-2 rounded-lg border border-[#2E86C1] bg-blue-50 px-3 py-2.5">
-                <Check className="h-4 w-4 flex-shrink-0 text-[#2E86C1]" />
-                <span className="text-sm font-medium text-[#2E86C1]">
+              <div className="animate-fade-in flex items-center gap-2.5 rounded-xl bg-[#F7F7F5] px-4 py-3">
+                <Check className="h-4 w-4 flex-shrink-0 text-[#787774]" />
+                <span className="text-[14px] font-medium text-[#1A1A1A]">
                   {selectedRepo.owner}/{selectedRepo.name}
                 </span>
               </div>
             )}
 
-            {/* 레포 검색 + 리스트 */}
             {!selectedRepo && (
-              <div className="rounded-lg border border-[#E5E7EB]">
+              <div className="overflow-hidden rounded-xl bg-[#F7F7F5]">
                 {/* 검색 */}
-                <div className="flex items-center gap-2 border-b border-[#E5E7EB] px-3 py-2">
-                  <Search className="h-4 w-4 flex-shrink-0 text-[#9CA3AF]" />
+                <div className="flex items-center gap-2.5 px-4 py-3">
+                  <Search className="h-4 w-4 flex-shrink-0 text-[#B4B4B0]" />
                   <input
                     type="text"
                     placeholder="레포지토리 검색..."
                     value={repoSearch}
                     onChange={(e) => setRepoSearch(e.target.value)}
-                    className="flex-1 text-sm placeholder:text-[#9CA3AF] focus:outline-none"
+                    className="flex-1 bg-transparent text-[14px] text-[#1A1A1A] placeholder:text-[#B4B4B0] focus:outline-none"
                   />
                 </div>
+
+                {/* 구분선 */}
+                <div className="mx-4 h-px bg-[#EEEEEC]" />
 
                 {/* 리스트 */}
                 <div className="max-h-56 overflow-y-auto">
                   {reposQuery.isLoading ? (
-                    <div className="flex items-center justify-center gap-2 py-8">
-                      <Loader2 className="h-4 w-4 animate-spin text-[#6B7280]" />
-                      <span className="text-sm text-[#6B7280]">레포지토리 불러오는 중...</span>
+                    <div className="flex items-center justify-center gap-2 py-10">
+                      <Loader2 className="h-4 w-4 animate-spin text-[#787774]" />
+                      <span className="text-[13px] text-[#787774]">불러오는 중...</span>
                     </div>
                   ) : reposQuery.isError ? (
-                    <div className="px-3 py-6 text-center text-sm text-red-500">
-                      레포지토리를 불러올 수 없습니다. GitHub 로그인을 확인해주세요.
+                    <div className="px-4 py-8 text-center text-[13px] text-[#DC2626]">
+                      레포지토리를 불러올 수 없습니다
                     </div>
                   ) : filteredRepos.length === 0 ? (
-                    <div className="px-3 py-6 text-center text-sm text-[#9CA3AF]">
-                      {repoSearch ? "검색 결과가 없습니다." : "레포지토리가 없습니다."}
+                    <div className="px-4 py-8 text-center text-[13px] text-[#B4B4B0]">
+                      {repoSearch ? "검색 결과가 없습니다" : "레포지토리가 없습니다"}
                     </div>
                   ) : (
                     filteredRepos.map((repo) => (
                       <button
                         key={repo.fullName}
                         onClick={() => setSelectedRepo({ owner: repo.owner, name: repo.name })}
-                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-[#F3F4F6]"
+                        className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-[13px] transition-colors hover:bg-[#EEEEEC]"
                       >
                         {repo.isPrivate && (
-                          <Lock className="h-3 w-3 flex-shrink-0 text-[#9CA3AF]" />
+                          <Lock className="h-3 w-3 flex-shrink-0 text-[#B4B4B0]" />
                         )}
-                        <span className="truncate text-[#374151]">
-                          <span className="text-[#6B7280]">{repo.owner}/</span>
-                          <span className="font-medium">{repo.name}</span>
+                        <span className="truncate text-[#787774]">
+                          <span className="text-[#B4B4B0]">{repo.owner}/</span>
+                          <span className="font-medium text-[#1A1A1A]">{repo.name}</span>
                         </span>
                       </button>
                     ))

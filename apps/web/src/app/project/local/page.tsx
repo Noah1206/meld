@@ -31,9 +31,9 @@ function LocalProjectContent() {
       headerActions={
         <div className="flex items-center gap-2">
           <div
-            className={`h-2 w-2 rounded-full ${agent.connected ? "bg-green-500" : "bg-red-500"}`}
+            className={`h-2 w-2 rounded-full ${agent.connected ? "bg-[#1A1A1A]" : "bg-[#B4B4B0]"}`}
           />
-          <span className="text-xs text-[#6B7280]">
+          <span className="text-[12px] text-[#787774]">
             {agent.connected ? "에이전트 연결됨" : "연결 대기 중"}
           </span>
         </div>
@@ -66,8 +66,8 @@ export default function LocalProjectPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex h-screen items-center justify-center">
-          <Loader2 className="h-6 w-6 animate-spin text-[#2E86C1]" />
+        <div className="flex h-screen items-center justify-center bg-white">
+          <Loader2 className="h-5 w-5 animate-spin text-[#787774]" />
         </div>
       }
     >

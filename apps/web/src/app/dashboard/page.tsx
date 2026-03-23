@@ -22,7 +22,6 @@ import {
   MessageCircle,
   Keyboard,
   ArrowUpRight,
-  Clock,
   Shield,
   Eye,
 } from "lucide-react";
@@ -188,8 +187,6 @@ export default function DashboardPage() {
           {[
             { icon: Plus, label: "새 프로젝트", href: "/project/new" },
             { icon: FolderOpen, label: "로컬 연결", href: "/project/local" },
-            { icon: BookOpen, label: "사용 가이드", href: "#guide" },
-            { icon: MessageCircle, label: "피드백", href: "#feedback" },
           ].map((action) => (
             <Link
               key={action.label}
@@ -341,33 +338,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* 최근 활동 */}
-        <div className="animate-fade-in-up animation-delay-450 mt-10">
-          <div className="flex items-center justify-between">
-            <h2 className="text-[16px] font-semibold text-[#1A1A1A]">최근 활동</h2>
-            <button className="text-[12px] text-[#787774] transition-colors hover:text-[#1A1A1A]">전체 보기</button>
-          </div>
-          <div className="mt-4 space-y-1">
-            {[
-              { icon: Github, text: "GitHub 계정이 연결되었습니다", time: "방금 전", color: "#787774" },
-              { icon: Code2, text: "FigmaCodeBridge에 오신 것을 환영합니다!", time: "방금 전", color: "#787774" },
-            ].map((activity, i) => (
-              <div key={i} className="flex items-center gap-3 rounded-xl px-4 py-3 transition-colors hover:bg-[#F7F7F5]">
-                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-[#F7F7F5]">
-                  <activity.icon className="h-4 w-4" style={{ color: activity.color }} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[13px] text-[#1A1A1A]">{activity.text}</p>
-                </div>
-                <div className="flex items-center gap-1 text-[11px] text-[#B4B4B0]">
-                  <Clock className="h-3 w-3" />
-                  {activity.time}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
         {/* 하단 리소스 링크 */}
         <div className="animate-fade-in-up animation-delay-600 mt-14 grid gap-3 sm:grid-cols-3">
           {[
@@ -375,7 +345,7 @@ export default function DashboardPage() {
               icon: BookOpen,
               title: "문서",
               desc: "시작 가이드와 API 레퍼런스",
-              href: "#docs",
+              href: "/docs",
               color: "#787774",
               bg: "#F7F7F5",
             },
@@ -383,7 +353,7 @@ export default function DashboardPage() {
               icon: Github,
               title: "GitHub",
               desc: "소스 코드와 이슈 트래커",
-              href: "#github",
+              href: "/github",
               color: "#787774",
               bg: "#F7F7F5",
             },
@@ -391,7 +361,7 @@ export default function DashboardPage() {
               icon: MessageCircle,
               title: "커뮤니티",
               desc: "디스코드에서 질문하기",
-              href: "#community",
+              href: "/community",
               color: "#787774",
               bg: "#F7F7F5",
             },

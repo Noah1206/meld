@@ -30,7 +30,7 @@ export default function ProjectPage() {
           <button
             onClick={sync}
             disabled={isSyncing}
-            className="flex items-center gap-1.5 rounded-lg border border-[#E5E7EB] bg-white px-3 py-1.5 text-xs font-medium text-[#374151] transition-all hover:bg-[#F3F4F6] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-lg bg-[#F7F7F5] px-3 py-1.5 text-[12px] font-medium text-[#787774] transition-all hover:bg-[#EEEEEC] active:scale-[0.98] disabled:opacity-40"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${isSyncing ? "animate-spin" : ""}`} />
             동기화
