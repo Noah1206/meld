@@ -64,21 +64,21 @@ export default function HomePage() {
           {/* 뱃지 */}
           <div className="animate-fade-in mb-6 inline-flex items-center gap-2 rounded-full bg-[#F5F5F5] px-3 py-1 font-mono text-[12px] text-[#999]">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#34D399]" />
-            Figma REST API only — 플러그인 필요 없음
+            플러그인 설치 없이 바로 사용
           </div>
 
           <h1 className="animate-fade-in-up text-[48px] font-bold leading-[1.05] tracking-[-0.04em] text-[#1A1A1A] sm:text-[64px] lg:text-[76px] xl:text-[88px]">
-            Figma에서 클릭하면
+            한 사람을 위한
             <br />
-            <span className="text-[#CCC]">AI가 기존 코드를 수정합니다</span>
+            <span className="text-[#CCC]">완벽한 디자인 IDE</span>
           </h1>
 
           <p className="animate-fade-in-up animation-delay-150 mt-6 max-w-lg text-[17px] leading-[1.7] text-[#999]">
-            새 코드를 생성하지 않습니다.
+            새 코드를 만들지 않습니다.
             <br />
-            네이밍 컨벤션 매칭 → AI 추론 → 캐시,
+            디자인 요소와 코드 파일을 자동으로 연결해서,
             <br />
-            3단계 매핑으로 기존 코드 파일을 찾아 수정합니다.
+            이미 작성된 코드 위에서 수정합니다.
           </p>
 
           {/* CTA */}
@@ -245,23 +245,23 @@ export default function HomePage() {
               {
                 step: "01",
                 icon: Figma,
-                title: "URL을 붙여넣으세요",
-                desc: "Figma 공유 링크만 있으면 됩니다. REST API /v1/files로 노드 트리와 이미지를 가져와 웹에서 렌더링합니다.",
-                detail: "/v1/files/{key} · /v1/images/{key}",
+                title: "Figma 링크를 붙여넣으세요",
+                desc: "Figma에서 공유 링크를 복사해 붙여넣으면, 디자인을 그대로 불러옵니다. 플러그인은 필요 없습니다.",
+                detail: "공유 링크만 있으면 끝",
               },
               {
                 step: "02",
                 icon: MousePointerClick,
-                title: "엘리먼트를 클릭하세요",
-                desc: "클릭한 요소의 이름과 구조로 코드 파일을 매칭합니다. 네이밍 매칭 → AI 추론 → 캐시, 3단계 폴백.",
-                detail: "confidence 0.7~0.95",
+                title: "바꿀 요소를 클릭하세요",
+                desc: "수정하고 싶은 디자인 요소를 클릭하면, AI가 해당하는 코드 파일을 자동으로 찾아줍니다.",
+                detail: "95% 이상 정확도",
               },
               {
                 step: "03",
                 icon: GitBranch,
-                title: "수정이 푸시됩니다",
-                desc: "AI가 JSON으로 { filePath, original, modified }를 반환합니다. Diff 확인 후 Octokit으로 GitHub 커밋.",
-                detail: "octokit.createOrUpdateFileContents()",
+                title: "확인하고 반영하세요",
+                desc: "AI가 수정한 코드의 변경 내역을 미리 보여줍니다. 확인 후 한 클릭으로 GitHub에 반영됩니다.",
+                detail: "변경 사항 미리보기 제공",
               },
             ].map((item) => (
               <div key={item.step} className="group">
@@ -290,7 +290,7 @@ export default function HomePage() {
             어디서든, 원하는 방식으로
           </h2>
           <p className="mt-3 max-w-md text-[15px] text-[#999]">
-            브라우저에서 바로, 로컬에서 에이전트로, 또는 설치 없이 샌드박스로.
+            상황에 맞는 방식을 선택하세요. 어떤 방식이든 결과는 같습니다.
           </p>
 
           <div className="mt-14 grid gap-4 sm:grid-cols-3">
@@ -301,10 +301,10 @@ export default function HomePage() {
               </div>
               <h3 className="text-[15px] font-semibold text-[#1A1A1A]">Cloud</h3>
               <p className="mt-1.5 flex-1 text-[13px] leading-relaxed text-[#999]">
-                GitHub OAuth + Figma OAuth로 인증합니다. Octokit으로 레포 파일을 읽고, 수정 후 바로 커밋합니다.
+                GitHub 계정만 연결하면 브라우저에서 바로 코드를 수정하고 저장할 수 있습니다. 설치할 것이 없습니다.
               </p>
               <div className="mt-4 flex flex-wrap gap-1.5">
-                {["GitHub OAuth", "Figma OAuth", "Octokit"].map((tag) => (
+                {["GitHub 연동", "Figma 연동", "원클릭 저장"].map((tag) => (
                   <span key={tag} className="rounded-full bg-white px-2 py-0.5 text-[10px] text-[#999] ring-1 ring-black/[0.04]">
                     {tag}
                   </span>
@@ -319,7 +319,7 @@ export default function HomePage() {
               </div>
               <h3 className="text-[15px] font-semibold text-[#1A1A1A]">Local</h3>
               <p className="mt-1.5 flex-1 text-[13px] leading-relaxed text-[#999]">
-                npx로 에이전트를 실행하면 WebSocket(포트 3100)으로 연결됩니다. chokidar가 파일 변경을 감지하고 실시간 동기화합니다.
+                터미널에서 한 줄만 실행하면 내 컴퓨터의 파일에 직접 반영됩니다. 저장하면 개발 서버가 바로 새로고침됩니다.
               </p>
               <div className="mt-4 overflow-hidden rounded-md bg-[#1A1A1A] px-3 py-2 font-mono text-[11px]">
                 <span className="text-[#666]">$</span>
@@ -334,10 +334,10 @@ export default function HomePage() {
               </div>
               <h3 className="text-[15px] font-semibold text-[#1A1A1A]">Sandbox</h3>
               <p className="mt-1.5 flex-1 text-[13px] leading-relaxed text-[#999]">
-                WebContainer API로 브라우저 안에서 Node.js가 실행됩니다. GitHub 레포를 마운트하고 npm install → dev server를 자동 부팅합니다.
+                아무것도 설치하지 않아도 됩니다. 브라우저 안에서 개발 환경이 자동으로 세팅되고, 결과를 바로 확인할 수 있습니다.
               </p>
               <div className="mt-4 flex flex-wrap gap-1.5">
-                {["WebContainer API", "iframe 프리뷰", "HMR"].map((tag) => (
+                {["설치 불필요", "실시간 미리보기", "자동 새로고침"].map((tag) => (
                   <span key={tag} className="rounded-full bg-white px-2 py-0.5 text-[10px] text-[#999] ring-1 ring-black/[0.04]">
                     {tag}
                   </span>
@@ -355,17 +355,17 @@ export default function HomePage() {
             <div>
               <p className="mb-2 font-mono text-[12px] tracking-wider text-[#CCC]">DIFF PREVIEW</p>
               <h2 className="text-[32px] font-bold tracking-[-0.03em] text-[#1A1A1A] sm:text-[36px] lg:text-[44px]">
-                새 코드가 아닙니다
+                기존 코드를 수정합니다
               </h2>
               <p className="mt-3 text-[15px] leading-relaxed text-[#999]">
-                AI가 JSON으로 {"{ filePath, original, modified, explanation }"}을 반환합니다.
-                original과 modified를 비교해 Diff를 보여주고, 승인하면 커밋됩니다.
+                AI가 수정한 부분만 하이라이트로 보여줍니다.
+                어떤 코드가 바뀌었는지 한눈에 확인하고, 승인하면 바로 반영됩니다.
               </p>
               <div className="mt-6 space-y-3 text-[13px] text-[#999]">
                 {[
-                  "기존 코드 패턴 유지 (max_tokens 4096)",
-                  "Claude Sonnet 4.6 · GPT-4o · Gemini 2.5 Flash",
-                  "tRPC ai.generateEdit 프로시저",
+                  "기존 코드 스타일 그대로 유지",
+                  "Claude · GPT-4o · Gemini 중 선택",
+                  "변경 전/후 비교 미리보기",
                 ].map((item) => (
                   <div key={item} className="flex items-center gap-2">
                     <Check className="h-3.5 w-3.5 text-[#1A1A1A]" />
@@ -421,10 +421,10 @@ export default function HomePage() {
         <div className="mx-auto max-w-[1440px] px-6 lg:px-16 py-24 lg:py-32">
           <div className="grid gap-px overflow-hidden rounded-xl bg-black/[0.04] ring-1 ring-black/[0.04] sm:grid-cols-4">
             {[
-              { value: "7", label: "프레임워크 지원", sub: "Next.js · React · Vue · Angular · Svelte · Vite · Astro" },
-              { value: "3", label: "AI 프로바이더", sub: "Claude Sonnet 4.6 · GPT-4o · Gemini 2.5 Flash" },
-              { value: "12", label: "tRPC 프로시저", sub: "figma 4 · ai 1 · git 4 · project 3" },
-              { value: "0", label: "플러그인 설치", sub: "Figma REST API만 사용" },
+              { value: "7", label: "지원 프레임워크", sub: "Next.js · React · Vue · Angular 등" },
+              { value: "3", label: "AI 모델", sub: "Claude · GPT-4o · Gemini" },
+              { value: "95%+", label: "매칭 정확도", sub: "디자인 → 코드 자동 연결" },
+              { value: "0", label: "플러그인 설치", sub: "브라우저만 있으면 충분" },
             ].map((stat) => (
               <div key={stat.label} className="bg-white p-6 text-center lg:p-10">
                 <div className="font-mono text-[32px] font-bold tracking-[-0.03em] text-[#1A1A1A] lg:text-[40px]">
