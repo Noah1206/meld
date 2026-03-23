@@ -194,7 +194,7 @@ async function detectDevServer(rootDir: string): Promise<{ url: string; framewor
   return null;
 }
 
-function detectFramework(rootDir: string): string {
+export function detectFramework(rootDir: string): string {
   try {
     const pkgPath = path.join(rootDir, "package.json");
     if (!fs.existsSync(pkgPath)) return "unknown";
@@ -216,7 +216,7 @@ function detectFramework(rootDir: string): string {
   }
 }
 
-function checkPort(port: number): Promise<boolean> {
+export function checkPort(port: number): Promise<boolean> {
   return new Promise((resolve) => {
     const socket = new net.Socket();
     socket.setTimeout(300);

@@ -5,6 +5,12 @@ import * as fs from "node:fs";
 import { Command } from "commander";
 import { startServer } from "./server.js";
 
+// Electron 등 외부에서 직접 import할 수 있도록 re-export
+export { scanProject } from "./scanner.js";
+export { createWatcher } from "./watcher.js";
+export type { FileChangeEvent, ChangeHandler } from "./watcher.js";
+export { detectFramework, checkPort } from "./server.js";
+
 const program = new Command();
 
 program

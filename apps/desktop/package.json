@@ -1,0 +1,23 @@
+{
+  "name": "@figma-code-bridge/desktop",
+  "version": "0.1.0",
+  "description": "FigmaCodeBridge 데스크톱 앱 — Electron 기반 로컬 파일 직접 수정",
+  "private": true,
+  "main": "dist/main/index.js",
+  "scripts": {
+    "dev": "tsup --watch & electron .",
+    "build": "tsup && electron-builder",
+    "build:main": "tsup"
+  },
+  "dependencies": {
+    "@figma-code-bridge/agent": "workspace:*",
+    "@figma-code-bridge/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0",
+    "tsup": "^8.4.0",
+    "typescript": "^5",
+    "@types/node": "^22.0.0"
+  }
+}

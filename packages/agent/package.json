@@ -7,9 +7,27 @@
   "bin": {
     "figma-code-bridge": "./dist/index.js"
   },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./scanner": {
+      "import": "./dist/scanner.js",
+      "types": "./dist/scanner.d.ts"
+    },
+    "./watcher": {
+      "import": "./dist/watcher.js",
+      "types": "./dist/watcher.d.ts"
+    },
+    "./server": {
+      "import": "./dist/server.js",
+      "types": "./dist/server.d.ts"
+    }
+  },
   "scripts": {
-    "build": "tsup src/index.ts --format esm --dts --clean",
-    "dev": "tsup src/index.ts --format esm --watch"
+    "build": "tsup src/index.ts src/scanner.ts src/watcher.ts src/server.ts --format esm --dts --clean",
+    "dev": "tsup src/index.ts src/scanner.ts src/watcher.ts src/server.ts --format esm --watch"
   },
   "dependencies": {
     "ws": "^8.18.0",

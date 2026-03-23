@@ -29,8 +29,11 @@ import {
   Search,
   Loader2,
   Globe,
+  Monitor,
+  HardDrive,
 } from "lucide-react";
 import { useAuthStore } from "@/lib/store/auth-store";
+import { usePlatform } from "@/lib/hooks/usePlatform";
 import { trpc } from "@/lib/trpc/client";
 
 function DashboardSkeleton() {
@@ -265,9 +268,78 @@ function GitHubProjectCard() {
   );
 }
 
+function DesktopProjectCard() {
+  const router = useRouter();
+
+  const handleOpen = () => {
+    router.push("/project/desktop");
+  };
+
+  return (
+    <div className="group relative flex flex-col rounded-2xl bg-[#F7F7F5] ring-1 ring-black/[0.04] transition-all duration-300 hover:bg-[#F0F0EE] hover:ring-black/[0.06]">
+      <div className="relative flex-1 p-6">
+        <h3 className="text-[24px] font-bold tracking-[-0.02em] text-[#1A1A1A]">
+          로컬 프로젝트 수정
+        </h3>
+        <p className="mt-1.5 text-[13px] leading-relaxed text-[#787774]">
+          로컬 폴더를 바로 열어서 수정해요.
+          <br />
+          에이전트 설치 없이 네이티브 파일 접근.
+        </p>
+
+        {/* 비주얼 플로우 */}
+        <div className="mt-6 flex items-center gap-2 text-[11px]">
+          {[
+            { icon: FolderOpen, label: "폴더", color: "#787774" },
+            { icon: Monitor, label: "데스크톱", color: "#787774" },
+            { icon: Zap, label: "AI", color: "#787774" },
+            { icon: HardDrive, label: "저장", color: "#787774" },
+          ].map((step, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 rounded-lg bg-white/70 px-2.5 py-1.5">
+                <step.icon className="h-3 w-3" style={{ color: step.color }} />
+                <span className="text-[#787774]">{step.label}</span>
+              </div>
+              {i < 3 && <ArrowRight className="h-3 w-3 text-[#D4D4D0]" />}
+            </div>
+          ))}
+        </div>
+
+        {/* 특징 */}
+        <div className="mt-4 flex items-center gap-3">
+          <div className="flex items-center gap-1 text-[10px] text-[#787774]">
+            <Eye className="h-3 w-3 text-[#B4B4B0]" />
+            실시간 프리뷰
+          </div>
+          <div className="flex items-center gap-1 text-[10px] text-[#787774]">
+            <Zap className="h-3 w-3 text-[#B4B4B0]" />
+            Hot Reload
+          </div>
+          <div className="flex items-center gap-1 text-[10px] text-[#787774]">
+            <HardDrive className="h-3 w-3 text-[#B4B4B0]" />
+            로컬 파일
+          </div>
+        </div>
+      </div>
+
+      <div className="px-4 pb-4">
+        <button
+          onClick={handleOpen}
+          className="group/btn flex w-full items-center justify-center gap-2 rounded-xl bg-[#1A1A1A] px-4 py-3 text-[13px] font-semibold text-white transition-all hover:bg-[#24282E] active:scale-[0.98]"
+        >
+          <FolderOpen className="h-4 w-4 transition-transform group-hover/btn:scale-110" />
+          프로젝트 폴더 열기
+          <ArrowRight className="h-3.5 w-3.5 text-[#787774] transition-transform group-hover/btn:translate-x-0.5" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const { user, loading, fetchUser, logout } = useAuthStore();
   const greeting = useGreeting();
+  const platform = usePlatform();
 
   useEffect(() => {
     fetchUser();
@@ -439,8 +511,8 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* 카드 2: GitHub 프로젝트 수정 (WebContainer) */}
-          <GitHubProjectCard />
+          {/* 카드 2: 데스크톱은 로컬 폴더 열기, 웹은 GitHub WebContainer */}
+          {platform === "desktop" ? <DesktopProjectCard /> : <GitHubProjectCard />}
         </div>
 
         {/* 내 프로젝트 */}
