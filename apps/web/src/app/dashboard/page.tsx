@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Figma,
   Github,
@@ -24,8 +25,13 @@ import {
   ArrowUpRight,
   Shield,
   Eye,
+  ChevronDown,
+  Search,
+  Loader2,
+  Globe,
 } from "lucide-react";
 import { useAuthStore } from "@/lib/store/auth-store";
+import { trpc } from "@/lib/trpc/client";
 
 function DashboardSkeleton() {
   return (
@@ -97,6 +103,165 @@ function useGreeting() {
   }, []);
 
   return greeting;
+}
+
+function GitHubProjectCard() {
+  const router = useRouter();
+  const [selectedRepo, setSelectedRepo] = useState<string | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const { data: repos, isLoading } = trpc.git.listRepos.useQuery(undefined, {
+    staleTime: 5 * 60_000,
+  });
+
+  const filtered = repos?.filter((r) =>
+    r.fullName.toLowerCase().includes(search.toLowerCase()),
+  );
+
+  const selected = repos?.find((r) => r.fullName === selectedRepo);
+
+  const handleOpen = () => {
+    if (!selected) return;
+    router.push(
+      `/project/sandbox?owner=${selected.owner}&repo=${selected.name}`,
+    );
+  };
+
+  return (
+    <div className="group relative flex flex-col overflow-hidden rounded-2xl bg-[#F7F7F5] transition-all duration-300 hover:bg-[#F0F0EE]">
+      <div className="relative flex-1 p-6">
+        <h3 className="text-[24px] font-bold tracking-[-0.02em] text-[#1A1A1A]">
+          GitHub 프로젝트 수정
+        </h3>
+        <p className="mt-1.5 text-[13px] leading-relaxed text-[#787774]">
+          GitHub 레포를 브라우저에서 바로 수정해요.
+          <br />
+          설치 없이 AI 코드 수정 + 실시간 프리뷰.
+        </p>
+
+        {/* 비주얼 플로우 */}
+        <div className="mt-6 flex items-center gap-2 text-[11px]">
+          {[
+            { icon: Github, label: "레포", color: "#787774" },
+            { icon: Globe, label: "브라우저", color: "#787774" },
+            { icon: Zap, label: "AI", color: "#787774" },
+            { icon: Eye, label: "프리뷰", color: "#787774" },
+          ].map((step, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 rounded-lg bg-white/70 px-2.5 py-1.5">
+                <step.icon className="h-3 w-3" style={{ color: step.color }} />
+                <span className="text-[#787774]">{step.label}</span>
+              </div>
+              {i < 3 && <ArrowRight className="h-3 w-3 text-[#D4D4D0]" />}
+            </div>
+          ))}
+        </div>
+
+        {/* 레포 선택 드롭다운 */}
+        <div className="relative mt-5">
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="flex w-full items-center gap-2 rounded-xl bg-white/80 px-4 py-3 text-left transition-all hover:bg-white"
+          >
+            <Github className="h-4 w-4 text-[#787774]" />
+            <span className={`flex-1 text-[13px] ${selected ? "font-medium text-[#1A1A1A]" : "text-[#B4B4B0]"}`}>
+              {selected ? selected.fullName : "레포지토리 선택..."}
+            </span>
+            {isLoading ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-[#B4B4B0]" />
+            ) : (
+              <ChevronDown className={`h-3.5 w-3.5 text-[#B4B4B0] transition-transform ${isOpen ? "rotate-180" : ""}`} />
+            )}
+          </button>
+
+          {isOpen && (
+            <div className="absolute inset-x-0 top-full z-20 mt-1 max-h-60 overflow-hidden rounded-xl bg-white shadow-lg ring-1 ring-black/5">
+              {/* 검색 */}
+              <div className="flex items-center gap-2 border-b border-[#EEEEEC] px-3 py-2">
+                <Search className="h-3.5 w-3.5 text-[#B4B4B0]" />
+                <input
+                  type="text"
+                  placeholder="레포 검색..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="flex-1 bg-transparent text-[12px] text-[#1A1A1A] placeholder:text-[#B4B4B0] focus:outline-none"
+                  autoFocus
+                />
+              </div>
+              {/* 목록 */}
+              <div className="max-h-48 overflow-y-auto">
+                {filtered?.length === 0 && (
+                  <p className="px-3 py-4 text-center text-[12px] text-[#B4B4B0]">
+                    레포를 찾을 수 없어요
+                  </p>
+                )}
+                {filtered?.map((repo) => (
+                  <button
+                    key={repo.fullName}
+                    onClick={() => {
+                      setSelectedRepo(repo.fullName);
+                      setIsOpen(false);
+                      setSearch("");
+                    }}
+                    className={`flex w-full items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-[#F7F7F5] ${
+                      selectedRepo === repo.fullName ? "bg-[#F7F7F5]" : ""
+                    }`}
+                  >
+                    <Github className="h-3.5 w-3.5 text-[#787774]" />
+                    <span className="flex-1 truncate text-[12px] text-[#1A1A1A]">
+                      {repo.fullName}
+                    </span>
+                    {repo.isPrivate && (
+                      <span className="rounded bg-[#F7F7F5] px-1.5 py-0.5 text-[10px] text-[#B4B4B0]">
+                        private
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 특징 */}
+        <div className="mt-4 flex items-center gap-3">
+          <div className="flex items-center gap-1 text-[10px] text-[#787774]">
+            <Eye className="h-3 w-3 text-[#B4B4B0]" />
+            실시간 프리뷰
+          </div>
+          <div className="flex items-center gap-1 text-[10px] text-[#787774]">
+            <Zap className="h-3 w-3 text-[#B4B4B0]" />
+            Hot Reload
+          </div>
+          <div className="flex items-center gap-1 text-[10px] text-[#787774]">
+            <GitBranch className="h-3 w-3 text-[#B4B4B0]" />
+            Git Push
+          </div>
+        </div>
+      </div>
+
+      <div className="px-4 pb-4">
+        <button
+          onClick={handleOpen}
+          disabled={!selected}
+          className="group/btn flex w-full items-center justify-center gap-2 rounded-xl bg-[#1A1A1A] px-4 py-3 text-[13px] font-semibold text-white transition-all hover:bg-[#24282E] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <Rocket className="h-4 w-4 transition-transform group-hover/btn:-rotate-12" />
+          프로젝트 열기
+          <ArrowRight className="h-3.5 w-3.5 text-[#787774] transition-transform group-hover/btn:translate-x-0.5" />
+        </button>
+        {/* 로컬 모드 링크 (고급) */}
+        <Link
+          href="/project/local"
+          className="mt-2 flex items-center justify-center gap-1.5 text-[11px] text-[#B4B4B0] transition-colors hover:text-[#787774]"
+        >
+          <Terminal className="h-3 w-3" />
+          터미널 에이전트로 로컬 연결
+        </Link>
+      </div>
+    </div>
+  );
 }
 
 export default function DashboardPage() {
@@ -273,55 +438,8 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* 카드 2: 로컬 프로젝트 */}
-          <div className="group relative flex flex-col overflow-hidden rounded-2xl bg-[#F7F7F5] transition-all duration-300 hover:bg-[#F0F0EE]">
-            <div className="relative flex-1 p-6">
-              <h3 className="text-[24px] font-bold tracking-[-0.02em] text-[#1A1A1A]">로컬 프로젝트 수정</h3>
-              <p className="mt-1.5 text-[13px] leading-relaxed text-[#787774]">
-                내 컴퓨터의 코드를 AI가 직접 수정해요.
-              </p>
-
-              {/* 2단계 안내 */}
-              <div className="mt-5 space-y-3">
-                {/* Step 1: 터미널 */}
-                <div className="rounded-xl bg-white/80 p-3">
-                  <div className="mb-2 flex items-center gap-2">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#1A1A1A] text-[10px] font-bold text-white">1</span>
-                    <span className="text-[12px] font-medium text-[#1A1A1A]">터미널에서 에이전트 실행</span>
-                  </div>
-                  <CopyCommand command="npx figma-code-bridge" />
-                </div>
-
-                {/* Step 2: 브라우저 */}
-                <div className="rounded-xl bg-white/80 p-3">
-                  <div className="mb-2 flex items-center gap-2">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#1A1A1A] text-[10px] font-bold text-white">2</span>
-                    <span className="text-[12px] font-medium text-[#1A1A1A]">여기서 연결하고 AI로 수정</span>
-                  </div>
-                  <Link
-                    href="/project/local"
-                    className="group/btn flex w-full items-center justify-center gap-2 rounded-lg bg-[#1A1A1A] px-4 py-2.5 text-[12px] font-semibold text-white transition-all hover:bg-[#24282E] active:scale-[0.98]"
-                  >
-                    <Rocket className="h-3.5 w-3.5 transition-transform group-hover/btn:-rotate-12" />
-                    로컬 프로젝트 열기
-                    <ArrowRight className="h-3.5 w-3.5 text-[#787774] transition-transform group-hover/btn:translate-x-0.5" />
-                  </Link>
-                </div>
-              </div>
-
-              {/* 특징 */}
-              <div className="mt-4 flex items-center gap-3">
-                <div className="flex items-center gap-1 text-[10px] text-[#787774]">
-                  <Eye className="h-3 w-3 text-[#B4B4B0]" />
-                  실시간 프리뷰
-                </div>
-                <div className="flex items-center gap-1 text-[10px] text-[#787774]">
-                  <Zap className="h-3 w-3 text-[#B4B4B0]" />
-                  Hot Reload
-                </div>
-              </div>
-            </div>
-          </div>
+          {/* 카드 2: GitHub 프로젝트 수정 (WebContainer) */}
+          <GitHubProjectCard />
         </div>
 
         {/* 내 프로젝트 */}

@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { WorkspaceLayout } from "@/components/layout/WorkspaceLayout";
 import { LocalPanel } from "@/components/workspace/LocalPanel";
@@ -10,6 +10,7 @@ import { useAgentConnection } from "@/lib/hooks/useAgentConnection";
 import { useAgentStore } from "@/lib/store/agent-store";
 
 function LocalProjectContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const agentUrl = searchParams.get("agent") ?? "ws://localhost:3100";
 
@@ -28,6 +29,7 @@ function LocalProjectContent() {
   return (
     <WorkspaceLayout
       projectName={agent.projectName ?? "로컬 프로젝트"}
+      onBack={() => router.push("/dashboard")}
       headerActions={
         <div className="flex items-center gap-2">
           <div

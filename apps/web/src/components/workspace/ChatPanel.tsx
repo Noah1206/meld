@@ -19,13 +19,20 @@ interface ChatPanelProps {
 
 export function ChatPanel({ projectId, githubOwner, githubRepo, mode = "cloud" }: ChatPanelProps) {
   const isLocal = mode === "local";
+  const isSandbox = projectId === "sandbox";
 
   const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = isLocal
-    ? [
-        { id: "chat", label: "Chat", icon: <MessageSquare className="h-3.5 w-3.5" /> },
-        { id: "diff", label: "Diff", icon: <Code className="h-3.5 w-3.5" /> },
-        { id: "preview", label: "Preview", icon: <Eye className="h-3.5 w-3.5" /> },
-      ]
+    ? isSandbox
+      ? [
+          { id: "chat", label: "Chat", icon: <MessageSquare className="h-3.5 w-3.5" /> },
+          { id: "diff", label: "Diff", icon: <Code className="h-3.5 w-3.5" /> },
+          { id: "git", label: "Git", icon: <GitBranch className="h-3.5 w-3.5" /> },
+        ]
+      : [
+          { id: "chat", label: "Chat", icon: <MessageSquare className="h-3.5 w-3.5" /> },
+          { id: "diff", label: "Diff", icon: <Code className="h-3.5 w-3.5" /> },
+          { id: "preview", label: "Preview", icon: <Eye className="h-3.5 w-3.5" /> },
+        ]
     : [
         { id: "chat", label: "Chat", icon: <MessageSquare className="h-3.5 w-3.5" /> },
         { id: "properties", label: "속성", icon: <Info className="h-3.5 w-3.5" /> },
@@ -81,7 +88,7 @@ export function ChatPanel({ projectId, githubOwner, githubRepo, mode = "cloud" }
           </div>
         )}
 
-        {activeTab === "git" && !isLocal && (
+        {activeTab === "git" && (!isLocal || isSandbox) && (
           <div className="flex-1 overflow-y-auto">
             <CommitDialog
               projectId={projectId}
@@ -92,7 +99,7 @@ export function ChatPanel({ projectId, githubOwner, githubRepo, mode = "cloud" }
           </div>
         )}
 
-        {activeTab === "preview" && isLocal && (
+        {activeTab === "preview" && isLocal && !isSandbox && (
           <div className="flex-1 overflow-y-auto p-4">
             <p className="text-center text-[12px] text-[#B4B4B0]">
               좌측 패널에서 프리뷰를 확인하세요

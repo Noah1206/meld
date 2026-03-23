@@ -18,6 +18,19 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // WebContainer는 SharedArrayBuffer가 필요 → COOP/COEP 헤더
+  // sandbox 경로에만 적용 (Figma CDN 이미지 깨짐 방지)
+  async headers() {
+    return [
+      {
+        source: "/project/sandbox/:path*",
+        headers: [
+          { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+          { key: "Cross-Origin-Embedder-Policy", value: "require-corp" },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;
