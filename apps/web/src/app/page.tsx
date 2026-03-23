@@ -232,6 +232,91 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ===== 호환성 ===== */}
+      <section className="relative z-10 bg-[#FAFAFA]">
+        <div className="mx-auto max-w-[1440px] px-6 lg:px-16 py-24 lg:py-32">
+          <div className="text-center">
+            <p className="mb-2 font-mono text-[12px] tracking-wider text-[#CCC]">COMPATIBLE WITH</p>
+            <h2 className="text-[32px] font-bold tracking-[-0.03em] text-[#1A1A1A] sm:text-[40px] lg:text-[48px]">
+              어떤 AI든, 어떤 도구든
+            </h2>
+            <p className="mx-auto mt-3 max-w-lg text-[15px] text-[#999]">
+              하나의 워크스페이스에서 AI 모델, 디자인 툴, 코드 저장소를 자유롭게 연결하세요
+            </p>
+          </div>
+
+          {/* AI 모델 독 */}
+          <div className="mt-16 flex flex-col items-center gap-10">
+            <div>
+              <p className="mb-4 text-center text-[12px] font-medium text-[#B4B4B0]">AI Models</p>
+              <div className="inline-flex items-center gap-1 rounded-2xl bg-white p-2 ring-1 ring-black/[0.04]">
+                {[
+                  { name: "Claude", abbr: "C", bg: "#D4A574" },
+                  { name: "GPT-4o", abbr: "G", bg: "#74A89C" },
+                  { name: "Gemini", abbr: "G", bg: "#7B8ECC" },
+                ].map((model) => (
+                  <div key={model.name} className="group relative flex flex-col items-center">
+                    <div
+                      className="flex h-14 w-14 items-center justify-center rounded-xl text-[18px] font-bold text-white transition-transform hover:scale-110"
+                      style={{ backgroundColor: model.bg }}
+                    >
+                      {model.abbr}
+                    </div>
+                    <span className="mt-1.5 text-[10px] text-[#999]">{model.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-4 text-center text-[12px] font-medium text-[#B4B4B0]">Integrations</p>
+              <div className="inline-flex items-center gap-1 rounded-2xl bg-white p-2 ring-1 ring-black/[0.04]">
+                {[
+                  { name: "Figma", abbr: "F", bg: "#1A1A1A" },
+                  { name: "GitHub", abbr: "GH", bg: "#1A1A1A" },
+                  { name: "VS Code", abbr: "VS", bg: "#1A1A1A" },
+                  { name: "Vercel", abbr: "V", bg: "#1A1A1A" },
+                  { name: "Supabase", abbr: "S", bg: "#1A1A1A" },
+                ].map((tool) => (
+                  <div key={tool.name} className="group relative flex flex-col items-center">
+                    <div
+                      className="flex h-14 w-14 items-center justify-center rounded-xl text-[14px] font-bold text-white transition-transform hover:scale-110"
+                      style={{ backgroundColor: tool.bg }}
+                    >
+                      {tool.abbr}
+                    </div>
+                    <span className="mt-1.5 text-[10px] text-[#999]">{tool.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* 호환성 설명 */}
+          <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              {
+                title: "AI 모델을 자유롭게 선택",
+                desc: "Claude, GPT-4o, Gemini 중 원하는 모델을 골라 사용하세요. 작업에 따라 언제든 전환할 수 있습니다.",
+              },
+              {
+                title: "내 프로젝트에 바로 연결",
+                desc: "GitHub 레포를 연결하면 기존 코드를 그대로 가져옵니다. 새로 설정할 것이 없습니다.",
+              },
+              {
+                title: "어떤 프레임워크든 지원",
+                desc: "Next.js, React, Vue, Angular, Svelte, Vite, Astro — 프레임워크를 자동으로 감지하고 맞춰서 수정합니다.",
+              },
+            ].map((item) => (
+              <div key={item.title} className="rounded-xl bg-white p-6 ring-1 ring-black/[0.04]">
+                <h3 className="text-[15px] font-semibold text-[#1A1A1A]">{item.title}</h3>
+                <p className="mt-2 text-[13px] leading-relaxed text-[#999]">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ===== "이렇게 동작합니다" ===== */}
       <section className="relative z-10 bg-[#FAFAFA]">
         <div className="mx-auto max-w-[1440px] px-6 lg:px-16 py-24 lg:py-32">
@@ -432,91 +517,6 @@ export default function HomePage() {
                 </div>
                 <div className="mt-1 text-[13px] font-medium text-[#1A1A1A]">{stat.label}</div>
                 <div className="mt-0.5 text-[11px] text-[#CCC]">{stat.sub}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ===== 호환성 ===== */}
-      <section className="relative z-10 bg-[#FAFAFA]">
-        <div className="mx-auto max-w-[1440px] px-6 lg:px-16 py-24 lg:py-32">
-          <div className="text-center">
-            <p className="mb-2 font-mono text-[12px] tracking-wider text-[#CCC]">COMPATIBLE WITH</p>
-            <h2 className="text-[32px] font-bold tracking-[-0.03em] text-[#1A1A1A] sm:text-[40px] lg:text-[48px]">
-              어떤 AI든, 어떤 도구든
-            </h2>
-            <p className="mx-auto mt-3 max-w-lg text-[15px] text-[#999]">
-              하나의 워크스페이스에서 AI 모델, 디자인 툴, 코드 저장소를 자유롭게 연결하세요
-            </p>
-          </div>
-
-          {/* AI 모델 독 */}
-          <div className="mt-16 flex flex-col items-center gap-10">
-            <div>
-              <p className="mb-4 text-center text-[12px] font-medium text-[#B4B4B0]">AI Models</p>
-              <div className="inline-flex items-center gap-1 rounded-2xl bg-[#F5F5F5] p-2 ring-1 ring-black/[0.04]">
-                {[
-                  { name: "Claude", abbr: "C", bg: "#D4A574" },
-                  { name: "GPT-4o", abbr: "G", bg: "#74A89C" },
-                  { name: "Gemini", abbr: "G", bg: "#7B8ECC" },
-                ].map((model) => (
-                  <div key={model.name} className="group relative flex flex-col items-center">
-                    <div
-                      className="flex h-14 w-14 items-center justify-center rounded-xl text-[18px] font-bold text-white transition-transform hover:scale-110"
-                      style={{ backgroundColor: model.bg }}
-                    >
-                      {model.abbr}
-                    </div>
-                    <span className="mt-1.5 text-[10px] text-[#999]">{model.name}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <p className="mb-4 text-center text-[12px] font-medium text-[#B4B4B0]">Integrations</p>
-              <div className="inline-flex items-center gap-1 rounded-2xl bg-[#F5F5F5] p-2 ring-1 ring-black/[0.04]">
-                {[
-                  { name: "Figma", abbr: "F", bg: "#1A1A1A" },
-                  { name: "GitHub", abbr: "GH", bg: "#1A1A1A" },
-                  { name: "VS Code", abbr: "VS", bg: "#1A1A1A" },
-                  { name: "Vercel", abbr: "V", bg: "#1A1A1A" },
-                  { name: "Supabase", abbr: "S", bg: "#1A1A1A" },
-                ].map((tool) => (
-                  <div key={tool.name} className="group relative flex flex-col items-center">
-                    <div
-                      className="flex h-14 w-14 items-center justify-center rounded-xl text-[14px] font-bold text-white transition-transform hover:scale-110"
-                      style={{ backgroundColor: tool.bg }}
-                    >
-                      {tool.abbr}
-                    </div>
-                    <span className="mt-1.5 text-[10px] text-[#999]">{tool.name}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* 호환성 설명 */}
-          <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {[
-              {
-                title: "AI 모델을 자유롭게 선택",
-                desc: "Claude, GPT-4o, Gemini 중 원하는 모델을 골라 사용하세요. 작업에 따라 언제든 전환할 수 있습니다.",
-              },
-              {
-                title: "내 프로젝트에 바로 연결",
-                desc: "GitHub 레포를 연결하면 기존 코드를 그대로 가져옵니다. 새로 설정할 것이 없습니다.",
-              },
-              {
-                title: "어떤 프레임워크든 지원",
-                desc: "Next.js, React, Vue, Angular, Svelte, Vite, Astro — 프레임워크를 자동으로 감지하고 맞춰서 수정합니다.",
-              },
-            ].map((item) => (
-              <div key={item.title} className="rounded-xl bg-white p-6 ring-1 ring-black/[0.04]">
-                <h3 className="text-[15px] font-semibold text-[#1A1A1A]">{item.title}</h3>
-                <p className="mt-2 text-[13px] leading-relaxed text-[#999]">{item.desc}</p>
               </div>
             ))}
           </div>
