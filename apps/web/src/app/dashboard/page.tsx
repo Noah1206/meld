@@ -65,10 +65,10 @@ function CopyCommand({ command }: { command: string }) {
       onClick={handleCopy}
       className="group flex w-full items-center gap-2.5 rounded-xl bg-[#1A1A1A] px-4 py-3 text-left font-mono text-[12px] transition-all hover:bg-[#252525] active:scale-[0.99]"
     >
-      <Terminal className="h-3.5 w-3.5 text-[#555] transition-colors group-hover:text-[#34D399]" />
-      <span className="flex-1 text-[#A7F3D0]">{command}</span>
+      <Terminal className="h-3.5 w-3.5 text-[#555] transition-colors group-hover:text-[#999]" />
+      <span className="flex-1 text-[#999]">{command}</span>
       {copied ? (
-        <span className="flex items-center gap-1 text-[10px] text-[#34D399]">
+        <span className="flex items-center gap-1 text-[10px] text-[#999]">
           <Check className="h-3 w-3" />
           복사됨!
         </span>
@@ -157,14 +157,14 @@ export default function DashboardPage() {
 
           {/* 연결 상태 칩 */}
           <div className="mt-5 flex items-center gap-2.5">
-            <div className="flex items-center gap-1.5 rounded-full bg-[#ECFDF5] px-3 py-1">
-              <Github className="h-3 w-3 text-[#34D399]" />
-              <span className="text-[11px] font-medium text-[#10B981]">GitHub</span>
+            <div className="flex items-center gap-1.5 rounded-full bg-[#F7F7F5] px-3 py-1">
+              <Github className="h-3 w-3 text-[#787774]" />
+              <span className="text-[11px] font-medium text-[#787774]">GitHub</span>
             </div>
             {user?.hasFigmaToken ? (
-              <div className="flex items-center gap-1.5 rounded-full bg-[#ECFDF5] px-3 py-1">
-                <Figma className="h-3 w-3 text-[#34D399]" />
-                <span className="text-[11px] font-medium text-[#10B981]">Figma</span>
+              <div className="flex items-center gap-1.5 rounded-full bg-[#F7F7F5] px-3 py-1">
+                <Figma className="h-3 w-3 text-[#787774]" />
+                <span className="text-[11px] font-medium text-[#787774]">Figma</span>
               </div>
             ) : (
               <a
@@ -206,8 +206,6 @@ export default function DashboardPage() {
         <div className="animate-fade-in-up animation-delay-150 grid gap-5 sm:grid-cols-2">
           {/* 카드 1: Figma 디자인 수정 */}
           <div className="group relative flex flex-col overflow-hidden rounded-2xl bg-[#F7F7F5] transition-all duration-300 hover:bg-[#F0F0EE]">
-            <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br from-[#C4B5FD]/20 to-[#818CF8]/10 opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100" />
-
             <div className="relative flex-1 p-6">
               <h3 className="text-[24px] font-bold tracking-[-0.02em] text-[#1A1A1A]">Figma 디자인 수정</h3>
               <p className="mt-1.5 text-[13px] leading-relaxed text-[#787774]">
@@ -220,9 +218,9 @@ export default function DashboardPage() {
               <div className="mt-6 flex items-center gap-2 text-[11px]">
                 {[
                   { icon: Figma, label: "URL", color: "#787774" },
-                  { icon: MousePointerClick, label: "선택", color: "#7C3AED" },
-                  { icon: Zap, label: "AI", color: "#F59E0B" },
-                  { icon: GitBranch, label: "Push", color: "#34D399" },
+                  { icon: MousePointerClick, label: "선택", color: "#787774" },
+                  { icon: Zap, label: "AI", color: "#787774" },
+                  { icon: GitBranch, label: "Push", color: "#787774" },
                 ].map((step, i) => (
                   <div key={i} className="flex items-center gap-2">
                     <div className="flex items-center gap-1.5 rounded-lg bg-white/70 px-2.5 py-1.5">
@@ -247,16 +245,16 @@ export default function DashboardPage() {
               {user?.hasFigmaToken ? (
                 <Link
                   href="/project/new"
-                  className="group/btn flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-[13px] font-semibold text-[#7C3AED] transition-all hover:bg-[#FAFAFA] active:scale-[0.98]"
+                  className="group/btn flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-[13px] font-semibold text-[#1A1A1A] transition-all hover:bg-[#FAFAFA] active:scale-[0.98]"
                 >
                   <Sparkles className="h-4 w-4 transition-transform group-hover/btn:rotate-12" />
                   새 프로젝트 만들기
-                  <ArrowRight className="h-3.5 w-3.5 text-[#C4B5FD] transition-transform group-hover/btn:translate-x-0.5" />
+                  <ArrowRight className="h-3.5 w-3.5 text-[#B4B4B0] transition-transform group-hover/btn:translate-x-0.5" />
                 </Link>
               ) : (
                 <a
                   href="/api/auth/figma"
-                  className="group/btn flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-[13px] font-medium text-[#787774] transition-all hover:bg-[#FAFAFA] hover:text-[#7C3AED] active:scale-[0.98]"
+                  className="group/btn flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-[13px] font-medium text-[#787774] transition-all hover:bg-[#FAFAFA] hover:text-[#1A1A1A] active:scale-[0.98]"
                 >
                   <Figma className="h-3.5 w-3.5" />
                   먼저 Figma를 연결하세요
@@ -268,8 +266,6 @@ export default function DashboardPage() {
 
           {/* 카드 2: 로컬 프로젝트 */}
           <div className="group relative flex flex-col overflow-hidden rounded-2xl bg-[#F7F7F5] transition-all duration-300 hover:bg-[#F0F0EE]">
-            <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br from-[#A7F3D0]/20 to-[#6EE7B7]/10 opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100" />
-
             <div className="relative flex-1 p-6">
               <h3 className="text-[24px] font-bold tracking-[-0.02em] text-[#1A1A1A]">로컬 프로젝트 수정</h3>
               <p className="mt-1.5 text-[13px] leading-relaxed text-[#787774]">
@@ -282,9 +278,9 @@ export default function DashboardPage() {
               <div className="mt-6 flex items-center gap-2 text-[11px]">
                 {[
                   { icon: Terminal, label: "npx", color: "#787774" },
-                  { icon: FolderOpen, label: "파일", color: "#059669" },
-                  { icon: Zap, label: "AI", color: "#F59E0B" },
-                  { icon: Check, label: "반영", color: "#34D399" },
+                  { icon: FolderOpen, label: "파일", color: "#787774" },
+                  { icon: Zap, label: "AI", color: "#787774" },
+                  { icon: Check, label: "반영", color: "#787774" },
                 ].map((step, i) => (
                   <div key={i} className="flex items-center gap-2">
                     <div className="flex items-center gap-1.5 rounded-lg bg-white/70 px-2.5 py-1.5">
@@ -313,11 +309,11 @@ export default function DashboardPage() {
               <CopyCommand command="npx figma-code-bridge" />
               <Link
                 href="/project/local"
-                className="group/btn flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-[13px] font-semibold text-[#059669] transition-all hover:bg-[#FAFAFA] active:scale-[0.98]"
+                className="group/btn flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-[13px] font-semibold text-[#1A1A1A] transition-all hover:bg-[#FAFAFA] active:scale-[0.98]"
               >
                 <Rocket className="h-4 w-4 transition-transform group-hover/btn:-rotate-12" />
                 로컬 프로젝트 열기
-                <ArrowRight className="h-3.5 w-3.5 text-[#A7F3D0] transition-transform group-hover/btn:translate-x-0.5" />
+                <ArrowRight className="h-3.5 w-3.5 text-[#B4B4B0] transition-transform group-hover/btn:translate-x-0.5" />
               </Link>
             </div>
           </div>
@@ -353,8 +349,8 @@ export default function DashboardPage() {
           </div>
           <div className="mt-4 space-y-1">
             {[
-              { icon: Github, text: "GitHub 계정이 연결되었습니다", time: "방금 전", color: "#34D399" },
-              { icon: Code2, text: "FigmaCodeBridge에 오신 것을 환영합니다!", time: "방금 전", color: "#7C3AED" },
+              { icon: Github, text: "GitHub 계정이 연결되었습니다", time: "방금 전", color: "#787774" },
+              { icon: Code2, text: "FigmaCodeBridge에 오신 것을 환영합니다!", time: "방금 전", color: "#787774" },
             ].map((activity, i) => (
               <div key={i} className="flex items-center gap-3 rounded-xl px-4 py-3 transition-colors hover:bg-[#F7F7F5]">
                 <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-[#F7F7F5]">
@@ -380,15 +376,15 @@ export default function DashboardPage() {
               title: "문서",
               desc: "시작 가이드와 API 레퍼런스",
               href: "#docs",
-              color: "#3B82F6",
-              bg: "#EFF6FF",
+              color: "#787774",
+              bg: "#F7F7F5",
             },
             {
               icon: Github,
               title: "GitHub",
               desc: "소스 코드와 이슈 트래커",
               href: "#github",
-              color: "#1A1A1A",
+              color: "#787774",
               bg: "#F7F7F5",
             },
             {
@@ -396,8 +392,8 @@ export default function DashboardPage() {
               title: "커뮤니티",
               desc: "디스코드에서 질문하기",
               href: "#community",
-              color: "#5865F2",
-              bg: "#EEF2FF",
+              color: "#787774",
+              bg: "#F7F7F5",
             },
           ].map((resource) => (
             <Link
