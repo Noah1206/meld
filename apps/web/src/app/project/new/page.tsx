@@ -141,7 +141,7 @@ export default function NewProjectPage() {
               placeholder="예: 랜딩 페이지 리디자인"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-xl bg-[#F7F7F5] px-4 py-3 text-[14px] text-[#1A1A1A] placeholder:text-[#B4B4B0] focus:bg-[#EEEEEC] focus:outline-none transition-colors"
+              className="w-full rounded-xl bg-[#F7F7F5] px-4 py-3 text-[14px] text-[#1A1A1A] ring-1 ring-black/[0.04] placeholder:text-[#B4B4B0] transition-colors focus:bg-[#EEEEEC] focus:ring-black/[0.08] focus:outline-none"
             />
           </div>
 
@@ -155,7 +155,7 @@ export default function NewProjectPage() {
             </p>
 
             {figmaFileName ? (
-              <div className="animate-fade-in flex items-center gap-2.5 rounded-xl bg-[#F7F7F5] px-4 py-3">
+              <div className="animate-fade-in flex items-center gap-2.5 rounded-xl bg-[#F7F7F5] px-4 py-3 ring-1 ring-black/[0.04]">
                 <Check className="h-4 w-4 flex-shrink-0 text-[#787774]" />
                 <span className="flex-1 truncate text-[14px] font-medium text-[#1A1A1A]">
                   {figmaFileName}
@@ -179,7 +179,7 @@ export default function NewProjectPage() {
                       setFigmaError(null);
                     }}
                     onKeyDown={(e) => e.key === "Enter" && handleFigmaValidate()}
-                    className="flex-1 rounded-xl bg-[#F7F7F5] px-4 py-3 text-[14px] text-[#1A1A1A] placeholder:text-[#B4B4B0] focus:bg-[#EEEEEC] focus:outline-none transition-colors"
+                    className="flex-1 rounded-xl bg-[#F7F7F5] px-4 py-3 text-[14px] text-[#1A1A1A] ring-1 ring-black/[0.04] placeholder:text-[#B4B4B0] transition-colors focus:bg-[#EEEEEC] focus:ring-black/[0.08] focus:outline-none"
                     disabled={figmaValidating}
                   />
                   <button
@@ -197,7 +197,7 @@ export default function NewProjectPage() {
                 </div>
 
                 {/* 가이드 */}
-                <div className="rounded-xl bg-[#F7F7F5] px-4 py-3.5">
+                <div className="rounded-xl bg-[#F7F7F5] px-4 py-3.5 ring-1 ring-black/[0.04]">
                   <p className="mb-2.5 text-[12px] font-semibold text-[#1A1A1A]">링크 가져오는 방법</p>
                   <ol className="space-y-2 text-[12px] text-[#787774]">
                     <li className="flex gap-2">
@@ -239,7 +239,7 @@ export default function NewProjectPage() {
             </div>
 
             {selectedRepo && (
-              <div className="animate-fade-in flex items-center gap-2.5 rounded-xl bg-[#F7F7F5] px-4 py-3">
+              <div className="animate-fade-in flex items-center gap-2.5 rounded-xl bg-[#F7F7F5] px-4 py-3 ring-1 ring-black/[0.04]">
                 <Check className="h-4 w-4 flex-shrink-0 text-[#787774]" />
                 <span className="text-[14px] font-medium text-[#1A1A1A]">
                   {selectedRepo.owner}/{selectedRepo.name}
@@ -248,7 +248,7 @@ export default function NewProjectPage() {
             )}
 
             {!selectedRepo && (
-              <div className="overflow-hidden rounded-xl bg-[#F7F7F5]">
+              <div className="rounded-xl bg-[#F7F7F5] ring-1 ring-black/[0.04]">
                 {/* 검색 */}
                 <div className="flex items-center gap-2.5 px-4 py-3">
                   <Search className="h-4 w-4 flex-shrink-0 text-[#B4B4B0]" />
@@ -262,10 +262,10 @@ export default function NewProjectPage() {
                 </div>
 
                 {/* 구분선 */}
-                <div className="mx-4 h-px bg-[#EEEEEC]" />
+                <div className="mx-4 h-px bg-[#E0E0DC]" />
 
                 {/* 리스트 */}
-                <div className="max-h-56 overflow-y-auto">
+                <div className="max-h-72 overflow-y-auto overscroll-contain py-1">
                   {reposQuery.isLoading ? (
                     <div className="flex items-center justify-center gap-2 py-10">
                       <Loader2 className="h-4 w-4 animate-spin text-[#787774]" />

@@ -129,7 +129,7 @@ function GitHubProjectCard() {
   };
 
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-2xl bg-[#F7F7F5] transition-all duration-300 hover:bg-[#F0F0EE]">
+    <div className="group relative flex flex-col overflow-hidden rounded-2xl bg-[#F7F7F5] ring-1 ring-black/[0.04] transition-all duration-300 hover:bg-[#F0F0EE] hover:ring-black/[0.06]">
       <div className="relative flex-1 p-6">
         <h3 className="text-[24px] font-bold tracking-[-0.02em] text-[#1A1A1A]">
           GitHub 프로젝트 수정
@@ -162,7 +162,7 @@ function GitHubProjectCard() {
         <div className="relative mt-5">
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="flex w-full items-center gap-2 rounded-xl bg-white/80 px-4 py-3 text-left transition-all hover:bg-white"
+            className="flex w-full items-center gap-2 rounded-xl bg-white px-4 py-3 text-left ring-1 ring-black/[0.04] transition-all hover:bg-white hover:ring-black/[0.08]"
           >
             <Github className="h-4 w-4 text-[#787774]" />
             <span className={`flex-1 text-[13px] ${selected ? "font-medium text-[#1A1A1A]" : "text-[#B4B4B0]"}`}>
@@ -176,9 +176,9 @@ function GitHubProjectCard() {
           </button>
 
           {isOpen && (
-            <div className="absolute inset-x-0 top-full z-20 mt-1 max-h-60 overflow-hidden rounded-xl bg-white shadow-lg ring-1 ring-black/5">
+            <div className="absolute inset-x-0 top-full z-20 mt-1 rounded-xl bg-white shadow-[0_4px_24px_rgba(0,0,0,0.08)] ring-1 ring-black/[0.06]">
               {/* 검색 */}
-              <div className="flex items-center gap-2 border-b border-[#EEEEEC] px-3 py-2">
+              <div className="flex items-center gap-2 px-3 py-2.5">
                 <Search className="h-3.5 w-3.5 text-[#B4B4B0]" />
                 <input
                   type="text"
@@ -189,8 +189,9 @@ function GitHubProjectCard() {
                   autoFocus
                 />
               </div>
+              <div className="mx-3 h-px bg-[#EEEEEC]" />
               {/* 목록 */}
-              <div className="max-h-48 overflow-y-auto">
+              <div className="max-h-64 overflow-y-auto overscroll-contain py-1">
                 {filtered?.length === 0 && (
                   <p className="px-3 py-4 text-center text-[12px] text-[#B4B4B0]">
                     레포를 찾을 수 없어요
@@ -379,7 +380,7 @@ export default function DashboardPage() {
         {/* 메인 카드 */}
         <div className="animate-fade-in-up animation-delay-150 grid gap-5 sm:grid-cols-2">
           {/* 카드 1: Figma 디자인 수정 */}
-          <div className="group relative flex flex-col overflow-hidden rounded-2xl bg-[#F7F7F5] transition-all duration-300 hover:bg-[#F0F0EE]">
+          <div className="group relative flex flex-col overflow-hidden rounded-2xl bg-[#F7F7F5] ring-1 ring-black/[0.04] transition-all duration-300 hover:bg-[#F0F0EE] hover:ring-black/[0.06]">
             <div className="relative flex-1 p-6">
               <h3 className="text-[24px] font-bold tracking-[-0.02em] text-[#1A1A1A]">Figma 디자인 수정</h3>
               <p className="mt-1.5 text-[13px] leading-relaxed text-[#787774]">
@@ -448,7 +449,7 @@ export default function DashboardPage() {
             <h2 className="text-[16px] font-semibold text-[#1A1A1A]">내 프로젝트</h2>
             <span className="text-[11px] text-[#B4B4B0]">0개</span>
           </div>
-          <div className="mt-4 rounded-2xl bg-[#F7F7F5] p-14 text-center transition-colors hover:bg-[#F0F0EE]">
+          <div className="mt-4 rounded-2xl bg-[#F7F7F5] p-14 text-center ring-1 ring-black/[0.04] transition-colors hover:bg-[#F0F0EE]">
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white">
               <span className="text-2xl">📂</span>
             </div>
@@ -495,7 +496,7 @@ export default function DashboardPage() {
             <Link
               key={resource.title}
               href={resource.href}
-              className="group flex items-center gap-3 rounded-xl bg-[#F7F7F5] p-4 transition-all hover:bg-[#F0F0EE]"
+              className="group flex items-center gap-3 rounded-xl bg-[#F7F7F5] p-4 ring-1 ring-black/[0.04] transition-all hover:bg-[#F0F0EE] hover:ring-black/[0.06]"
             >
               <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: resource.bg }}>
                 <resource.icon className="h-4 w-4" style={{ color: resource.color }} />
