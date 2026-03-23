@@ -101,6 +101,7 @@ function useGreeting() {
 
 export default function DashboardPage() {
   const { user, loading, fetchUser, logout } = useAuthStore();
+  const greeting = useGreeting();
 
   useEffect(() => {
     fetchUser();
@@ -109,8 +110,6 @@ export default function DashboardPage() {
   if (loading) {
     return <DashboardSkeleton />;
   }
-
-  const greeting = useGreeting();
 
   return (
     <div className="animate-fade-in min-h-screen bg-white">
@@ -279,27 +278,35 @@ export default function DashboardPage() {
             <div className="relative flex-1 p-6">
               <h3 className="text-[24px] font-bold tracking-[-0.02em] text-[#1A1A1A]">로컬 프로젝트 수정</h3>
               <p className="mt-1.5 text-[13px] leading-relaxed text-[#787774]">
-                터미널 한 줄이면 연결 완료.
-                <br />
                 내 컴퓨터의 코드를 AI가 직접 수정해요.
               </p>
 
-              {/* 비주얼 플로우 */}
-              <div className="mt-6 flex items-center gap-2 text-[11px]">
-                {[
-                  { icon: Terminal, label: "npx", color: "#787774" },
-                  { icon: FolderOpen, label: "파일", color: "#787774" },
-                  { icon: Zap, label: "AI", color: "#787774" },
-                  { icon: Check, label: "반영", color: "#787774" },
-                ].map((step, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <div className="flex items-center gap-1.5 rounded-lg bg-white/70 px-2.5 py-1.5">
-                      <step.icon className="h-3 w-3" style={{ color: step.color }} />
-                      <span className="text-[#787774]">{step.label}</span>
-                    </div>
-                    {i < 3 && <ArrowRight className="h-3 w-3 text-[#D4D4D0]" />}
+              {/* 2단계 안내 */}
+              <div className="mt-5 space-y-3">
+                {/* Step 1: 터미널 */}
+                <div className="rounded-xl bg-white/80 p-3">
+                  <div className="mb-2 flex items-center gap-2">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#1A1A1A] text-[10px] font-bold text-white">1</span>
+                    <span className="text-[12px] font-medium text-[#1A1A1A]">터미널에서 에이전트 실행</span>
                   </div>
-                ))}
+                  <CopyCommand command="npx figma-code-bridge" />
+                </div>
+
+                {/* Step 2: 브라우저 */}
+                <div className="rounded-xl bg-white/80 p-3">
+                  <div className="mb-2 flex items-center gap-2">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#1A1A1A] text-[10px] font-bold text-white">2</span>
+                    <span className="text-[12px] font-medium text-[#1A1A1A]">여기서 연결하고 AI로 수정</span>
+                  </div>
+                  <Link
+                    href="/project/local"
+                    className="group/btn flex w-full items-center justify-center gap-2 rounded-lg bg-[#1A1A1A] px-4 py-2.5 text-[12px] font-semibold text-white transition-all hover:bg-[#24282E] active:scale-[0.98]"
+                  >
+                    <Rocket className="h-3.5 w-3.5 transition-transform group-hover/btn:-rotate-12" />
+                    로컬 프로젝트 열기
+                    <ArrowRight className="h-3.5 w-3.5 text-[#787774] transition-transform group-hover/btn:translate-x-0.5" />
+                  </Link>
+                </div>
               </div>
 
               {/* 특징 */}
@@ -313,18 +320,6 @@ export default function DashboardPage() {
                   Hot Reload
                 </div>
               </div>
-            </div>
-
-            <div className="space-y-2.5 px-4 pb-4">
-              <CopyCommand command="npx figma-code-bridge" />
-              <Link
-                href="/project/local"
-                className="group/btn flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-[13px] font-semibold text-[#1A1A1A] transition-all hover:bg-[#FAFAFA] active:scale-[0.98]"
-              >
-                <Rocket className="h-4 w-4 transition-transform group-hover/btn:-rotate-12" />
-                로컬 프로젝트 열기
-                <ArrowRight className="h-3.5 w-3.5 text-[#B4B4B0] transition-transform group-hover/btn:translate-x-0.5" />
-              </Link>
             </div>
           </div>
         </div>
