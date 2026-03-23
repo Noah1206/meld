@@ -243,7 +243,7 @@ export default function HomePage() {
       </nav>
 
       {/* ===== 히어로 ===== */}
-      <section className="relative z-10 pt-28 pb-6 lg:pt-32 lg:pb-10">
+      <section className="relative z-10 pt-36 pb-6 lg:pt-44 lg:pb-10">
         <div className="mx-auto max-w-[1440px] px-6 lg:px-16">
           <h1 className="text-[48px] font-bold leading-[1.05] tracking-[-0.04em] text-[#1A1A1A] sm:text-[64px] lg:text-[76px] xl:text-[88px]">
             {title1}
