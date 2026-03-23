@@ -78,12 +78,25 @@ function CopyCommand({ command }: { command: string }) {
   );
 }
 
-function getGreeting(): { text: string; emoji: string } {
+function getGreeting() {
   const hour = new Date().getHours();
   if (hour < 6) return { text: "늦은 밤까지 고생하시네요", emoji: "🌙" };
   if (hour < 12) return { text: "좋은 아침이에요", emoji: "☀️" };
   if (hour < 18) return { text: "좋은 오후예요", emoji: "🔥" };
   return { text: "좋은 저녁이에요", emoji: "🌆" };
+}
+
+function useGreeting() {
+  const [greeting, setGreeting] = useState(getGreeting);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setGreeting(getGreeting());
+    }, 60_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return greeting;
 }
 
 export default function DashboardPage() {
@@ -97,7 +110,7 @@ export default function DashboardPage() {
     return <DashboardSkeleton />;
   }
 
-  const greeting = getGreeting();
+  const greeting = useGreeting();
 
   return (
     <div className="animate-fade-in min-h-screen bg-white">
