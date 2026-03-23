@@ -18,6 +18,8 @@ import {
   Globe,
   Cpu,
   Check,
+  Bell,
+  RefreshCw,
 } from "lucide-react";
 
 const translations = {
@@ -79,30 +81,30 @@ const translations = {
     diffCheck2: "Choose from Claude · GPT-4o · Gemini",
     diffCheck3: "Before/after comparison preview",
 
-    // Features
-    featuresLabel: "WORKSPACE",
-    featuresTitle: "Your design and code, side by side",
-    featuresSubtitle: "Meld brings together Figma layers, AI agent, and live code — in one workspace.",
-    // Mockup layer tree
-    mockupLayerPage: "Pages",
-    mockupLayerFrame: "HeroSection",
-    mockupLayerChild1: "Navbar",
-    mockupLayerChild2: "HeroContent",
-    mockupLayerChild3: "CTAButton",
-    mockupLayerChild4: "BackgroundImage",
-    // Mockup AI steps
-    mockupAiStep1: "Analyzing Figma node tree...",
-    mockupAiStep2: "Matched → HeroSection.tsx",
-    mockupAiStep3: "Modifying button color to #10B981",
-    mockupAiStep4: "Writing changes to file...",
-    mockupAiStep5: "Done. 1 file changed.",
-    // Feature pills
-    feat1Title: "Figma Layer Browsing",
-    feat1Desc: "See your Figma layer tree and click any element to select it.",
-    feat2Title: "AI Code Agent",
-    feat2Desc: "Describe changes in natural language. AI finds the file and modifies it.",
-    feat3Title: "Live Code Preview",
-    feat3Desc: "See the actual code diff before applying. Your dev server refreshes instantly.",
+    // Features — 4대 핵심 기능
+    featuresLabel: "CORE FEATURES",
+    featuresTitle: "What Meld actually does",
+    feat1Label: "DESIGN → CODE MAPPING",
+    feat1Title: "Click design, find code",
+    feat1Desc: "Click any element in Figma viewer and AI automatically locates the matching code file in your project. Name-convention matching → AI inference → cache. 3-step fallback.",
+    feat1Visual1: "CTAButton",
+    feat1Visual2: "HeroSection.tsx",
+    feat1Visual3: "95%+ match accuracy",
+    feat2Label: "REAL-TIME PREVIEW",
+    feat2Title: "Edit, save, see instantly",
+    feat2Desc: "Code changes trigger your dev server's hot reload. See the result in the embedded iframe — no tab switching. The loop is under 2 seconds.",
+    feat2Visual1: "Code modified",
+    feat2Visual2: "Hot reload triggered",
+    feat2Visual3: "Preview updated",
+    feat3Label: "FRAMEWORK-AWARE",
+    feat3Title: "Respects your conventions",
+    feat3Desc: "AI analyzes your existing code patterns — component structure, naming, import style — and generates modifications that match. Not boilerplate. Your code, your way.",
+    feat4Label: "DESIGN TRACKING",
+    feat4Title: "Figma changed? We notice.",
+    feat4Desc: "When a designer updates the Figma file, Meld detects the diff and asks: \"Update your code?\" One click to review and apply the changes.",
+    feat4Visual1: "Figma design updated",
+    feat4Visual2: "2 elements changed",
+    feat4Visual3: "Update code?",
 
     // Bottom CTA
     bottomTitle: "Get started now",
@@ -168,30 +170,30 @@ const translations = {
     diffCheck2: "Claude · GPT-4o · Gemini 중 선택",
     diffCheck3: "변경 전/후 비교 미리보기",
 
-    // Features
-    featuresLabel: "WORKSPACE",
-    featuresTitle: "디자인과 코드를 나란히",
-    featuresSubtitle: "Figma 레이어, AI 에이전트, 라이브 코드를 하나의 워크스페이스에서.",
-    // Mockup layer tree
-    mockupLayerPage: "Pages",
-    mockupLayerFrame: "HeroSection",
-    mockupLayerChild1: "Navbar",
-    mockupLayerChild2: "HeroContent",
-    mockupLayerChild3: "CTAButton",
-    mockupLayerChild4: "BackgroundImage",
-    // Mockup AI steps
-    mockupAiStep1: "Figma 노드 트리 분석 중...",
-    mockupAiStep2: "매칭 → HeroSection.tsx",
-    mockupAiStep3: "버튼 색상을 #10B981로 수정 중",
-    mockupAiStep4: "파일에 변경사항 작성 중...",
-    mockupAiStep5: "완료. 1개 파일 변경됨.",
-    // Feature pills
-    feat1Title: "Figma 레이어 탐색",
-    feat1Desc: "Figma 레이어 트리를 보고, 요소를 클릭해 선택합니다.",
-    feat2Title: "AI 코드 에이전트",
-    feat2Desc: "자연어로 변경사항을 설명하면 AI가 파일을 찾아 수정합니다.",
-    feat3Title: "실시간 코드 미리보기",
-    feat3Desc: "적용 전 코드 diff를 확인합니다. 개발 서버가 즉시 새로고침됩니다.",
+    // Features — 4대 핵심 기능
+    featuresLabel: "CORE FEATURES",
+    featuresTitle: "Meld가 실제로 하는 일",
+    feat1Label: "디자인 → 코드 매핑",
+    feat1Title: "디자인을 클릭하면, 코드를 찾습니다",
+    feat1Desc: "Figma 뷰어에서 아무 요소나 클릭하면 AI가 프로젝트에서 해당 코드 파일을 자동으로 찾아냅니다. 네이밍 매칭 → AI 추론 → 캐시. 3단계 폴백.",
+    feat1Visual1: "CTAButton",
+    feat1Visual2: "HeroSection.tsx",
+    feat1Visual3: "95% 이상 매칭 정확도",
+    feat2Label: "실시간 프리뷰",
+    feat2Title: "수정하고, 저장하고, 바로 확인",
+    feat2Desc: "코드 변경이 dev server의 hot reload를 트리거합니다. 내장된 iframe에서 결과를 바로 확인하세요 — 탭 전환 없이. 루프는 2초 이내.",
+    feat2Visual1: "코드 수정됨",
+    feat2Visual2: "Hot reload 트리거",
+    feat2Visual3: "미리보기 업데이트",
+    feat3Label: "프레임워크 인식",
+    feat3Title: "기존 코드 컨벤션을 따릅니다",
+    feat3Desc: "AI가 기존 코드 패턴을 분석합니다 — 컴포넌트 구조, 네이밍, import 스타일 — 그에 맞는 수정을 생성합니다. 보일러플레이트가 아닙니다.",
+    feat4Label: "디자인 변경 추적",
+    feat4Title: "Figma가 바뀌면? 알려드립니다.",
+    feat4Desc: "디자이너가 Figma 파일을 업데이트하면, Meld가 변경을 감지하고 묻습니다: \"코드를 업데이트할까요?\" 한 클릭으로 변경사항을 확인하고 적용합니다.",
+    feat4Visual1: "Figma 디자인 업데이트됨",
+    feat4Visual2: "2개 요소 변경",
+    feat4Visual3: "코드 업데이트?",
 
     // Bottom CTA
     bottomTitle: "지금 시작하세요",
@@ -724,165 +726,171 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ===== 서비스 기능 (Product Showcase) ===== */}
-      <section ref={featuresSection.ref} className="relative z-10 bg-[#0B0E11]">
+      {/* ===== 4대 핵심 기능 ===== */}
+      <section ref={featuresSection.ref} className="relative z-10 bg-[#0B0E11] overflow-hidden">
         <div className="mx-auto max-w-[1440px] px-6 lg:px-16 py-24 lg:py-32">
-          {/* 헤더 */}
-          <div className={`mb-14 transition-all duration-700 ease-out ${featuresSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
+          {/* 섹션 헤더 */}
+          <div className={`mb-20 transition-all duration-700 ease-out ${featuresSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
             <span className="text-[12px] font-semibold tracking-[0.15em] text-[#555]">{t.featuresLabel}</span>
             <h2 className="mt-2 text-[32px] font-bold leading-[1.15] tracking-[-0.03em] text-white sm:text-[40px]">
               {t.featuresTitle}
             </h2>
-            <p className="mt-2 text-[15px] text-[#666]">{t.featuresSubtitle}</p>
           </div>
 
-          {/* 프로덕트 목업 — 다크 윈도우 */}
-          <div className={`overflow-hidden rounded-2xl border border-[#1E2228] bg-[#131619] shadow-2xl shadow-black/40 transition-all duration-1000 ease-out ${featuresSection.inView ? "opacity-100 scale-100" : "opacity-0 scale-[0.97]"}`}>
-            {/* 타이틀바 */}
-            <div className="flex items-center gap-2 border-b border-[#1E2228] px-4 py-3">
-              <div className="flex gap-1.5">
-                <span className="h-3 w-3 rounded-full bg-[#FF5F57]" />
-                <span className="h-3 w-3 rounded-full bg-[#FEBC2E]" />
-                <span className="h-3 w-3 rounded-full bg-[#28C840]" />
-              </div>
-              <div className="flex flex-1 items-center justify-center gap-2">
-                <Blend className="h-3.5 w-3.5 text-[#555]" />
-                <span className="text-[12px] font-medium text-[#555]">Meld</span>
-              </div>
-              <div className="w-12" />
+          {/* ── 기능 1: 디자인-코드 매핑 ── */}
+          <div className={`mb-24 grid items-center gap-12 lg:grid-cols-2 transition-all duration-700 ease-out ${featuresSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`} style={{ transitionDelay: "200ms" }}>
+            <div>
+              <span className="text-[11px] font-semibold tracking-[0.12em] text-[#10B981]">{t.feat1Label}</span>
+              <h3 className="mt-2 text-[24px] font-bold leading-tight tracking-[-0.02em] text-white sm:text-[28px]">{t.feat1Title}</h3>
+              <p className="mt-3 text-[14px] leading-relaxed text-[#777]">{t.feat1Desc}</p>
             </div>
-
-            {/* 3-패널 레이아웃 */}
-            <div className="grid lg:grid-cols-[220px_1fr_1fr] min-h-[420px]">
-              {/* 왼쪽: Figma 레이어 트리 */}
-              <div className="hidden border-r border-[#1E2228] bg-[#131619] p-4 lg:block">
-                <p className="mb-3 text-[11px] font-semibold tracking-wider text-[#555]">{t.mockupLayerPage}</p>
-                <div className="space-y-0.5">
-                  {/* 프레임 - 확장됨 */}
-                  <div className={`flex items-center gap-2 rounded-md px-2 py-1.5 transition-all duration-500 ${featuresSection.inView ? "opacity-100" : "opacity-0"}`} style={{ transitionDelay: "300ms" }}>
-                    <svg className="h-3 w-3 text-[#555]" viewBox="0 0 12 12" fill="none"><path d="M4 2L8 6L4 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    <Figma className="h-3 w-3 text-[#A78BFA]" />
-                    <span className="text-[12px] text-[#CCC]">{t.mockupLayerFrame}</span>
+            {/* 비주얼: 클릭 → 매칭 플로우 */}
+            <div className="rounded-2xl border border-[#1E2228] bg-[#131619] p-6">
+              <div className="flex items-center justify-between gap-4">
+                {/* Figma 요소 */}
+                <div className={`flex-1 rounded-xl border border-[#1E2228] bg-[#0B0E11] p-4 transition-all duration-500 ${featuresSection.inView ? "opacity-100 scale-100" : "opacity-0 scale-95"}`} style={{ transitionDelay: "500ms" }}>
+                  <div className="mb-3 flex items-center gap-2">
+                    <Figma className="h-3.5 w-3.5 text-[#A78BFA]" />
+                    <span className="text-[11px] font-semibold text-[#888]">Figma</span>
                   </div>
-                  {/* 자식 노드들 */}
-                  {[t.mockupLayerChild1, t.mockupLayerChild2, t.mockupLayerChild3, t.mockupLayerChild4].map((child, i) => (
-                    <div
-                      key={child}
-                      className={`ml-5 flex items-center gap-2 rounded-md px-2 py-1.5 transition-all duration-500 ${i === 2 ? "bg-[#1A3A5C] ring-1 ring-[#3B82F6]/30" : ""} ${featuresSection.inView ? "opacity-100" : "opacity-0"}`}
-                      style={{ transitionDelay: `${400 + i * 100}ms` }}
-                    >
-                      <Layers className="h-3 w-3 text-[#555]" />
-                      <span className={`text-[12px] ${i === 2 ? "text-[#93C5FD]" : "text-[#888]"}`}>{child}</span>
+                  <div className="rounded-lg bg-[#1A3A5C] ring-1 ring-[#3B82F6]/30 px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <MousePointerClick className="h-3 w-3 text-[#60A5FA]" />
+                      <span className="text-[12px] font-medium text-[#93C5FD]">{t.feat1Visual1}</span>
                     </div>
-                  ))}
+                  </div>
                 </div>
-
-                {/* 프레임워크 태그 */}
-                <div className={`mt-8 transition-all duration-500 ${featuresSection.inView ? "opacity-100" : "opacity-0"}`} style={{ transitionDelay: "900ms" }}>
-                  <p className="mb-2 text-[10px] font-semibold tracking-wider text-[#444]">DETECTED</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {["React", "TypeScript", "Tailwind"].map((tag) => (
-                      <span key={tag} className="rounded bg-[#1A1F25] px-2 py-0.5 text-[10px] text-[#6EE7B7]">{tag}</span>
-                    ))}
+                {/* 화살표 */}
+                <div className={`flex flex-col items-center gap-1 transition-all duration-500 ${featuresSection.inView ? "opacity-100" : "opacity-0"}`} style={{ transitionDelay: "800ms" }}>
+                  <ArrowRight className="h-4 w-4 text-[#10B981]" />
+                  <span className="text-[9px] text-[#555]">AI</span>
+                </div>
+                {/* 코드 파일 */}
+                <div className={`flex-1 rounded-xl border border-[#1E2228] bg-[#0B0E11] p-4 transition-all duration-500 ${featuresSection.inView ? "opacity-100 scale-100" : "opacity-0 scale-95"}`} style={{ transitionDelay: "1100ms" }}>
+                  <div className="mb-3 flex items-center gap-2">
+                    <Eye className="h-3.5 w-3.5 text-[#10B981]" />
+                    <span className="text-[11px] font-semibold text-[#888]">Code</span>
+                  </div>
+                  <div className="rounded-lg bg-[#132A1B] ring-1 ring-[#10B981]/20 px-3 py-2">
+                    <span className="font-mono text-[12px] text-[#6EE7B7]">{t.feat1Visual2}</span>
                   </div>
                 </div>
               </div>
-
-              {/* 중앙: AI 에이전트 채팅 */}
-              <div className="border-r border-[#1E2228] bg-[#0F1215] p-5 flex flex-col">
-                <div className="mb-4 flex items-center gap-2">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#1A1F25]">
-                    <Cpu className="h-3.5 w-3.5 text-[#10B981]" />
-                  </div>
-                  <span className="text-[12px] font-semibold text-[#999]">AI Agent</span>
-                  <span className="ml-auto rounded-full bg-[#10B981]/10 px-2 py-0.5 text-[10px] font-medium text-[#10B981]">Running</span>
-                </div>
-
-                <div className="flex-1 space-y-3 font-mono text-[12px]">
-                  {[t.mockupAiStep1, t.mockupAiStep2, t.mockupAiStep3, t.mockupAiStep4, t.mockupAiStep5].map((step, i) => (
-                    <div
-                      key={i}
-                      className={`flex items-start gap-2.5 transition-all duration-500 ${featuresSection.inView ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"}`}
-                      style={{ transitionDelay: `${500 + i * 250}ms` }}
-                    >
-                      <span className={`mt-1 h-2 w-2 flex-shrink-0 rounded-full ${i === 4 ? "bg-[#10B981]" : "bg-[#3B82F6]"}`} />
-                      <span className={`leading-relaxed ${i === 4 ? "text-[#10B981]" : "text-[#888]"}`}>{step}</span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* 입력바 */}
-                <div className={`mt-4 flex items-center gap-2 rounded-lg border border-[#1E2228] bg-[#131619] px-3 py-2.5 transition-all duration-500 ${featuresSection.inView ? "opacity-100" : "opacity-0"}`} style={{ transitionDelay: "1800ms" }}>
-                  <MessageSquare className="h-3.5 w-3.5 text-[#444]" />
-                  <span className="text-[12px] text-[#444]">{t.mockupInput}</span>
-                </div>
-              </div>
-
-              {/* 오른쪽: 코드 프리뷰 */}
-              <div className="bg-[#0F1215] p-5 hidden lg:flex flex-col">
-                <div className="mb-4 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Eye className="h-3.5 w-3.5 text-[#555]" />
-                    <span className="text-[12px] font-semibold text-[#999]">HeroSection.tsx</span>
-                  </div>
-                  <div className={`flex items-center gap-1.5 transition-all duration-500 ${featuresSection.inView ? "opacity-100" : "opacity-0"}`} style={{ transitionDelay: "1600ms" }}>
-                    <Check className="h-3 w-3 text-[#10B981]" />
-                    <span className="text-[10px] font-medium text-[#10B981]">Modified</span>
-                  </div>
-                </div>
-
-                <div className="flex-1 space-y-0 rounded-lg border border-[#1E2228] bg-[#0B0E11] font-mono text-[11px] overflow-hidden">
-                  {[
-                    { n: 12, code: "  return (", color: "text-[#555]" },
-                    { n: 13, code: '    <section className="hero">', color: "text-[#555]" },
-                    { n: 14, code: "      <h1>{title}</h1>", color: "text-[#555]" },
-                    { n: 15, code: "      <Button", color: "text-[#555]", removed: true },
-                    { n: 15, code: "      <Button", color: "text-[#A5D6A7]", added: true },
-                    { n: 16, code: '        className="cta-btn"', color: "text-[#555]", removed: true },
-                    { n: 16, code: '        className="cta-btn"', color: "text-[#A5D6A7]", added: true },
-                    { n: 17, code: '        color="#6B7280"', color: "text-[#555]", removed: true },
-                    { n: 17, code: '        color="#10B981"', color: "text-[#A5D6A7]", added: true },
-                    { n: 18, code: "      >", color: "text-[#555]" },
-                    { n: 19, code: "        Get Started", color: "text-[#555]" },
-                    { n: 20, code: "      </Button>", color: "text-[#555]" },
-                  ].map((line, i) => (
-                    <div
-                      key={i}
-                      className={`flex items-center px-3 py-[3px] ${line.removed ? "bg-[#3C1618]" : line.added ? "bg-[#132A1B]" : ""} transition-all duration-400 ${featuresSection.inView ? "opacity-100" : "opacity-0"}`}
-                      style={{ transitionDelay: `${800 + i * 60}ms` }}
-                    >
-                      <span className="mr-4 w-5 text-right text-[10px] text-[#444]">{line.n}</span>
-                      <span className={`${line.removed ? "text-[#E57373]" : ""} ${line.added ? "text-[#A5D6A7]" : ""} ${!line.removed && !line.added ? line.color : ""}`}>
-                        {line.removed && <span className="mr-1 text-[#E57373]">-</span>}
-                        {line.added && <span className="mr-1 text-[#A5D6A7]">+</span>}
-                        {line.code}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+              <div className={`mt-4 flex items-center justify-center gap-1.5 transition-all duration-500 ${featuresSection.inView ? "opacity-100" : "opacity-0"}`} style={{ transitionDelay: "1400ms" }}>
+                <Check className="h-3 w-3 text-[#10B981]" />
+                <span className="text-[11px] font-medium text-[#10B981]">{t.feat1Visual3}</span>
               </div>
             </div>
           </div>
 
-          {/* 기능 3-카드 */}
-          <div className="mt-10 grid gap-4 sm:grid-cols-3">
-            {[
-              { icon: Figma, title: t.feat1Title, desc: t.feat1Desc, delay: 200 },
-              { icon: Cpu, title: t.feat2Title, desc: t.feat2Desc, delay: 400 },
-              { icon: Eye, title: t.feat3Title, desc: t.feat3Desc, delay: 600 },
-            ].map((feat) => (
-              <div
-                key={feat.title}
-                className={`group rounded-xl border border-[#1E2228] bg-[#131619] p-5 transition-all duration-500 ease-out hover:border-[#2A3038] hover:bg-[#181C21] ${featuresSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
-                style={{ transitionDelay: featuresSection.inView ? `${feat.delay}ms` : "0ms" }}
-              >
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#1A1F25] transition-transform duration-300 group-hover:scale-110">
-                  <feat.icon className="h-4 w-4 text-[#888]" />
-                </div>
-                <h3 className="mt-3 text-[14px] font-semibold text-[#DDD]">{feat.title}</h3>
-                <p className="mt-1 text-[12px] leading-relaxed text-[#666]">{feat.desc}</p>
+          {/* ── 기능 2: 실시간 프리뷰 루프 ── */}
+          <div className={`mb-24 grid items-center gap-12 lg:grid-cols-2 transition-all duration-700 ease-out ${featuresSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`} style={{ transitionDelay: "400ms" }}>
+            {/* 비주얼: 3-step 루프 */}
+            <div className="order-2 lg:order-1 rounded-2xl border border-[#1E2228] bg-[#131619] p-6">
+              <div className="space-y-3">
+                {[
+                  { icon: MessageSquare, text: t.feat2Visual1, color: "text-[#60A5FA]", bg: "bg-[#1A2A4A]", ring: "ring-[#3B82F6]/20" },
+                  { icon: RefreshCw, text: t.feat2Visual2, color: "text-[#FBBF24]", bg: "bg-[#2A2410]", ring: "ring-[#FBBF24]/20" },
+                  { icon: Monitor, text: t.feat2Visual3, color: "text-[#10B981]", bg: "bg-[#132A1B]", ring: "ring-[#10B981]/20" },
+                ].map((step, i) => (
+                  <div
+                    key={i}
+                    className={`flex items-center gap-3 rounded-xl ${step.bg} ring-1 ${step.ring} px-4 py-3 transition-all duration-500 ${featuresSection.inView ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-6"}`}
+                    style={{ transitionDelay: `${600 + i * 200}ms` }}
+                  >
+                    <step.icon className={`h-4 w-4 flex-shrink-0 ${step.color}`} />
+                    <span className={`text-[13px] font-medium ${step.color}`}>{step.text}</span>
+                    {i < 2 && <ArrowRight className="ml-auto h-3 w-3 text-[#444]" />}
+                    {i === 2 && <Check className="ml-auto h-3 w-3 text-[#10B981]" />}
+                  </div>
+                ))}
               </div>
-            ))}
+              <div className={`mt-4 flex items-center justify-center gap-4 text-[10px] text-[#555] transition-all duration-500 ${featuresSection.inView ? "opacity-100" : "opacity-0"}`} style={{ transitionDelay: "1300ms" }}>
+                <span>{"< 2s"}</span>
+                <div className="h-px flex-1 bg-[#1E2228]" />
+                <span>loop</span>
+              </div>
+            </div>
+            <div className="order-1 lg:order-2">
+              <span className="text-[11px] font-semibold tracking-[0.12em] text-[#FBBF24]">{t.feat2Label}</span>
+              <h3 className="mt-2 text-[24px] font-bold leading-tight tracking-[-0.02em] text-white sm:text-[28px]">{t.feat2Title}</h3>
+              <p className="mt-3 text-[14px] leading-relaxed text-[#777]">{t.feat2Desc}</p>
+            </div>
+          </div>
+
+          {/* ── 기능 3: 프레임워크 인식 코드 생성 ── */}
+          <div className={`mb-24 grid items-center gap-12 lg:grid-cols-2 transition-all duration-700 ease-out ${featuresSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`} style={{ transitionDelay: "600ms" }}>
+            <div>
+              <span className="text-[11px] font-semibold tracking-[0.12em] text-[#A78BFA]">{t.feat3Label}</span>
+              <h3 className="mt-2 text-[24px] font-bold leading-tight tracking-[-0.02em] text-white sm:text-[28px]">{t.feat3Title}</h3>
+              <p className="mt-3 text-[14px] leading-relaxed text-[#777]">{t.feat3Desc}</p>
+            </div>
+            {/* 비주얼: 프레임워크 감지 + 코드 스타일 */}
+            <div className="rounded-2xl border border-[#1E2228] bg-[#131619] p-6">
+              <div className={`mb-4 flex flex-wrap gap-2 transition-all duration-500 ${featuresSection.inView ? "opacity-100" : "opacity-0"}`} style={{ transitionDelay: "800ms" }}>
+                {["Next.js", "React", "Vue", "Angular", "Svelte"].map((fw, i) => (
+                  <span key={fw} className={`rounded-lg px-3 py-1.5 text-[11px] font-medium ${i === 0 ? "bg-[#1A2A4A] text-[#93C5FD] ring-1 ring-[#3B82F6]/30" : "bg-[#1A1F25] text-[#666]"}`}>{fw}</span>
+                ))}
+              </div>
+              <div className={`rounded-xl border border-[#1E2228] bg-[#0B0E11] font-mono text-[11px] overflow-hidden transition-all duration-500 ${featuresSection.inView ? "opacity-100" : "opacity-0"}`} style={{ transitionDelay: "1000ms" }}>
+                <div className="border-b border-[#1E2228] px-3 py-1.5 text-[10px] text-[#555]">
+                  your-project/src/components/Hero.tsx
+                </div>
+                {[
+                  { code: "export function Hero() {", color: "text-[#C792EA]" },
+                  { code: "  const { title } = useHeroData();", color: "text-[#82AAFF]" },
+                  { code: "  return (", color: "text-[#888]" },
+                  { code: '    <section className={styles.hero}>', color: "text-[#A5D6A7]", highlight: true },
+                  { code: "      <h1>{title}</h1>", color: "text-[#888]" },
+                  { code: "    </section>", color: "text-[#888]" },
+                ].map((line, i) => (
+                  <div key={i} className={`px-3 py-[3px] ${line.highlight ? "bg-[#132A1B]/50" : ""}`}>
+                    <span className={line.color}>{line.code}</span>
+                  </div>
+                ))}
+              </div>
+              <p className={`mt-3 text-center text-[10px] text-[#555] transition-all duration-500 ${featuresSection.inView ? "opacity-100" : "opacity-0"}`} style={{ transitionDelay: "1200ms" }}>
+                AI follows your existing patterns
+              </p>
+            </div>
+          </div>
+
+          {/* ── 기능 4: 디자인 변경 추적 ── */}
+          <div className={`grid items-center gap-12 lg:grid-cols-2 transition-all duration-700 ease-out ${featuresSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`} style={{ transitionDelay: "800ms" }}>
+            {/* 비주얼: 알림 카드 */}
+            <div className="order-2 lg:order-1 rounded-2xl border border-[#1E2228] bg-[#131619] p-6">
+              <div className={`rounded-xl border border-[#1E2228] bg-[#0B0E11] p-5 transition-all duration-700 ${featuresSection.inView ? "opacity-100 scale-100" : "opacity-0 scale-95"}`} style={{ transitionDelay: "1000ms" }}>
+                {/* 알림 헤더 */}
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-[#2A2410]">
+                    <Bell className="h-4 w-4 text-[#FBBF24]" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-[13px] font-semibold text-white">{t.feat4Visual1}</p>
+                    <p className="mt-0.5 text-[11px] text-[#666]">{t.feat4Visual2}</p>
+                  </div>
+                  <span className="rounded-full bg-[#FBBF24]/10 px-2 py-0.5 text-[10px] font-medium text-[#FBBF24]">NEW</span>
+                </div>
+                {/* 변경된 요소 리스트 */}
+                <div className="mt-4 space-y-2">
+                  {["CTAButton — color changed", "Heading — font-size 36→40px"].map((item, i) => (
+                    <div key={i} className={`flex items-center gap-2 rounded-lg bg-[#131619] px-3 py-2 text-[11px] text-[#888] transition-all duration-500 ${featuresSection.inView ? "opacity-100" : "opacity-0"}`} style={{ transitionDelay: `${1200 + i * 150}ms` }}>
+                      <span className="h-1.5 w-1.5 rounded-full bg-[#FBBF24]" />
+                      {item}
+                    </div>
+                  ))}
+                </div>
+                {/* CTA 버튼 */}
+                <button className={`mt-4 w-full rounded-lg bg-[#10B981] py-2.5 text-[12px] font-semibold text-white transition-all duration-500 hover:bg-[#059669] ${featuresSection.inView ? "opacity-100" : "opacity-0"}`} style={{ transitionDelay: "1500ms" }}>
+                  {t.feat4Visual3}
+                </button>
+              </div>
+            </div>
+            <div className="order-1 lg:order-2">
+              <span className="text-[11px] font-semibold tracking-[0.12em] text-[#FBBF24]">{t.feat4Label}</span>
+              <h3 className="mt-2 text-[24px] font-bold leading-tight tracking-[-0.02em] text-white sm:text-[28px]">{t.feat4Title}</h3>
+              <p className="mt-3 text-[14px] leading-relaxed text-[#777]">{t.feat4Desc}</p>
+            </div>
           </div>
         </div>
       </section>
