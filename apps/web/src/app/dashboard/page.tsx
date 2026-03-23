@@ -15,6 +15,7 @@ import {
   FolderOpen,
   Sparkles,
   Zap,
+  Palette,
   MousePointerClick,
   GitBranch,
   Terminal,
@@ -476,6 +477,13 @@ export default function DashboardPage() {
           >
             <FolderOpen className="h-3.5 w-3.5" />
             로컬 연결
+          </Link>
+          <Link
+            href="/project/local?tab=design"
+            className="flex flex-shrink-0 items-center gap-1.5 rounded-lg bg-[#F7F7F5] px-3.5 py-2 text-[12px] font-medium text-[#787774] transition-all hover:bg-[#EEEEEC] hover:text-[#1A1A1A] active:scale-[0.98]"
+          >
+            <Palette className="h-3.5 w-3.5" />
+            디자인 시스템
           </Link>
         </div>
 

@@ -21,6 +21,8 @@ export const aiRouter = router({
         // Phase 4: 프레임워크/의존성 컨텍스트
         framework: z.string().optional(),
         dependencies: z.array(z.string()).optional(),
+        // 디자인 시스템 컨텍스트 (DESIGN.md)
+        designSystemMd: z.string().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -36,12 +38,13 @@ export const aiRouter = router({
         currentCode: providedCode,
         framework,
         dependencies,
+        designSystemMd,
       } = input;
 
       const llm = createProvider(providerType);
 
-      const promptContext = (framework || dependencies?.length)
-        ? { framework, dependencies }
+      const promptContext = (framework || dependencies?.length || designSystemMd)
+        ? { framework, dependencies, designSystemMd }
         : undefined;
 
       // 로컬 모드: currentCode가 직접 전달된 경우
@@ -140,7 +143,7 @@ export const aiRouter = router({
               !d.startsWith("@types/") && !d.startsWith("eslint")
             ).slice(0, 20);
 
-            ghContext = { framework: detectedFramework, dependencies: keyDeps };
+            ghContext = { framework: detectedFramework, dependencies: keyDeps, designSystemMd };
           }
         } catch {
           // package.json을 못 읽으면 무시

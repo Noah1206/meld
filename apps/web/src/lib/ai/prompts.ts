@@ -9,6 +9,7 @@ export function buildCodeEditPrompt(
     dependencies?: string[];
     projectStructure?: string;
     siblingFiles?: string[];
+    designSystemMd?: string; // DESIGN.md 전체 내용
   }
 ): { system: string; user: string } {
   let systemExtra = "";
@@ -24,6 +25,9 @@ export function buildCodeEditPrompt(
   }
   if (context?.siblingFiles?.length) {
     systemExtra += `\n같은 폴더의 파일: ${context.siblingFiles.join(", ")}`;
+  }
+  if (context?.designSystemMd) {
+    systemExtra += `\n\n--- DESIGN SYSTEM ---\n아래 디자인 시스템을 반드시 따르세요. 색상, 폰트, 스페이싱 등 모든 스타일 값은 이 시스템에서 가져오세요.\n\n${context.designSystemMd}\n--- END DESIGN SYSTEM ---`;
   }
 
   const system = `당신은 Figma 디자인을 코드로 변환하는 전문가입니다.

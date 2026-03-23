@@ -8,6 +8,7 @@ import { useAgentStore } from "@/lib/store/agent-store";
 import type { LLMProviderType } from "@/lib/store/chat-store";
 import { trpc } from "@/lib/trpc/client";
 import { matchByNaming } from "@/lib/mapping/engine";
+import { useDesignSystemStore } from "@/lib/store/design-system-store";
 
 const LLM_OPTIONS: { value: LLMProviderType; label: string }[] = [
   { value: "claude", label: "Claude" },
@@ -52,6 +53,7 @@ export function ChatInput({ projectId, mode = "cloud" }: ChatInputProps) {
     connected,
   } = useAgentStore();
   const editCodeMutation = trpc.ai.editCode.useMutation();
+  const getDesignMd = useDesignSystemStore((s) => s.getDesignMd);
 
   const isLocal = mode === "local";
 
@@ -106,6 +108,7 @@ export function ChatInput({ projectId, mode = "cloud" }: ChatInputProps) {
           currentCode,
           provider,
           framework: devServerFramework ?? undefined,
+          designSystemMd: getDesignMd() || undefined,
         });
 
         // AI 결과를 로컬 파일에 쓰기
@@ -133,6 +136,7 @@ export function ChatInput({ projectId, mode = "cloud" }: ChatInputProps) {
           command,
           provider,
           filePath: selectedFilePath ?? undefined,
+          designSystemMd: getDesignMd() || undefined,
         });
 
         addMessage({

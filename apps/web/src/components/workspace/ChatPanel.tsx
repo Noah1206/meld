@@ -1,14 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { MessageSquare, Info, Code, GitBranch, Eye } from "lucide-react";
+import { MessageSquare, Info, Code, GitBranch, Eye, Palette } from "lucide-react";
 import { ChatMessages } from "@/components/chat/ChatMessages";
 import { ChatInput } from "@/components/chat/ChatInput";
 import { NodeProperties } from "@/components/figma-viewer/NodeProperties";
 import { DiffViewer } from "@/components/diff-viewer/DiffViewer";
 import { CommitDialog } from "@/components/git-panel/CommitDialog";
+import { DesignSystemPanel } from "@/components/design-system/DesignSystemPanel";
 
-type TabId = "chat" | "properties" | "diff" | "git" | "preview";
+type TabId = "chat" | "properties" | "diff" | "git" | "preview" | "design";
 
 interface ChatPanelProps {
   projectId: string;
@@ -25,16 +26,19 @@ export function ChatPanel({ projectId, githubOwner, githubRepo, mode = "cloud" }
     ? isSandbox
       ? [
           { id: "chat", label: "Chat", icon: <MessageSquare className="h-3.5 w-3.5" /> },
+          { id: "design", label: "Design", icon: <Palette className="h-3.5 w-3.5" /> },
           { id: "diff", label: "Diff", icon: <Code className="h-3.5 w-3.5" /> },
           { id: "git", label: "Git", icon: <GitBranch className="h-3.5 w-3.5" /> },
         ]
       : [
           { id: "chat", label: "Chat", icon: <MessageSquare className="h-3.5 w-3.5" /> },
+          { id: "design", label: "Design", icon: <Palette className="h-3.5 w-3.5" /> },
           { id: "diff", label: "Diff", icon: <Code className="h-3.5 w-3.5" /> },
           { id: "preview", label: "Preview", icon: <Eye className="h-3.5 w-3.5" /> },
         ]
     : [
         { id: "chat", label: "Chat", icon: <MessageSquare className="h-3.5 w-3.5" /> },
+        { id: "design", label: "Design", icon: <Palette className="h-3.5 w-3.5" /> },
         { id: "properties", label: "속성", icon: <Info className="h-3.5 w-3.5" /> },
         { id: "diff", label: "Diff", icon: <Code className="h-3.5 w-3.5" /> },
         { id: "git", label: "Git", icon: <GitBranch className="h-3.5 w-3.5" /> },
@@ -73,6 +77,12 @@ export function ChatPanel({ projectId, githubOwner, githubRepo, mode = "cloud" }
             <div className="flex-shrink-0 bg-[#EEEEEC] p-2">
               <ChatInput projectId={projectId} mode={mode} />
             </div>
+          </div>
+        )}
+
+        {activeTab === "design" && (
+          <div className="flex-1 overflow-y-auto">
+            <DesignSystemPanel embedded />
           </div>
         )}
 
