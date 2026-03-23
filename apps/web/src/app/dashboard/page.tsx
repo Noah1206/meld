@@ -129,7 +129,7 @@ function GitHubProjectCard() {
   };
 
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-2xl bg-[#F7F7F5] ring-1 ring-black/[0.04] transition-all duration-300 hover:bg-[#F0F0EE] hover:ring-black/[0.06]">
+    <div className="group relative flex flex-col rounded-2xl bg-[#F7F7F5] ring-1 ring-black/[0.04] transition-all duration-300 hover:bg-[#F0F0EE] hover:ring-black/[0.06]">
       <div className="relative flex-1 p-6">
         <h3 className="text-[24px] font-bold tracking-[-0.02em] text-[#1A1A1A]">
           GitHub 프로젝트 수정
