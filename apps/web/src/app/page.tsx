@@ -18,6 +18,9 @@ import {
   Globe,
   Cpu,
   Check,
+  Paintbrush,
+  RefreshCw,
+  Shield,
 } from "lucide-react";
 
 const translations = {
@@ -79,15 +82,22 @@ const translations = {
     diffCheck2: "Choose from Claude · GPT-4o · Gemini",
     diffCheck3: "Before/after comparison preview",
 
-    // Stats
-    statFrameworkLabel: "Supported Frameworks",
-    statFrameworkSub: "Next.js · React · Vue · Angular & more",
-    statAiLabel: "AI Models",
-    statAiSub: "Claude · GPT-4o · Gemini",
-    statAccuracyLabel: "Matching Accuracy",
-    statAccuracySub: "Design → Code auto-linking",
-    statPluginLabel: "Plugin Installs",
-    statPluginSub: "A browser is all you need",
+    // Features
+    featuresLabel: "FEATURES",
+    featuresTitle: "Everything you need, built in",
+    featuresSubtitle: "From design to deployment, one seamless workflow.",
+    feat1Title: "Auto Code Mapping",
+    feat1Desc: "Click a design element and AI instantly locates the matching code file. No manual searching.",
+    feat2Title: "Real-time Preview",
+    feat2Desc: "See code changes reflected live in your dev server. Edit, save, and confirm in seconds.",
+    feat3Title: "Design Change Tracking",
+    feat3Desc: "When Figma designs update, Meld detects the changes and suggests code modifications automatically.",
+    feat4Title: "Framework-Aware Generation",
+    feat4Desc: "AI reads your existing patterns and generates code that matches your project's conventions.",
+    feat5Title: "Multi-Model AI",
+    feat5Desc: "Choose from Claude, GPT-4o, or Gemini. Pick the model that works best for each task.",
+    feat6Title: "Secure by Default",
+    feat6Desc: "Your code never leaves your machine in Local mode. Cloud mode uses encrypted GitHub OAuth.",
 
     // Bottom CTA
     bottomTitle: "Get started now",
@@ -153,15 +163,22 @@ const translations = {
     diffCheck2: "Claude · GPT-4o · Gemini 중 선택",
     diffCheck3: "변경 전/후 비교 미리보기",
 
-    // Stats
-    statFrameworkLabel: "지원 프레임워크",
-    statFrameworkSub: "Next.js · React · Vue · Angular 등",
-    statAiLabel: "AI 모델",
-    statAiSub: "Claude · GPT-4o · Gemini",
-    statAccuracyLabel: "매칭 정확도",
-    statAccuracySub: "디자인 → 코드 자동 연결",
-    statPluginLabel: "플러그인 설치",
-    statPluginSub: "브라우저만 있으면 충분",
+    // Features
+    featuresLabel: "FEATURES",
+    featuresTitle: "필요한 모든 기능, 하나에",
+    featuresSubtitle: "디자인에서 배포까지, 하나의 워크플로우.",
+    feat1Title: "자동 코드 매핑",
+    feat1Desc: "디자인 요소를 클릭하면 AI가 해당 코드 파일을 즉시 찾아냅니다. 수동 검색이 필요 없습니다.",
+    feat2Title: "실시간 미리보기",
+    feat2Desc: "코드 변경이 개발 서버에 실시간 반영됩니다. 수정하고, 저장하고, 몇 초 만에 확인하세요.",
+    feat3Title: "디자인 변경 추적",
+    feat3Desc: "Figma 디자인이 업데이트되면 Meld가 변경 사항을 감지하고 코드 수정을 자동으로 제안합니다.",
+    feat4Title: "프레임워크 인식 생성",
+    feat4Desc: "AI가 기존 패턴을 분석해 프로젝트 컨벤션에 맞는 코드를 생성합니다.",
+    feat5Title: "멀티 AI 모델",
+    feat5Desc: "Claude, GPT-4o, Gemini 중 선택하세요. 작업에 가장 적합한 모델을 고르세요.",
+    feat6Title: "기본 보안",
+    feat6Desc: "Local 모드에서는 코드가 외부로 전송되지 않습니다. Cloud 모드는 암호화된 GitHub OAuth를 사용합니다.",
 
     // Bottom CTA
     bottomTitle: "지금 시작하세요",
@@ -248,9 +265,7 @@ export default function HomePage() {
   const bottomCta = useInView();
 
   // 카운트업 애니메이션
-  const countFrameworks = useCountUp(7, 1200, statsSection.inView);
-  const countModels = useCountUp(3, 800, statsSection.inView);
-  const countAccuracy = useCountUp(95, 1500, statsSection.inView);
+  const featuresSection = statsSection; // reuse the same IntersectionObserver ref
 
   // 목업 채팅 메시지 순차 표시
   const [chatStep, setChatStep] = useState(0);
@@ -697,22 +712,36 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ===== 숫자들 ===== */}
-      <section ref={statsSection.ref} className="relative z-10">
+      {/* ===== 서비스 기능 ===== */}
+      <section ref={featuresSection.ref} className="relative z-10">
         <div className="mx-auto max-w-[1440px] px-6 lg:px-16 py-24 lg:py-32">
-          <div className={`grid gap-px overflow-hidden rounded-xl bg-black/[0.04] ring-1 ring-black/[0.04] sm:grid-cols-4 transition-all duration-700 ${statsSection.inView ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}>
+          <div className={`mb-12 transition-all duration-700 ease-out ${featuresSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
+            <span className="text-[12px] font-semibold tracking-[0.15em] text-[#B4B4B0]">{t.featuresLabel}</span>
+            <h2 className="mt-2 text-[32px] font-bold leading-[1.15] tracking-[-0.03em] text-[#1A1A1A] sm:text-[40px]">
+              {t.featuresTitle}
+            </h2>
+            <p className="mt-2 text-[15px] text-[#787774]">{t.featuresSubtitle}</p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {[
-              { value: countFrameworks.toString(), label: t.statFrameworkLabel, sub: t.statFrameworkSub, delay: 0 },
-              { value: countModels.toString(), label: t.statAiLabel, sub: t.statAiSub, delay: 100 },
-              { value: `${countAccuracy}%+`, label: t.statAccuracyLabel, sub: t.statAccuracySub, delay: 200 },
-              { value: "0", label: t.statPluginLabel, sub: t.statPluginSub, delay: 300 },
-            ].map((stat) => (
-              <div key={stat.label} className={`bg-white p-6 text-center lg:p-10 transition-all duration-500 ${statsSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`} style={{ transitionDelay: `${stat.delay}ms` }}>
-                <div className="font-mono text-[32px] font-bold tracking-[-0.03em] text-[#1A1A1A] lg:text-[40px] tabular-nums">
-                  {stat.value}
+              { icon: MousePointerClick, title: t.feat1Title, desc: t.feat1Desc, delay: 0 },
+              { icon: RefreshCw, title: t.feat2Title, desc: t.feat2Desc, delay: 100 },
+              { icon: Paintbrush, title: t.feat3Title, desc: t.feat3Desc, delay: 200 },
+              { icon: Layers, title: t.feat4Title, desc: t.feat4Desc, delay: 300 },
+              { icon: Cpu, title: t.feat5Title, desc: t.feat5Desc, delay: 400 },
+              { icon: Shield, title: t.feat6Title, desc: t.feat6Desc, delay: 500 },
+            ].map((feat) => (
+              <div
+                key={feat.title}
+                className={`group rounded-2xl bg-[#F7F7F5] p-6 transition-all duration-500 ease-out hover:bg-[#F0F0EE] hover:shadow-md hover:-translate-y-1 ${featuresSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
+                style={{ transitionDelay: featuresSection.inView ? `${feat.delay}ms` : "0ms" }}
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white ring-1 ring-black/[0.04] transition-transform duration-300 group-hover:scale-110">
+                  <feat.icon className="h-5 w-5 text-[#787774]" />
                 </div>
-                <div className="mt-1 text-[13px] font-medium text-[#1A1A1A]">{stat.label}</div>
-                <div className="mt-0.5 text-[11px] text-[#CCC]">{stat.sub}</div>
+                <h3 className="mt-4 text-[15px] font-semibold text-[#1A1A1A]">{feat.title}</h3>
+                <p className="mt-1.5 text-[13px] leading-relaxed text-[#787774]">{feat.desc}</p>
               </div>
             ))}
           </div>
