@@ -585,7 +585,7 @@ export default function DashboardPage() {
         </div>
 
         {/* 하단 리소스 링크 */}
-        <div className="animate-fade-in-up animation-delay-600 mt-14 grid gap-3 sm:grid-cols-3">
+        <div className="animate-fade-in-up animation-delay-600 mt-14 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
             {
               icon: BookOpen,
@@ -600,6 +600,14 @@ export default function DashboardPage() {
               title: "GitHub",
               desc: "소스 코드와 이슈 트래커",
               href: "/github",
+              color: "#787774",
+              bg: "#F7F7F5",
+            },
+            {
+              icon: Monitor,
+              title: "데스크톱 앱",
+              desc: "네이티브 성능으로 로컬 수정",
+              href: "/download",
               color: "#787774",
               bg: "#F7F7F5",
             },

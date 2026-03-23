@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -173,6 +173,43 @@ const translations = {
 
 type Lang = keyof typeof translations;
 
+function useInView(threshold = 0.15) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [inView, setInView] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setInView(true); observer.disconnect(); } },
+      { threshold },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [threshold]);
+
+  return { ref, inView };
+}
+
+function useCountUp(end: number, duration = 1500, start = false) {
+  const [value, setValue] = useState(0);
+
+  useEffect(() => {
+    if (!start) return;
+    let startTime: number;
+    const step = (timestamp: number) => {
+      if (!startTime) startTime = timestamp;
+      const progress = Math.min((timestamp - startTime) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setValue(Math.round(eased * end));
+      if (progress < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }, [end, duration, start]);
+
+  return value;
+}
+
 function useTypewriter(text: string, speed = 40) {
   const [displayed, setDisplayed] = useState("");
   const [done, setDone] = useState(false);
@@ -201,6 +238,30 @@ export default function HomePage() {
 
   const { displayed: title1, done: title1Done } = useTypewriter(t.heroTitle1, 50);
   const { displayed: title2 } = useTypewriter(title1Done ? t.heroTitle2 : "", 50);
+
+  // 스크롤 기반 애니메이션 트리거
+  const logoStrip = useInView();
+  const howSection = useInView();
+  const modesSection = useInView();
+  const diffSection = useInView();
+  const statsSection = useInView(0.3);
+  const bottomCta = useInView();
+
+  // 카운트업 애니메이션
+  const countFrameworks = useCountUp(7, 1200, statsSection.inView);
+  const countModels = useCountUp(3, 800, statsSection.inView);
+  const countAccuracy = useCountUp(95, 1500, statsSection.inView);
+
+  // 목업 채팅 메시지 순차 표시
+  const [chatStep, setChatStep] = useState(0);
+  useEffect(() => {
+    const timers = [
+      setTimeout(() => setChatStep(1), 1200),
+      setTimeout(() => setChatStep(2), 2400),
+      setTimeout(() => setChatStep(3), 3400),
+    ];
+    return () => timers.forEach(clearTimeout);
+  }, [lang]);
 
   return (
     <div className="min-h-screen bg-white selection:bg-[#1A1A1A] selection:text-white">
@@ -231,6 +292,9 @@ export default function HomePage() {
             </Link>
             <Link href="/github" className="text-[13px] text-[#999] transition-colors hover:text-[#1A1A1A]">
               {t.navGitHub}
+            </Link>
+            <Link href="/download" className="text-[13px] text-[#999] transition-colors hover:text-[#1A1A1A]">
+              Download
             </Link>
             <Link
               href="/dashboard"
@@ -377,13 +441,13 @@ export default function HomePage() {
               <div className="flex flex-1 flex-col p-3">
                 <div className="flex-1 space-y-3">
                   {/* 유저 */}
-                  <div className="flex justify-end">
+                  <div className={`flex justify-end transition-all duration-500 ${chatStep >= 1 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}>
                     <div className="max-w-[200px] rounded-2xl rounded-br-sm bg-[#1A1A1A] px-3 py-2 text-[11px] leading-relaxed text-white">
                       {t.mockupChat1}
                     </div>
                   </div>
                   {/* AI */}
-                  <div className="flex justify-start">
+                  <div className={`flex justify-start transition-all duration-500 ${chatStep >= 2 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}>
                     <div className="max-w-[220px] space-y-2 rounded-2xl rounded-bl-sm bg-[#FAFAFA] px-3 py-2.5 text-[11px] leading-relaxed text-[#666] ring-1 ring-black/[0.04]">
                       <p>{t.mockupChat2}</p>
                       {/* 코드 diff */}
@@ -398,7 +462,7 @@ export default function HomePage() {
                     </div>
                   </div>
                   {/* 완료 */}
-                  <div className="flex justify-start">
+                  <div className={`flex justify-start transition-all duration-500 ${chatStep >= 3 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}>
                     <div className="flex items-center gap-1.5 rounded-full bg-[#F0FDF4] px-3 py-1.5 text-[10px] font-medium text-[#16A34A] ring-1 ring-[#16A34A]/10">
                       <Check className="h-3 w-3" />
                       {t.mockupCommit}
@@ -419,39 +483,43 @@ export default function HomePage() {
       </section>
 
       {/* ===== 호환성 로고 스트립 ===== */}
-      <section className="relative z-10 border-y border-black/[0.04] bg-[#FAFAFA]">
+      <section ref={logoStrip.ref} className="relative z-10 border-y border-black/[0.04] bg-[#FAFAFA] overflow-hidden">
         <div className="mx-auto max-w-[1440px] px-6 lg:px-16 py-14 lg:py-20">
-          <p className="mb-10 text-center text-[13px] text-[#B4B4B0]">
+          <p className={`mb-10 text-center text-[13px] text-[#B4B4B0] transition-all duration-700 ${logoStrip.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
             {t.logoSubtitle}
           </p>
 
-          {/* 로고 스트립 */}
-          <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-6 sm:gap-x-14 lg:gap-x-20">
-            {[
-              { name: "Claude Sonnet", style: "font-serif italic" },
-              { name: "GPT-4o", style: "font-mono font-bold" },
-              { name: "Gemini 2.5 Flash", style: "font-sans font-light tracking-wide" },
-              { name: "Figma", style: "font-sans font-bold" },
-              { name: "GitHub", style: "font-mono font-semibold" },
-              { name: "Supabase", style: "font-mono font-medium" },
-              { name: "Vercel", style: "font-sans font-semibold tracking-tight" },
-            ].map((item) => (
-              <span
-                key={item.name}
-                className={`text-[18px] text-[#C0C0C0] transition-colors hover:text-[#1A1A1A] sm:text-[20px] ${item.style}`}
-              >
-                {item.name}
-              </span>
-            ))}
+          {/* 로고 마키 */}
+          <div className={`transition-all duration-700 delay-300 ${logoStrip.inView ? "opacity-100" : "opacity-0"}`}>
+            <div className="flex animate-marquee items-center gap-x-10 sm:gap-x-14 lg:gap-x-20 whitespace-nowrap">
+              {[...Array(2)].flatMap((_, setIdx) =>
+                [
+                  { name: "Claude Sonnet", style: "font-serif italic" },
+                  { name: "GPT-4o", style: "font-mono font-bold" },
+                  { name: "Gemini 2.5 Flash", style: "font-sans font-light tracking-wide" },
+                  { name: "Figma", style: "font-sans font-bold" },
+                  { name: "GitHub", style: "font-mono font-semibold" },
+                  { name: "Supabase", style: "font-mono font-medium" },
+                  { name: "Vercel", style: "font-sans font-semibold tracking-tight" },
+                ].map((item) => (
+                  <span
+                    key={`${setIdx}-${item.name}`}
+                    className={`text-[18px] text-[#C0C0C0] transition-colors hover:text-[#1A1A1A] sm:text-[20px] px-5 ${item.style}`}
+                  >
+                    {item.name}
+                  </span>
+                ))
+              )}
+            </div>
           </div>
         </div>
       </section>
 
       {/* ===== "이렇게 동작합니다" ===== */}
-      <section className="relative z-10 bg-[#FAFAFA]">
+      <section ref={howSection.ref} className="relative z-10 bg-[#FAFAFA]">
         <div className="mx-auto max-w-[1440px] px-6 lg:px-16 py-24 lg:py-32">
-          <p className="mb-2 font-mono text-[12px] tracking-wider text-[#CCC]">{t.howLabel}</p>
-          <h2 className="text-[32px] font-bold tracking-[-0.03em] text-[#1A1A1A] sm:text-[40px] lg:text-[48px]">
+          <p className={`mb-2 font-mono text-[12px] tracking-wider text-[#CCC] transition-all duration-500 ${howSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>{t.howLabel}</p>
+          <h2 className={`text-[32px] font-bold tracking-[-0.03em] text-[#1A1A1A] sm:text-[40px] lg:text-[48px] transition-all duration-700 delay-100 ${howSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
             {t.howTitle}
           </h2>
 
@@ -463,6 +531,7 @@ export default function HomePage() {
                 title: t.howStep1Title,
                 desc: t.howStep1Desc,
                 detail: t.howStep1Detail,
+                delay: "delay-200",
               },
               {
                 step: "02",
@@ -470,6 +539,7 @@ export default function HomePage() {
                 title: t.howStep2Title,
                 desc: t.howStep2Desc,
                 detail: t.howStep2Detail,
+                delay: "delay-[400ms]",
               },
               {
                 step: "03",
@@ -477,14 +547,15 @@ export default function HomePage() {
                 title: t.howStep3Title,
                 desc: t.howStep3Desc,
                 detail: t.howStep3Detail,
+                delay: "delay-[600ms]",
               },
             ].map((item) => (
-              <div key={item.step} className="group">
+              <div key={item.step} className={`group transition-all duration-700 ${item.delay} ${howSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
                 <div className="mb-4 flex items-center gap-3">
                   <span className="font-mono text-[32px] font-bold text-[#E8E8E8] transition-colors group-hover:text-[#1A1A1A]">
                     {item.step}
                   </span>
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white ring-1 ring-black/[0.06]">
+                  <div className={`flex h-8 w-8 items-center justify-center rounded-lg bg-white ring-1 ring-black/[0.06] transition-transform duration-500 ${howSection.inView ? "rotate-0 scale-100" : "rotate-12 scale-75"}`}>
                     <item.icon className="h-4 w-4 text-[#999]" />
                   </div>
                 </div>
@@ -498,19 +569,19 @@ export default function HomePage() {
       </section>
 
       {/* ===== 3가지 모드 ===== */}
-      <section className="relative z-10">
+      <section ref={modesSection.ref} className="relative z-10">
         <div className="mx-auto max-w-[1440px] px-6 lg:px-16 py-24 lg:py-32">
-          <p className="mb-2 font-mono text-[12px] tracking-wider text-[#CCC]">{t.modesLabel}</p>
-          <h2 className="text-[32px] font-bold tracking-[-0.03em] text-[#1A1A1A] sm:text-[40px] lg:text-[48px]">
+          <p className={`mb-2 font-mono text-[12px] tracking-wider text-[#CCC] transition-all duration-500 ${modesSection.inView ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-6"}`}>{t.modesLabel}</p>
+          <h2 className={`text-[32px] font-bold tracking-[-0.03em] text-[#1A1A1A] sm:text-[40px] lg:text-[48px] transition-all duration-700 delay-100 ${modesSection.inView ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-8"}`}>
             {t.modesTitle}
           </h2>
-          <p className="mt-3 max-w-md text-[15px] text-[#999]">
+          <p className={`mt-3 max-w-md text-[15px] text-[#999] transition-all duration-700 delay-200 ${modesSection.inView ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-6"}`}>
             {t.modesSubtitle}
           </p>
 
           <div className="mt-14 grid gap-4 sm:grid-cols-3">
             {/* Cloud */}
-            <div className="flex flex-col rounded-xl bg-[#FAFAFA] p-6 ring-1 ring-black/[0.04] transition-colors hover:ring-black/[0.08]">
+            <div className={`flex flex-col rounded-xl bg-[#FAFAFA] p-6 ring-1 ring-black/[0.04] transition-all duration-700 delay-300 hover:ring-black/[0.08] hover:shadow-lg hover:-translate-y-1 ${modesSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}>
               <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-white ring-1 ring-black/[0.06]">
                 <Globe className="h-5 w-5 text-[#1A1A1A]" />
               </div>
@@ -528,7 +599,7 @@ export default function HomePage() {
             </div>
 
             {/* Local */}
-            <div className="flex flex-col rounded-xl bg-[#FAFAFA] p-6 ring-1 ring-black/[0.04] transition-colors hover:ring-black/[0.08]">
+            <div className={`flex flex-col rounded-xl bg-[#FAFAFA] p-6 ring-1 ring-black/[0.04] transition-all duration-700 delay-[450ms] hover:ring-black/[0.08] hover:shadow-lg hover:-translate-y-1 ${modesSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}>
               <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-white ring-1 ring-black/[0.06]">
                 <Terminal className="h-5 w-5 text-[#1A1A1A]" />
               </div>
@@ -543,7 +614,7 @@ export default function HomePage() {
             </div>
 
             {/* Sandbox */}
-            <div className="flex flex-col rounded-xl bg-[#FAFAFA] p-6 ring-1 ring-black/[0.04] transition-colors hover:ring-black/[0.08]">
+            <div className={`flex flex-col rounded-xl bg-[#FAFAFA] p-6 ring-1 ring-black/[0.04] transition-all duration-700 delay-[600ms] hover:ring-black/[0.08] hover:shadow-lg hover:-translate-y-1 ${modesSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}>
               <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-white ring-1 ring-black/[0.06]">
                 <Monitor className="h-5 w-5 text-[#1A1A1A]" />
               </div>
@@ -564,10 +635,10 @@ export default function HomePage() {
       </section>
 
       {/* ===== 코드 디프 예시 ===== */}
-      <section className="relative z-10 bg-[#FAFAFA]">
+      <section ref={diffSection.ref} className="relative z-10 bg-[#FAFAFA]">
         <div className="mx-auto max-w-[1440px] px-6 lg:px-16 py-24 lg:py-32">
           <div className="grid items-center gap-12 sm:grid-cols-2 lg:gap-20">
-            <div>
+            <div className={`transition-all duration-700 ${diffSection.inView ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-12"}`}>
               <p className="mb-2 font-mono text-[12px] tracking-wider text-[#CCC]">{t.diffLabel}</p>
               <h2 className="text-[32px] font-bold tracking-[-0.03em] text-[#1A1A1A] sm:text-[36px] lg:text-[44px]">
                 {t.diffTitle}
@@ -576,8 +647,8 @@ export default function HomePage() {
                 {t.diffDesc}
               </p>
               <div className="mt-6 space-y-3 text-[13px] text-[#999]">
-                {[t.diffCheck1, t.diffCheck2, t.diffCheck3].map((item) => (
-                  <div key={item} className="flex items-center gap-2">
+                {[t.diffCheck1, t.diffCheck2, t.diffCheck3].map((item, i) => (
+                  <div key={item} className={`flex items-center gap-2 transition-all duration-500 ${diffSection.inView ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"}`} style={{ transitionDelay: `${400 + i * 150}ms` }}>
                     <Check className="h-3.5 w-3.5 text-[#1A1A1A]" />
                     {item}
                   </div>
@@ -586,7 +657,7 @@ export default function HomePage() {
             </div>
 
             {/* 코드 블록 */}
-            <div className="overflow-hidden rounded-xl bg-[#1A1A1A] ring-1 ring-black/[0.1]">
+            <div className={`overflow-hidden rounded-xl bg-[#1A1A1A] ring-1 ring-black/[0.1] transition-all duration-700 delay-200 ${diffSection.inView ? "opacity-100 translate-x-0" : "opacity-0 translate-x-12"}`}>
               <div className="flex items-center justify-between px-4 py-2.5">
                 <span className="font-mono text-[11px] text-[#555]">HeroSection.tsx</span>
                 <span className="rounded bg-[#333] px-2 py-0.5 text-[10px] text-[#888]">modified</span>
@@ -627,17 +698,17 @@ export default function HomePage() {
       </section>
 
       {/* ===== 숫자들 ===== */}
-      <section className="relative z-10">
+      <section ref={statsSection.ref} className="relative z-10">
         <div className="mx-auto max-w-[1440px] px-6 lg:px-16 py-24 lg:py-32">
-          <div className="grid gap-px overflow-hidden rounded-xl bg-black/[0.04] ring-1 ring-black/[0.04] sm:grid-cols-4">
+          <div className={`grid gap-px overflow-hidden rounded-xl bg-black/[0.04] ring-1 ring-black/[0.04] sm:grid-cols-4 transition-all duration-700 ${statsSection.inView ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}>
             {[
-              { value: "7", label: t.statFrameworkLabel, sub: t.statFrameworkSub },
-              { value: "3", label: t.statAiLabel, sub: t.statAiSub },
-              { value: "95%+", label: t.statAccuracyLabel, sub: t.statAccuracySub },
-              { value: "0", label: t.statPluginLabel, sub: t.statPluginSub },
+              { value: countFrameworks.toString(), label: t.statFrameworkLabel, sub: t.statFrameworkSub, delay: 0 },
+              { value: countModels.toString(), label: t.statAiLabel, sub: t.statAiSub, delay: 100 },
+              { value: `${countAccuracy}%+`, label: t.statAccuracyLabel, sub: t.statAccuracySub, delay: 200 },
+              { value: "0", label: t.statPluginLabel, sub: t.statPluginSub, delay: 300 },
             ].map((stat) => (
-              <div key={stat.label} className="bg-white p-6 text-center lg:p-10">
-                <div className="font-mono text-[32px] font-bold tracking-[-0.03em] text-[#1A1A1A] lg:text-[40px]">
+              <div key={stat.label} className={`bg-white p-6 text-center lg:p-10 transition-all duration-500 ${statsSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`} style={{ transitionDelay: `${stat.delay}ms` }}>
+                <div className="font-mono text-[32px] font-bold tracking-[-0.03em] text-[#1A1A1A] lg:text-[40px] tabular-nums">
                   {stat.value}
                 </div>
                 <div className="mt-1 text-[13px] font-medium text-[#1A1A1A]">{stat.label}</div>
@@ -649,18 +720,24 @@ export default function HomePage() {
       </section>
 
       {/* ===== 하단 CTA ===== */}
-      <section className="relative z-10 bg-[#1A1A1A]">
+      <section ref={bottomCta.ref} className="relative z-10 bg-[#1A1A1A] overflow-hidden">
         <div className="mx-auto max-w-[1440px] px-6 lg:px-16 py-24 lg:py-32">
-          <h2 className="text-[36px] font-bold leading-[1.1] tracking-[-0.03em] text-white sm:text-[48px] lg:text-[56px]">
+          <h2
+            className={`text-[36px] font-bold leading-[1.1] tracking-[-0.03em] text-white sm:text-[48px] lg:text-[56px] transition-all duration-700 ease-out ${bottomCta.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
+          >
             {t.bottomTitle}
           </h2>
-          <p className="mt-3 text-[16px] text-[#666]">
+          <p
+            className={`mt-3 text-[16px] text-[#666] transition-all duration-700 delay-200 ease-out ${bottomCta.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
+          >
             {t.bottomDesc}
           </p>
-          <div className="mt-10 flex items-center gap-6">
+          <div
+            className={`mt-10 flex items-center gap-6 transition-all duration-700 delay-[400ms] ease-out ${bottomCta.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
+          >
             <Link
               href="/dashboard"
-              className="inline-flex items-center rounded-xl bg-[#F5F0E8] px-7 py-3.5 text-[15px] font-semibold text-[#1A1A1A] transition-all hover:bg-[#EDE7DB] active:scale-[0.98]"
+              className="inline-flex items-center rounded-xl bg-[#F5F0E8] px-7 py-3.5 text-[15px] font-semibold text-[#1A1A1A] transition-all hover:bg-[#EDE7DB] hover:shadow-lg hover:shadow-white/10 active:scale-[0.98]"
             >
               {t.bottomCta}
             </Link>
