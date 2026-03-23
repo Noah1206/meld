@@ -43,16 +43,16 @@ export function ChatPanel({ projectId, githubOwner, githubRepo, mode = "cloud" }
   const [activeTab, setActiveTab] = useState<TabId>("chat");
 
   return (
-    <div className="flex h-full flex-col bg-[#F7F7F5]">
+    <div className="flex h-full flex-col">
       {/* 탭 바 */}
-      <div className="flex bg-[#F7F7F5]">
+      <div className="flex bg-[#EEEEEC]">
         {TABS.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`flex flex-1 items-center justify-center gap-1.5 py-2.5 text-[12px] font-medium transition-colors ${
               activeTab === tab.id
-                ? "bg-white text-[#1A1A1A]"
+                ? "bg-[#F7F7F5] text-[#1A1A1A]"
                 : "text-[#787774] hover:text-[#1A1A1A]"
             }`}
           >
@@ -63,14 +63,14 @@ export function ChatPanel({ projectId, githubOwner, githubRepo, mode = "cloud" }
       </div>
 
       {/* 탭 컨텐츠 */}
-      <div className="flex min-h-0 flex-1 flex-col bg-white">
+      <div className="flex min-h-0 flex-1 flex-col bg-[#F7F7F5]">
         {activeTab === "chat" && (
           <div className="relative flex min-h-0 flex-1 flex-col">
             <div className="min-h-0 flex-1 overflow-y-auto pb-2">
               <ChatMessages />
             </div>
-            <div className="pointer-events-none absolute inset-x-0 bottom-[var(--input-h,100px)] h-8 bg-gradient-to-t from-white to-transparent" />
-            <div className="flex-shrink-0 bg-[#F7F7F5]">
+            <div className="pointer-events-none absolute inset-x-0 bottom-[var(--input-h,100px)] h-8 bg-gradient-to-t from-[#F7F7F5] to-transparent" />
+            <div className="flex-shrink-0 bg-[#EEEEEC] p-2">
               <ChatInput projectId={projectId} mode={mode} />
             </div>
           </div>

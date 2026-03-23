@@ -21,7 +21,7 @@ export function WorkspaceLayout({
   return (
     <div className="flex h-screen flex-col bg-white">
       {/* Header */}
-      <header className="flex h-12 items-center justify-between bg-white/80 backdrop-blur-xl px-4">
+      <header className="flex h-11 items-center justify-between bg-[#F7F7F5] px-4">
         <div className="flex items-center gap-3">
           {onBack && (
             <button
@@ -54,14 +54,14 @@ export function WorkspaceLayout({
       </header>
 
       {/* Main Content: 2-Panel */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 gap-px overflow-hidden bg-[#E0E0DC]">
         {/* Left Panel */}
-        <main className="animate-fade-in flex-1 overflow-hidden">
+        <main className="animate-fade-in flex-1 overflow-hidden bg-white">
           {leftPanel}
         </main>
 
         {/* Right Panel */}
-        <aside className="animate-slide-in-right flex w-[420px] flex-shrink-0 flex-col bg-[#F7F7F5]">
+        <aside className="animate-slide-in-right flex w-[380px] flex-shrink-0 flex-col bg-[#F7F7F5]">
           {rightPanel}
         </aside>
       </div>

@@ -20,9 +20,9 @@ export function PreviewFrame({ url, framework }: PreviewFrameProps) {
   };
 
   return (
-    <div className="flex h-full flex-col bg-white">
+    <div className="flex h-full flex-col bg-[#F7F7F5]">
       {/* 툴바 */}
-      <div className="flex items-center gap-2 bg-[#F7F7F5] px-3 py-2">
+      <div className="flex items-center gap-2 px-3 py-2">
         <Globe className="h-3.5 w-3.5 text-[#787774]" />
         <span className="flex-1 truncate text-[12px] text-[#787774]">{url}</span>
         {framework && (

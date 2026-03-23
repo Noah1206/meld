@@ -42,7 +42,7 @@ export function FileTreeBrowser({ files, selectedPath, onSelectFile }: FileTreeB
   return (
     <div className="flex h-full flex-col">
       {/* 검색 */}
-      <div className="bg-[#F7F7F5] p-2">
+      <div className="p-2">
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-[#B4B4B0]" />
           <input
@@ -50,7 +50,7 @@ export function FileTreeBrowser({ files, selectedPath, onSelectFile }: FileTreeB
             placeholder="파일 검색..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg bg-white py-1.5 pl-7 pr-2.5 text-[12px] text-[#1A1A1A] placeholder:text-[#B4B4B0] focus:bg-[#FAFAFA] focus:outline-none transition-colors"
+            className="w-full rounded-lg bg-[#F7F7F5] py-1.5 pl-7 pr-2.5 text-[12px] text-[#1A1A1A] placeholder:text-[#B4B4B0] focus:bg-[#EEEEEC] focus:outline-none transition-colors"
           />
         </div>
       </div>

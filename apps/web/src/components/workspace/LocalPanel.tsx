@@ -83,26 +83,15 @@ export function LocalPanel({
   ];
 
   return (
-    <div className="flex h-full flex-col bg-white">
-      {/* 프로젝트 정보 */}
-      <div className="flex items-center gap-2 bg-[#F7F7F5] px-3 py-2">
-        <div className="h-2 w-2 rounded-full bg-[#1A1A1A]" />
-        <span className="text-[12px] font-medium text-[#1A1A1A]">
-          {projectName ?? "로컬 프로젝트"}
-        </span>
-        <span className="rounded-lg bg-white px-1.5 py-0.5 text-[10px] font-medium text-[#787774]">
-          연결됨
-        </span>
-      </div>
-
+    <div className="flex h-full flex-col bg-[#F7F7F5]">
       {/* 탭 바 */}
-      <div className="flex bg-[#F7F7F5]">
+      <div className="flex">
         {TABS.map((tab) => (
           <button
             key={tab.id}
             onClick={() => !tab.disabled && setActiveTab(tab.id)}
             disabled={tab.disabled}
-            className={`flex flex-1 items-center justify-center gap-1.5 py-2 text-[12px] font-medium transition-colors ${
+            className={`flex flex-1 items-center justify-center gap-1.5 py-2.5 text-[12px] font-medium transition-colors ${
               activeTab === tab.id
                 ? "bg-white text-[#1A1A1A]"
                 : tab.disabled
@@ -117,7 +106,7 @@ export function LocalPanel({
       </div>
 
       {/* 탭 컨텐츠 */}
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden bg-white">
         {activeTab === "files" && (
           <div className="flex flex-1 flex-col overflow-hidden">
             <div className={`overflow-hidden ${selectedFilePath ? "h-1/2" : "flex-1"}`}>
@@ -129,14 +118,14 @@ export function LocalPanel({
             </div>
 
             {selectedFilePath && (
-              <div className="flex flex-1 flex-col">
-                <div className="flex items-center gap-2 bg-[#F7F7F5] px-3 py-1.5">
+              <div className="flex flex-1 flex-col bg-[#F7F7F5]">
+                <div className="flex items-center gap-2 px-3 py-2">
                   <Code className="h-3 w-3 text-[#B4B4B0]" />
-                  <span className="truncate text-[10px] font-medium text-[#787774]">
+                  <span className="truncate text-[11px] font-medium text-[#787774]">
                     {selectedFilePath}
                   </span>
                 </div>
-                <div className="flex-1 overflow-auto bg-[#F7F7F5] p-3">
+                <div className="mx-2 mb-2 flex-1 overflow-auto rounded-lg bg-[#EEEEEC] p-3">
                   {isLoadingFile ? (
                     <div className="flex items-center gap-2">
                       <Loader2 className="h-3 w-3 animate-spin text-[#B4B4B0]" />
