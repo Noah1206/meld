@@ -242,14 +242,13 @@ export default function HomePage() {
           {/* 로고 스트립 */}
           <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-6 sm:gap-x-14 lg:gap-x-20">
             {[
-              { name: "Claude", style: "font-serif italic" },
+              { name: "Claude Sonnet", style: "font-serif italic" },
               { name: "GPT-4o", style: "font-mono font-bold" },
-              { name: "Gemini", style: "font-sans font-light tracking-wide" },
+              { name: "Gemini 2.5 Flash", style: "font-sans font-light tracking-wide" },
               { name: "Figma", style: "font-sans font-bold" },
               { name: "GitHub", style: "font-mono font-semibold" },
-              { name: "Vercel", style: "font-sans font-semibold tracking-tight" },
               { name: "Supabase", style: "font-mono font-medium" },
-              { name: "VS Code", style: "font-sans font-bold tracking-tight" },
+              { name: "Vercel", style: "font-sans font-semibold tracking-tight" },
             ].map((item) => (
               <span
                 key={item.name}
