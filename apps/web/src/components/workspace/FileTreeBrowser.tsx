@@ -34,7 +34,7 @@ export function FileTreeBrowser({ files, selectedPath, onSelectFile }: FileTreeB
   if (files.length === 0) {
     return (
       <div className="flex h-full items-center justify-center p-4">
-        <p className="text-xs text-[#9CA3AF]">파일 트리를 로드 중...</p>
+        <p className="text-[12px] text-[#B4B4B0]">파일 트리를 로드 중...</p>
       </div>
     );
   }
@@ -42,15 +42,15 @@ export function FileTreeBrowser({ files, selectedPath, onSelectFile }: FileTreeB
   return (
     <div className="flex h-full flex-col">
       {/* 검색 */}
-      <div className="border-b border-[#E5E7EB] p-2">
+      <div className="bg-[#F7F7F5] p-2">
         <div className="relative">
-          <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-[#9CA3AF]" />
+          <Search className="absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-[#B4B4B0]" />
           <input
             type="text"
             placeholder="파일 검색..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-md border border-[#E5E7EB] py-1.5 pl-7 pr-2.5 text-xs placeholder:text-[#9CA3AF] focus:border-[#2E86C1] focus:outline-none"
+            className="w-full rounded-lg bg-white py-1.5 pl-7 pr-2.5 text-[12px] text-[#1A1A1A] placeholder:text-[#B4B4B0] focus:bg-[#FAFAFA] focus:outline-none transition-colors"
           />
         </div>
       </div>
@@ -99,22 +99,22 @@ function FileItem({
 
   return (
     <button
-      className={`flex w-full items-center gap-1.5 px-2 py-1 text-left text-xs transition-colors ${
+      className={`flex w-full items-center gap-1.5 px-2 py-1 text-left text-[12px] transition-colors ${
         isSelected
-          ? "bg-blue-50 text-[#2E86C1]"
-          : "text-[#374151] hover:bg-[#F3F4F6]"
+          ? "bg-[#F7F7F5] text-[#1A1A1A]"
+          : "text-[#787774] hover:bg-[#F7F7F5] hover:text-[#1A1A1A]"
       }`}
       style={{ paddingLeft: 8 + indent * 16 }}
       onClick={() => !isDir && onSelect(entry.path)}
     >
       {isDir ? (
-        <Folder className="h-3.5 w-3.5 flex-shrink-0 text-[#F59E0B]" />
+        <Folder className="h-3.5 w-3.5 flex-shrink-0 text-[#787774]" />
       ) : (
-        <File className="h-3.5 w-3.5 flex-shrink-0 text-[#9CA3AF]" />
+        <File className="h-3.5 w-3.5 flex-shrink-0 text-[#B4B4B0]" />
       )}
       <span className="truncate">{getFileName(entry.path)}</span>
       {!isDir && entry.size != null && (
-        <span className="ml-auto flex-shrink-0 text-[10px] text-[#9CA3AF]">
+        <span className="ml-auto flex-shrink-0 text-[10px] text-[#B4B4B0]">
           {formatSize(entry.size)}
         </span>
       )}
@@ -146,7 +146,7 @@ function TreeEntry({
       <div className="flex items-center">
         {hasChildren && (
           <button
-            className="flex-shrink-0 px-1 text-[#9CA3AF] hover:text-[#6B7280]"
+            className="flex-shrink-0 px-1 text-[#B4B4B0] hover:text-[#787774]"
             style={{ marginLeft: indent * 16 }}
             onClick={() => onToggle(entry.path)}
           >

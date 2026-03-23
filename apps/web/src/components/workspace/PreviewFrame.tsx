@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { RefreshCw, ExternalLink, Globe } from "lucide-react";
+import { RefreshCw, ExternalLink, Globe, Loader2 } from "lucide-react";
 
 interface PreviewFrameProps {
   url: string;
@@ -20,19 +20,19 @@ export function PreviewFrame({ url, framework }: PreviewFrameProps) {
   };
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col bg-white">
       {/* 툴바 */}
-      <div className="flex items-center gap-2 border-b border-[#E5E7EB] px-3 py-2">
-        <Globe className="h-3.5 w-3.5 text-[#6B7280]" />
-        <span className="flex-1 truncate text-xs text-[#6B7280]">{url}</span>
+      <div className="flex items-center gap-2 bg-[#F7F7F5] px-3 py-2">
+        <Globe className="h-3.5 w-3.5 text-[#787774]" />
+        <span className="flex-1 truncate text-[12px] text-[#787774]">{url}</span>
         {framework && (
-          <span className="rounded bg-[#F3F4F6] px-1.5 py-0.5 text-[10px] font-medium text-[#6B7280]">
+          <span className="rounded-lg bg-white px-1.5 py-0.5 text-[10px] font-medium text-[#787774]">
             {framework}
           </span>
         )}
         <button
           onClick={handleRefresh}
-          className="rounded p-1 text-[#9CA3AF] transition-colors hover:bg-[#F3F4F6] hover:text-[#6B7280]"
+          className="rounded-lg p-1 text-[#B4B4B0] transition-colors hover:bg-[#EEEEEC] hover:text-[#787774]"
           title="새로고침"
         >
           <RefreshCw className="h-3.5 w-3.5" />
@@ -41,7 +41,7 @@ export function PreviewFrame({ url, framework }: PreviewFrameProps) {
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="rounded p-1 text-[#9CA3AF] transition-colors hover:bg-[#F3F4F6] hover:text-[#6B7280]"
+          className="rounded-lg p-1 text-[#B4B4B0] transition-colors hover:bg-[#EEEEEC] hover:text-[#787774]"
           title="새 탭에서 열기"
         >
           <ExternalLink className="h-3.5 w-3.5" />
@@ -53,8 +53,8 @@ export function PreviewFrame({ url, framework }: PreviewFrameProps) {
         {isLoading && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-white">
             <div className="flex items-center gap-2">
-              <RefreshCw className="h-4 w-4 animate-spin text-[#2E86C1]" />
-              <span className="text-xs text-[#6B7280]">로딩 중...</span>
+              <Loader2 className="h-4 w-4 animate-spin text-[#787774]" />
+              <span className="text-[12px] text-[#787774]">로딩 중...</span>
             </div>
           </div>
         )}

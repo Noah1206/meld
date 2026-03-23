@@ -36,17 +36,17 @@ export function ChatPanel({ projectId, githubOwner, githubRepo, mode = "cloud" }
   const [activeTab, setActiveTab] = useState<TabId>("chat");
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col bg-[#F7F7F5]">
       {/* 탭 바 */}
-      <div className="flex border-b border-[#E5E7EB]">
+      <div className="flex bg-[#F7F7F5]">
         {TABS.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex flex-1 items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors ${
+            className={`flex flex-1 items-center justify-center gap-1.5 py-2.5 text-[12px] font-medium transition-colors ${
               activeTab === tab.id
-                ? "border-b-2 border-[#2E86C1] text-[#2E86C1]"
-                : "text-[#6B7280] hover:text-[#374151]"
+                ? "bg-white text-[#1A1A1A]"
+                : "text-[#787774] hover:text-[#1A1A1A]"
             }`}
           >
             {tab.icon}
@@ -56,14 +56,14 @@ export function ChatPanel({ projectId, githubOwner, githubRepo, mode = "cloud" }
       </div>
 
       {/* 탭 컨텐츠 */}
-      <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex min-h-0 flex-1 flex-col bg-white">
         {activeTab === "chat" && (
           <div className="relative flex min-h-0 flex-1 flex-col">
             <div className="min-h-0 flex-1 overflow-y-auto pb-2">
               <ChatMessages />
             </div>
             <div className="pointer-events-none absolute inset-x-0 bottom-[var(--input-h,100px)] h-8 bg-gradient-to-t from-white to-transparent" />
-            <div className="flex-shrink-0 border-t border-white/60 bg-white/70 backdrop-blur-xl backdrop-saturate-150">
+            <div className="flex-shrink-0 bg-[#F7F7F5]">
               <ChatInput projectId={projectId} mode={mode} />
             </div>
           </div>
@@ -94,7 +94,7 @@ export function ChatPanel({ projectId, githubOwner, githubRepo, mode = "cloud" }
 
         {activeTab === "preview" && isLocal && (
           <div className="flex-1 overflow-y-auto p-4">
-            <p className="text-center text-xs text-[#9CA3AF]">
+            <p className="text-center text-[12px] text-[#B4B4B0]">
               좌측 패널에서 프리뷰를 확인하세요
             </p>
           </div>
