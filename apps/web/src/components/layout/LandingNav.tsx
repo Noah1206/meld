@@ -49,41 +49,44 @@ export function LandingNav({ dark = false, activePath }: LandingNavProps) {
           scrolled ? "shadow-2xl" : ""
         }`}
         style={{
-          backdropFilter: "blur(40px) saturate(1.8)",
-          WebkitBackdropFilter: "blur(40px) saturate(1.8)",
+          backdropFilter: scrolled ? "blur(40px) saturate(1.8)" : "none",
+          WebkitBackdropFilter: scrolled ? "blur(40px) saturate(1.8)" : "none",
         }}
       >
-        {/* 글래스 배경 레이어 */}
+        {/* 글래스 배경 레이어 — 스크롤 시에만 등장 */}
         <div
           className="absolute inset-0 rounded-full transition-opacity duration-500"
           style={{
             background:
               "linear-gradient(135deg, rgba(15,18,30,0.6) 0%, rgba(25,28,50,0.5) 40%, rgba(50,40,80,0.4) 100%)",
+            opacity: scrolled ? 1 : 0,
           }}
         />
 
-        {/* 테두리 글로우 */}
+        {/* 테두리 글로우 — 스크롤 시에만 등장 */}
         <div
-          className="absolute inset-0 rounded-full"
+          className="absolute inset-0 rounded-full transition-opacity duration-500"
           style={{
             border: "1px solid rgba(255,255,255,0.1)",
             boxShadow:
               "inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -1px 0 rgba(255,255,255,0.04), 0 8px 32px rgba(0,0,0,0.3)",
+            opacity: scrolled ? 1 : 0,
           }}
         />
 
-        {/* 빛 반사 하이라이트 (상단) */}
+        {/* 빛 반사 하이라이트 (상단) — 스크롤 시에만 */}
         <div
-          className="absolute inset-x-0 top-0 h-[1px] rounded-full"
+          className="absolute inset-x-0 top-0 h-[1px] rounded-full transition-opacity duration-500"
           style={{
             background:
               "linear-gradient(90deg, transparent 10%, rgba(255,255,255,0.2) 50%, transparent 90%)",
+            opacity: scrolled ? 1 : 0,
           }}
         />
 
-        {/* 떠다니는 오로라 글로우 */}
+        {/* 떠다니는 오로라 글로우 — 스크롤 시에만 */}
         <div
-          className="absolute -inset-1 rounded-full opacity-0 transition-opacity duration-700"
+          className="absolute -inset-1 rounded-full transition-opacity duration-700"
           style={{
             background:
               "linear-gradient(135deg, rgba(100,130,255,0.15) 0%, rgba(160,100,255,0.1) 50%, rgba(200,170,100,0.1) 100%)",
