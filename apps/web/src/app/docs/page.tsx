@@ -131,10 +131,10 @@ export default function DocsPage() {
     <div className="min-h-screen bg-white">
       {/* 헤더 */}
       <header className="bg-white/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-[1440px] items-center justify-between px-6 lg:px-16 py-3.5">
+        <div className="mx-auto flex max-w-[1440px] items-center justify-between px-6 lg:px-16 py-4">
           <Link
             href="/dashboard"
-            className="flex items-center gap-1.5 text-[13px] text-[#787774] transition-colors hover:text-[#1A1A1A]"
+            className="flex items-center gap-1.5 text-[15px] text-[#787774] transition-colors hover:text-[#1A1A1A]"
           >
             <ArrowLeft className="h-4 w-4" />
             {t.back}

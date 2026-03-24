@@ -188,7 +188,7 @@ const translations = {
 function DashboardSkeleton() {
   return (
     <div className="min-h-screen bg-white">
-      <header className="bg-white px-6 lg:px-16 py-3.5">
+      <header className="bg-white px-6 lg:px-16 py-4">
         <div className="mx-auto flex max-w-[1440px] items-center justify-between">
           <div className="animate-shimmer h-5 w-28 rounded" />
           <div className="flex items-center gap-3">
@@ -510,12 +510,12 @@ export default function DashboardPage() {
     <div className="animate-fade-in min-h-screen bg-white">
       {/* 헤더 */}
       <header className="bg-white/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-[1440px] items-center justify-between px-6 lg:px-16 py-3.5">
+        <div className="mx-auto flex max-w-[1440px] items-center justify-between px-6 lg:px-16 py-4">
           <Link href="/" className="flex items-center gap-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1A1A1A]">
               <Blend className="h-3.5 w-3.5 text-white" />
             </div>
-            <span className="text-[15px] font-semibold text-[#1A1A1A]">FigmaCodeBridge</span>
+            <span className="text-[16px] font-semibold text-[#1A1A1A]">FigmaCodeBridge</span>
           </Link>
           <div className="flex items-center gap-3">
             {user && (

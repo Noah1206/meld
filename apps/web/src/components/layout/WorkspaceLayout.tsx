@@ -21,12 +21,12 @@ export function WorkspaceLayout({
   return (
     <div className="flex h-screen flex-col bg-[#EEEEEC]">
       {/* Header */}
-      <header className="flex h-11 items-center justify-between bg-white px-4">
+      <header className="flex h-12 items-center justify-between bg-white px-4">
         <div className="flex items-center gap-3">
           {onBack && (
             <button
               onClick={onBack}
-              className="flex items-center gap-1 text-[13px] text-[#787774] transition-colors hover:text-[#1A1A1A]"
+              className="flex items-center gap-1 text-[15px] text-[#787774] transition-colors hover:text-[#1A1A1A]"
             >
               <ArrowLeft className="h-4 w-4" />
               <span className="hidden sm:inline">뒤로</span>
@@ -35,11 +35,11 @@ export function WorkspaceLayout({
           {onBack && <div className="h-4 w-px bg-[#E0E0DC]" />}
           <div className="flex items-center gap-2">
             <Link href="/" className="flex items-center gap-2">
-              <div className="flex h-6 w-6 items-center justify-center rounded-md bg-[#1A1A1A]">
-                <Blend className="h-3 w-3 text-white" />
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1A1A1A]">
+                <Blend className="h-3.5 w-3.5 text-white" />
               </div>
             </Link>
-            <h1 className="text-[14px] font-semibold text-[#1A1A1A]">
+            <h1 className="text-[16px] font-semibold text-[#1A1A1A]">
               {projectName || "FigmaCodeBridge"}
             </h1>
             <span className="rounded-md bg-[#F7F7F5] px-2 py-0.5 text-[10px] font-medium text-[#B4B4B0]">
