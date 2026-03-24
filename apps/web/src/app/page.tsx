@@ -343,14 +343,8 @@ export default function HomePage() {
             </Link>
           </div>
 
-          {/* 프레임워크 태그 */}
-          <div className="animate-fade-in animation-delay-450 mt-8 flex items-center gap-2 text-[12px] text-[#CCC]">
-            {["Next.js", "React", "Vue", "Angular", "Svelte", "Vite", "Astro"].map((fw) => (
-              <span key={fw} className="rounded-full bg-[#FAFAFA] px-2.5 py-0.5 ring-1 ring-black/[0.04]">
-                {fw}
-              </span>
-            ))}
-          </div>
+          {/* 빈 여백 */}
+          <div className="mt-8" />
         </div>
       </section>
 
@@ -492,10 +486,10 @@ export default function HomePage() {
                   { name: "Claude Sonnet", style: "font-serif italic" },
                   { name: "GPT-4o", style: "font-mono font-bold" },
                   { name: "Gemini 2.5 Flash", style: "font-sans font-light tracking-wide" },
-                  { name: "Figma", style: "font-sans font-bold" },
-                  { name: "GitHub", style: "font-mono font-semibold" },
-                  { name: "Supabase", style: "font-mono font-medium" },
-                  { name: "Vercel", style: "font-sans font-semibold tracking-tight" },
+                  { name: "Grok", style: "font-sans font-bold" },
+                  { name: "LLaMA 4", style: "font-mono font-semibold" },
+                  { name: "Mistral Large", style: "font-sans font-medium tracking-tight" },
+                  { name: "DeepSeek V3", style: "font-mono font-light" },
                 ].map((item) => (
                   <span
                     key={`${setIdx}-${item.name}`}
