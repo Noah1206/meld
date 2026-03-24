@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { useLangStore } from "@/lib/store/lang-store";
 import Link from "next/link";
 import { LandingNav } from "@/components/layout/LandingNav";
@@ -12,10 +12,6 @@ const translations = {
     // Hero
     heroTitle1: "choose your plan",
     heroTitle2: "design to code",
-
-    // Toggle
-    yearly: "yearly billing",
-    yearlySave: "save 20%",
 
     // Starter
     starterName: "Meld Starter",
@@ -31,9 +27,10 @@ const translations = {
 
     // Pro
     proName: "Meld Pro",
-    proPriceMonthly: "$20",
-    proPriceYearly: "$16",
+    proOriginalPrice: "$30",
+    proPrice: "$20",
     proPer: "/ mo",
+    proDiscount: "33% off",
     proFeatures: [
       "Unlimited projects",
       "Unlimited AI edits",
@@ -46,9 +43,10 @@ const translations = {
 
     // Unlimited
     unlimitedName: "Meld Unlimited",
-    unlimitedPriceMonthly: "$49",
-    unlimitedPriceYearly: "$39",
+    unlimitedOriginalPrice: "$69",
+    unlimitedPrice: "$49",
     unlimitedPer: "/ mo",
+    unlimitedDiscount: "29% off",
     unlimitedFeatures: [
       "Everything in Pro",
       "Team collaboration",
@@ -69,9 +67,6 @@ const translations = {
     heroTitle1: "플랜을 선택하세요",
     heroTitle2: "디자인을 코드로",
 
-    yearly: "연간 결제",
-    yearlySave: "20% 할인",
-
     starterName: "Meld Starter",
     starterPrice: "Free",
     starterTagline: "Figma to Code 시작하기",
@@ -84,9 +79,10 @@ const translations = {
     starterCta: "시작하기",
 
     proName: "Meld Pro",
-    proPriceMonthly: "$20",
-    proPriceYearly: "$16",
+    proOriginalPrice: "$30",
+    proPrice: "$20",
     proPer: "/ 월",
+    proDiscount: "33% 할인",
     proFeatures: [
       "무제한 프로젝트",
       "무제한 AI 수정",
@@ -98,9 +94,10 @@ const translations = {
     proCta: "Meld Pro 시작",
 
     unlimitedName: "Meld Unlimited",
-    unlimitedPriceMonthly: "$49",
-    unlimitedPriceYearly: "$39",
+    unlimitedOriginalPrice: "$69",
+    unlimitedPrice: "$49",
     unlimitedPer: "/ 월",
+    unlimitedDiscount: "29% 할인",
     unlimitedFeatures: [
       "Pro의 모든 기능",
       "팀 협업",
@@ -143,7 +140,6 @@ function useInView(threshold = 0.15) {
 export default function PricingPage() {
   const { lang, toggleLang } = useLangStore();
   const t = translations[lang];
-  const [yearly, setYearly] = useState(true);
 
   const cardsSection = useInView(0.1);
   const bottomSection = useInView();
@@ -209,32 +205,14 @@ export default function PricingPage() {
           {/* Pro */}
           <div className={`flex flex-col border-x border-[#1E2228] bg-[#0B0E11] p-10 lg:p-12 transition-all duration-700 delay-150 ${cardsSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
             <div className="flex-1">
-              <h3 className="text-[22px] font-medium text-white">{t.proName}</h3>
-              <div className="mt-1.5 flex items-baseline gap-2.5">
-                {yearly ? (
-                  <>
-                    <span className="text-[16px] text-[#555] line-through">{t.proPriceMonthly}</span>
-                    <span className="text-[32px] font-light text-white">{t.proPriceYearly}</span>
-                  </>
-                ) : (
-                  <span className="text-[32px] font-light text-white">{t.proPriceMonthly}</span>
-                )}
-                <span className="text-[15px] text-[#555]">{t.proPer}</span>
+              <div className="flex items-center gap-3">
+                <h3 className="text-[22px] font-medium text-white">{t.proName}</h3>
+                <span className="rounded-full bg-[#C5B882]/15 px-2.5 py-0.5 text-[11px] font-semibold text-[#C5B882]">{t.proDiscount}</span>
               </div>
-
-              {/* 연간/월간 토글 */}
-              <div className="mt-5 flex items-center gap-3">
-                <button
-                  onClick={() => setYearly(!yearly)}
-                  className={`relative h-6 w-10 rounded-full transition-colors ${yearly ? "bg-[#6B8AFF]" : "bg-[#333]"}`}
-                >
-                  <div
-                    className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${yearly ? "left-[18px]" : "left-0.5"}`}
-                  />
-                </button>
-                <span className="text-[14px] text-[#666]">
-                  {t.yearly} ({t.yearlySave})
-                </span>
+              <div className="mt-1.5 flex items-baseline gap-2.5">
+                <span className="text-[16px] text-[#555] line-through">{t.proOriginalPrice}</span>
+                <span className="text-[32px] font-light text-white">{t.proPrice}</span>
+                <span className="text-[15px] text-[#555]">{t.proPer}</span>
               </div>
 
               <ul className="mt-10 space-y-4">
@@ -262,16 +240,13 @@ export default function PricingPage() {
           {/* Unlimited */}
           <div className={`flex flex-col bg-[#0B0E11] p-10 lg:p-12 transition-all duration-700 delay-300 ${cardsSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
             <div className="flex-1">
-              <h3 className="text-[22px] font-medium text-white">{t.unlimitedName}</h3>
+              <div className="flex items-center gap-3">
+                <h3 className="text-[22px] font-medium text-white">{t.unlimitedName}</h3>
+                <span className="rounded-full bg-[#C5B882]/15 px-2.5 py-0.5 text-[11px] font-semibold text-[#C5B882]">{t.unlimitedDiscount}</span>
+              </div>
               <div className="mt-1.5 flex items-baseline gap-2.5">
-                {yearly ? (
-                  <>
-                    <span className="text-[16px] text-[#555] line-through">{t.unlimitedPriceMonthly}</span>
-                    <span className="text-[32px] font-light text-white">{t.unlimitedPriceYearly}</span>
-                  </>
-                ) : (
-                  <span className="text-[32px] font-light text-white">{t.unlimitedPriceMonthly}</span>
-                )}
+                <span className="text-[16px] text-[#555] line-through">{t.unlimitedOriginalPrice}</span>
+                <span className="text-[32px] font-light text-white">{t.unlimitedPrice}</span>
                 <span className="text-[15px] text-[#555]">{t.unlimitedPer}</span>
               </div>
 
