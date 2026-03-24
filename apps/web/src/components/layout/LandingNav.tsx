@@ -35,8 +35,17 @@ export function LandingNav({ dark = false, activePath }: LandingNavProps) {
     { href: "/pricing", label: lang === "ko" ? "가격" : "Pricing" },
   ];
 
-  const activeColor = "font-medium text-white";
-  const linkColor = "text-white/50 hover:text-white";
+  // 다크 배경이거나 스크롤돼서 글래스가 뜨면 → 흰색, 밝은 배경이면 → 검은색
+  const onDark = dark || scrolled;
+  const logoText = onDark ? "text-white" : "text-[#1A1A1A]";
+  const activeColor = onDark
+    ? "font-medium text-white"
+    : "font-medium text-[#1A1A1A]";
+  const linkColor = onDark
+    ? "text-white/50 hover:text-white"
+    : "text-[#999] hover:text-[#1A1A1A]";
+  const logoBg = onDark ? "bg-white/90" : "bg-[#1A1A1A]";
+  const logoIcon = onDark ? "text-[#0B0E11]" : "text-white";
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 flex justify-center px-4 pt-4 pointer-events-none">
@@ -105,10 +114,10 @@ export function LandingNav({ dark = false, activePath }: LandingNavProps) {
               : "opacity-0 -translate-x-4"
           }`}
         >
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/90 backdrop-blur-sm transition-transform duration-300 hover:scale-110 hover:rotate-3">
-            <Blend className="h-3.5 w-3.5 text-[#0B0E11]" />
+          <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${logoBg} backdrop-blur-sm transition-all duration-500 hover:scale-110 hover:rotate-3`}>
+            <Blend className={`h-3.5 w-3.5 ${logoIcon}`} />
           </div>
-          <span className="text-[17px] font-semibold text-white">Meld</span>
+          <span className={`text-[17px] font-semibold transition-colors duration-500 ${logoText}`}>Meld</span>
         </Link>
 
         {/* 링크 */}
@@ -117,7 +126,7 @@ export function LandingNav({ dark = false, activePath }: LandingNavProps) {
             <Link
               key={link.href}
               href={link.href}
-              className={`relative text-[15px] transition-all duration-300 ${
+              className={`relative text-[15px] transition-all duration-500 ${
                 activePath === link.href ? activeColor : linkColor
               } ${
                 mounted
