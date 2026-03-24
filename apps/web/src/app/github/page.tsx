@@ -17,7 +17,7 @@ import { useLangStore } from "@/lib/store/lang-store";
 
 const translations = {
   en: {
-    back: "Dashboard",
+    back: "Home",
     title: "GitHub",
     subtitle: "Check out the source code and file issues.",
 
@@ -42,10 +42,10 @@ const translations = {
 
     techStack: "Tech Stack",
 
-    backToDashboard: "Back to Dashboard",
+    backToDashboard: "Back to Home",
   },
   ko: {
-    back: "대시보드",
+    back: "홈",
     title: "GitHub",
     subtitle: "소스 코드를 확인하고 이슈를 등록하세요.",
 
@@ -70,7 +70,7 @@ const translations = {
 
     techStack: "기술 스택",
 
-    backToDashboard: "대시보드로 돌아가기",
+    backToDashboard: "홈으로 돌아가기",
   },
 } as const;
 
@@ -93,7 +93,7 @@ export default function GitHubPage() {
       <header className="bg-white/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[1440px] items-center justify-between px-6 lg:px-16 py-4">
           <Link
-            href="/dashboard"
+            href="/"
             className="flex items-center gap-1.5 text-[15px] text-[#787774] transition-colors hover:text-[#1A1A1A]"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -206,7 +206,7 @@ export default function GitHubPage() {
         {/* 하단 */}
         <div className="text-center">
           <Link
-            href="/dashboard"
+            href="/"
             className="inline-flex items-center gap-2 text-[14px] font-medium text-[#1A1A1A] transition-colors hover:text-[#787774]"
           >
             {t.backToDashboard}

@@ -17,7 +17,7 @@ import { useLangStore } from "@/lib/store/lang-store";
 
 const translations = {
   en: {
-    back: "Dashboard",
+    back: "Home",
     title: "Docs",
     subtitle: "Learn how to get started and make the most of FigmaCodeBridge.",
 
@@ -56,10 +56,10 @@ const translations = {
     faq4Q: "Which AI model does it use?",
     faq4A: "It uses Claude Sonnet 4.6, with prompts optimized for code modifications.",
 
-    backToDashboard: "Back to Dashboard",
+    backToDashboard: "Back to Home",
   },
   ko: {
-    back: "대시보드",
+    back: "홈",
     title: "문서",
     subtitle: "FigmaCodeBridge를 시작하고 활용하는 방법을 안내합니다.",
 
@@ -98,7 +98,7 @@ const translations = {
     faq4Q: "어떤 AI 모델을 사용하나요?",
     faq4A: "Claude Sonnet 4.6을 사용합니다. 코드 수정에 최적화된 프롬프트로 동작합니다.",
 
-    backToDashboard: "대시보드로 돌아가기",
+    backToDashboard: "홈으로 돌아가기",
   },
 } as const;
 
@@ -133,7 +133,7 @@ export default function DocsPage() {
       <header className="bg-white/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[1440px] items-center justify-between px-6 lg:px-16 py-4">
           <Link
-            href="/dashboard"
+            href="/"
             className="flex items-center gap-1.5 text-[15px] text-[#787774] transition-colors hover:text-[#1A1A1A]"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -259,7 +259,7 @@ export default function DocsPage() {
         {/* 하단 CTA */}
         <div className="text-center">
           <Link
-            href="/dashboard"
+            href="/"
             className="inline-flex items-center gap-2 text-[14px] font-medium text-[#1A1A1A] transition-colors hover:text-[#787774]"
           >
             {t.backToDashboard}

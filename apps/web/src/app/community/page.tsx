@@ -16,7 +16,7 @@ import { useLangStore } from "@/lib/store/lang-store";
 
 const translations = {
   en: {
-    back: "Dashboard",
+    back: "Home",
     title: "Community",
     subtitle: "Connect with other users and help each other.",
 
@@ -46,10 +46,10 @@ const translations = {
     twitter: "Twitter / X",
     twitterDesc: "News and updates",
 
-    backToDashboard: "Back to Dashboard",
+    backToDashboard: "Back to Home",
   },
   ko: {
-    back: "대시보드",
+    back: "홈",
     title: "커뮤니티",
     subtitle: "다른 사용자들과 소통하고 도움을 주고받으세요.",
 
@@ -79,7 +79,7 @@ const translations = {
     twitter: "Twitter / X",
     twitterDesc: "업데이트 소식",
 
-    backToDashboard: "대시보드로 돌아가기",
+    backToDashboard: "홈으로 돌아가기",
   },
 } as const;
 
@@ -100,7 +100,7 @@ export default function CommunityPage() {
       <header className="bg-white/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[1440px] items-center justify-between px-6 lg:px-16 py-4">
           <Link
-            href="/dashboard"
+            href="/"
             className="flex items-center gap-1.5 text-[15px] text-[#787774] transition-colors hover:text-[#1A1A1A]"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -217,7 +217,7 @@ export default function CommunityPage() {
         {/* 하단 */}
         <div className="text-center">
           <Link
-            href="/dashboard"
+            href="/"
             className="inline-flex items-center gap-2 text-[14px] font-medium text-[#1A1A1A] transition-colors hover:text-[#787774]"
           >
             {t.backToDashboard}
