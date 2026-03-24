@@ -16,17 +16,17 @@ const translations = {
     yearly: "yearly billing",
     yearlySave: "save 20%",
 
-    // Free
-    freeName: "Free",
-    freePrice: "$0",
-    freeTagline: "design, share, ship",
-    freeFeatures: [
+    // Starter
+    starterName: "Starter",
+    starterPrice: "$0",
+    starterTagline: "design, share, ship",
+    starterFeatures: [
       "100/week MCP tool calls",
       "Limited image generation",
       "25 MB max image size",
       "Limited collaboration files",
     ],
-    freeCta: "get started",
+    starterCta: "get started",
 
     // Pro
     proName: "Pro",
@@ -43,11 +43,11 @@ const translations = {
     ],
     proCta: "get Meld Pro",
 
-    // Org
-    orgName: "Organizations",
-    orgPrice: "—",
-    orgTagline: "coming soon",
-    orgFeatures: [
+    // Unlimited
+    unlimitedName: "Unlimited",
+    unlimitedPrice: "—",
+    unlimitedTagline: "coming soon",
+    unlimitedFeatures: [
       "Everything in Pro",
       "SAML / SSO",
       "Admin controls",
@@ -55,7 +55,7 @@ const translations = {
       "Dedicated support",
       "Priority onboarding",
     ],
-    orgCta: "contact us",
+    unlimitedCta: "contact us",
 
     // Bottom
     bottomText: "used in production by designers at",
@@ -70,16 +70,16 @@ const translations = {
     yearly: "연간 결제",
     yearlySave: "20% 할인",
 
-    freeName: "Free",
-    freePrice: "$0",
-    freeTagline: "디자인, 공유, 배포",
-    freeFeatures: [
+    starterName: "Starter",
+    starterPrice: "$0",
+    starterTagline: "디자인, 공유, 배포",
+    starterFeatures: [
       "주 100회 MCP 도구 호출",
       "제한된 이미지 생성",
       "25 MB 최대 이미지 크기",
       "제한된 협업 파일",
     ],
-    freeCta: "시작하기",
+    starterCta: "시작하기",
 
     proName: "Pro",
     proPriceMonthly: "$20",
@@ -95,10 +95,10 @@ const translations = {
     ],
     proCta: "Meld Pro 시작",
 
-    orgName: "Organizations",
-    orgPrice: "—",
-    orgTagline: "출시 예정",
-    orgFeatures: [
+    unlimitedName: "Unlimited",
+    unlimitedPrice: "—",
+    unlimitedTagline: "출시 예정",
+    unlimitedFeatures: [
       "Pro의 모든 기능",
       "SAML / SSO",
       "관리자 제어",
@@ -106,7 +106,7 @@ const translations = {
       "전담 지원",
       "우선 온보딩",
     ],
-    orgCta: "문의하기",
+    unlimitedCta: "문의하기",
 
     bottomText: "현재 사용 중인 디자이너들",
 
@@ -176,15 +176,15 @@ export default function PricingPage() {
       {/* 가격 카드 */}
       <section ref={cardsSection.ref} className="relative z-10 mx-auto max-w-[1440px] px-6 lg:px-16 py-16 lg:py-24">
         <div className="grid gap-px overflow-hidden rounded-2xl border border-[#1E2228] sm:grid-cols-3">
-          {/* Free */}
+          {/* Starter */}
           <div className={`flex flex-col bg-[#0B0E11] p-10 lg:p-12 transition-all duration-700 ${cardsSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
             <div className="flex-1">
-              <h3 className="text-[22px] font-medium text-white">{t.freeName}</h3>
-              <p className="mt-1.5 text-[32px] font-light text-white">{t.freePrice}</p>
-              <p className="mt-4 text-[14px] text-[#C5B882]">{t.freeTagline}</p>
+              <h3 className="text-[22px] font-medium text-white">{t.starterName}</h3>
+              <p className="mt-1.5 text-[32px] font-light text-white">{t.starterPrice}</p>
+              <p className="mt-4 text-[14px] text-[#C5B882]">{t.starterTagline}</p>
 
               <ul className="mt-10 space-y-4">
-                {t.freeFeatures.map((feature) => (
+                {t.starterFeatures.map((feature) => (
                   <li key={feature} className="flex items-start gap-3">
                     <Check className="mt-0.5 h-4.5 w-4.5 flex-shrink-0 text-[#C5B882]" />
                     <span className="text-[16px] text-[#999]">{feature}</span>
@@ -198,7 +198,7 @@ export default function PricingPage() {
                 href="/dashboard"
                 className="inline-flex items-center rounded-lg bg-[#1E2228] px-6 py-3 text-[15px] font-medium text-white transition-all hover:bg-[#2A2F36] active:scale-[0.98]"
               >
-                {t.freeCta}
+                {t.starterCta}
               </Link>
             </div>
           </div>
@@ -254,15 +254,15 @@ export default function PricingPage() {
             </div>
           </div>
 
-          {/* Organizations */}
+          {/* Unlimited */}
           <div className={`flex flex-col bg-[#0B0E11] p-10 lg:p-12 transition-all duration-700 delay-300 ${cardsSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
             <div className="flex-1">
-              <h3 className="text-[22px] font-medium text-white">{t.orgName}</h3>
-              <p className="mt-1.5 text-[32px] font-light text-white">{t.orgPrice}</p>
-              <p className="mt-4 text-[14px] text-[#C5B882]">{t.orgTagline}</p>
+              <h3 className="text-[22px] font-medium text-white">{t.unlimitedName}</h3>
+              <p className="mt-1.5 text-[32px] font-light text-white">{t.unlimitedPrice}</p>
+              <p className="mt-4 text-[14px] text-[#C5B882]">{t.unlimitedTagline}</p>
 
               <ul className="mt-10 space-y-4">
-                {t.orgFeatures.map((feature) => (
+                {t.unlimitedFeatures.map((feature) => (
                   <li key={feature} className="flex items-start gap-3">
                     <Check className="mt-0.5 h-4.5 w-4.5 flex-shrink-0 text-[#C5B882]" />
                     <span className="text-[16px] text-[#999]">{feature}</span>
@@ -276,7 +276,7 @@ export default function PricingPage() {
                 href="/community"
                 className="inline-flex items-center rounded-lg bg-[#1E2228] px-6 py-3 text-[15px] font-medium text-white transition-all hover:bg-[#2A2F36] active:scale-[0.98]"
               >
-                {t.orgCta}
+                {t.unlimitedCta}
               </Link>
             </div>
           </div>
