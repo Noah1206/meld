@@ -30,19 +30,19 @@ export function LandingNav({ dark = false, activePath }: LandingNavProps) {
 
   return (
     <nav className={`fixed top-0 left-0 right-0 z-50 ${navBg} backdrop-blur-xl`}>
-      <div className="mx-auto flex max-w-[1440px] items-center justify-between px-6 lg:px-16 py-4">
-        <Link href="/" className="flex items-center gap-2">
-          <div className={`flex h-7 w-7 items-center justify-center rounded-md ${logoBg}`}>
-            <Blend className={`h-3.5 w-3.5 ${logoIcon}`} />
+      <div className="mx-auto flex max-w-[1440px] items-center justify-between px-6 lg:px-16 py-5">
+        <Link href="/" className="flex items-center gap-2.5">
+          <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${logoBg}`}>
+            <Blend className={`h-4 w-4 ${logoIcon}`} />
           </div>
-          <span className={`text-[16px] font-semibold ${logoText}`}>Meld</span>
+          <span className={`text-[18px] font-semibold ${logoText}`}>Meld</span>
         </Link>
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-7">
           {links.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className={`text-[15px] transition-colors ${
+              className={`text-[16px] transition-colors ${
                 activePath === link.href ? activeColor : linkColor
               }`}
             >
@@ -51,7 +51,7 @@ export function LandingNav({ dark = false, activePath }: LandingNavProps) {
           ))}
           <Link
             href="/dashboard"
-            className="rounded-lg bg-[#F5F0E8] px-5 py-2 text-[15px] font-semibold text-[#1A1A1A] transition-colors hover:bg-[#EDE7DB]"
+            className="rounded-lg bg-[#F5F0E8] px-6 py-2.5 text-[16px] font-semibold text-[#1A1A1A] transition-colors hover:bg-[#EDE7DB]"
           >
             {lang === "ko" ? "시작하기" : "Get Started"}
           </Link>
