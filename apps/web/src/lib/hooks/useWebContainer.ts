@@ -56,6 +56,13 @@ export function useWebContainer(
         setStatusMessage("WebContainer 부팅 중...");
 
         if (!wcInstance) {
+          if (typeof window !== "undefined" && !window.crossOriginIsolated) {
+            setStatus("error");
+            setStatusMessage(
+              "Cross-Origin Isolation이 활성화되지 않았습니다. 페이지를 새로고침해주세요.",
+            );
+            return;
+          }
           wcInstance = await WebContainer.boot();
         }
         const wc = wcInstance;
