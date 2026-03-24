@@ -21,10 +21,10 @@ const translations = {
     freePrice: "$0",
     freeTagline: "design, share, ship",
     freeFeatures: [
-      "100/week AI code edits",
-      "3 projects",
-      "GitHub push (public repos)",
-      "Community support",
+      "100/week MCP tool calls",
+      "Limited image generation",
+      "25 MB max image size",
+      "Limited collaboration files",
     ],
     freeCta: "get started",
 
@@ -34,13 +34,12 @@ const translations = {
     proPriceYearly: "$16",
     proPer: "per user/month",
     proFeatures: [
-      "Unlimited AI code edits",
-      "Unlimited projects",
-      "GitHub push (all repos)",
-      "Priority AI models",
-      "Design change tracking",
-      "Team collaboration",
-      "Priority support",
+      "1M/week MCP tool calls",
+      "100x more image gen per day",
+      "Video export",
+      "100 MB max image size",
+      "Unlimited collaboration files",
+      "Priority feedback",
     ],
     proCta: "get Meld Pro",
 
@@ -59,7 +58,7 @@ const translations = {
     orgCta: "contact us",
 
     // Bottom
-    bottomText: "used in production by developers at",
+    bottomText: "used in production by designers at",
 
     // Footer
     footerTagline: "Design to Code, seamlessly.",
@@ -75,10 +74,10 @@ const translations = {
     freePrice: "$0",
     freeTagline: "디자인, 공유, 배포",
     freeFeatures: [
-      "주 100회 AI 코드 수정",
-      "3개 프로젝트",
-      "GitHub 푸시 (공개 레포)",
-      "커뮤니티 지원",
+      "주 100회 MCP 도구 호출",
+      "제한된 이미지 생성",
+      "25 MB 최대 이미지 크기",
+      "제한된 협업 파일",
     ],
     freeCta: "시작하기",
 
@@ -87,13 +86,12 @@ const translations = {
     proPriceYearly: "$16",
     proPer: "유저/월",
     proFeatures: [
-      "무제한 AI 코드 수정",
-      "무제한 프로젝트",
-      "GitHub 푸시 (모든 레포)",
-      "우선 AI 모델",
-      "디자인 변경 추적",
-      "팀 협업",
-      "우선 지원",
+      "주 100만회 MCP 도구 호출",
+      "100배 더 많은 이미지 생성",
+      "비디오 내보내기",
+      "100 MB 최대 이미지 크기",
+      "무제한 협업 파일",
+      "우선 피드백",
     ],
     proCta: "Meld Pro 시작",
 
@@ -110,7 +108,7 @@ const translations = {
     ],
     orgCta: "문의하기",
 
-    bottomText: "현재 사용 중인 개발자들",
+    bottomText: "현재 사용 중인 디자이너들",
 
     footerTagline: "Design to Code, seamlessly.",
   },
@@ -179,26 +177,26 @@ export default function PricingPage() {
       <section ref={cardsSection.ref} className="relative z-10 mx-auto max-w-[1440px] px-6 lg:px-16 py-16 lg:py-24">
         <div className="grid gap-px overflow-hidden rounded-2xl border border-[#1E2228] sm:grid-cols-3">
           {/* Free */}
-          <div className={`flex flex-col bg-[#0B0E11] p-8 lg:p-10 transition-all duration-700 ${cardsSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
+          <div className={`flex flex-col bg-[#0B0E11] p-10 lg:p-12 transition-all duration-700 ${cardsSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
             <div className="flex-1">
-              <h3 className="text-[20px] font-medium text-white">{t.freeName}</h3>
-              <p className="mt-1 text-[28px] font-light text-white">{t.freePrice}</p>
-              <p className="mt-3 text-[13px] text-[#C5B882]">{t.freeTagline}</p>
+              <h3 className="text-[22px] font-medium text-white">{t.freeName}</h3>
+              <p className="mt-1.5 text-[32px] font-light text-white">{t.freePrice}</p>
+              <p className="mt-4 text-[14px] text-[#C5B882]">{t.freeTagline}</p>
 
-              <ul className="mt-8 space-y-3.5">
+              <ul className="mt-10 space-y-4">
                 {t.freeFeatures.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2.5">
-                    <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#C5B882]" />
-                    <span className="text-[14px] text-[#999]">{feature}</span>
+                  <li key={feature} className="flex items-start gap-3">
+                    <Check className="mt-0.5 h-4.5 w-4.5 flex-shrink-0 text-[#C5B882]" />
+                    <span className="text-[16px] text-[#999]">{feature}</span>
                   </li>
                 ))}
               </ul>
             </div>
 
-            <div className="mt-12">
+            <div className="mt-14">
               <Link
                 href="/dashboard"
-                className="inline-flex items-center rounded-lg bg-[#1E2228] px-5 py-2.5 text-[13px] font-medium text-white transition-all hover:bg-[#2A2F36] active:scale-[0.98]"
+                className="inline-flex items-center rounded-lg bg-[#1E2228] px-6 py-3 text-[15px] font-medium text-white transition-all hover:bg-[#2A2F36] active:scale-[0.98]"
               >
                 {t.freeCta}
               </Link>
@@ -206,50 +204,50 @@ export default function PricingPage() {
           </div>
 
           {/* Pro */}
-          <div className={`flex flex-col border-x border-[#1E2228] bg-[#0B0E11] p-8 lg:p-10 transition-all duration-700 delay-150 ${cardsSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
+          <div className={`flex flex-col border-x border-[#1E2228] bg-[#0B0E11] p-10 lg:p-12 transition-all duration-700 delay-150 ${cardsSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
             <div className="flex-1">
-              <h3 className="text-[20px] font-medium text-white">{t.proName}</h3>
-              <div className="mt-1 flex items-baseline gap-2">
+              <h3 className="text-[22px] font-medium text-white">{t.proName}</h3>
+              <div className="mt-1.5 flex items-baseline gap-2.5">
                 {yearly ? (
                   <>
-                    <span className="text-[14px] text-[#555] line-through">{t.proPriceMonthly}</span>
-                    <span className="text-[28px] font-light text-white">{t.proPriceYearly}</span>
+                    <span className="text-[16px] text-[#555] line-through">{t.proPriceMonthly}</span>
+                    <span className="text-[32px] font-light text-white">{t.proPriceYearly}</span>
                   </>
                 ) : (
-                  <span className="text-[28px] font-light text-white">{t.proPriceMonthly}</span>
+                  <span className="text-[32px] font-light text-white">{t.proPriceMonthly}</span>
                 )}
-                <span className="text-[13px] text-[#555]">{t.proPer}</span>
+                <span className="text-[15px] text-[#555]">{t.proPer}</span>
               </div>
 
               {/* 연간/월간 토글 */}
-              <div className="mt-4 flex items-center gap-2.5">
+              <div className="mt-5 flex items-center gap-3">
                 <button
                   onClick={() => setYearly(!yearly)}
-                  className={`relative h-5 w-9 rounded-full transition-colors ${yearly ? "bg-[#6B8AFF]" : "bg-[#333]"}`}
+                  className={`relative h-6 w-10 rounded-full transition-colors ${yearly ? "bg-[#6B8AFF]" : "bg-[#333]"}`}
                 >
                   <div
-                    className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${yearly ? "left-[18px]" : "left-0.5"}`}
+                    className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${yearly ? "left-[18px]" : "left-0.5"}`}
                   />
                 </button>
-                <span className="text-[12px] text-[#666]">
+                <span className="text-[14px] text-[#666]">
                   {t.yearly} ({t.yearlySave})
                 </span>
               </div>
 
-              <ul className="mt-8 space-y-3.5">
+              <ul className="mt-10 space-y-4">
                 {t.proFeatures.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2.5">
-                    <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#C5B882]" />
-                    <span className="text-[14px] text-[#999]">{feature}</span>
+                  <li key={feature} className="flex items-start gap-3">
+                    <Check className="mt-0.5 h-4.5 w-4.5 flex-shrink-0 text-[#C5B882]" />
+                    <span className="text-[16px] text-[#999]">{feature}</span>
                   </li>
                 ))}
               </ul>
             </div>
 
-            <div className="mt-12">
+            <div className="mt-14">
               <Link
                 href="/dashboard"
-                className="inline-flex items-center rounded-lg border border-[#C5B882]/30 bg-transparent px-5 py-2.5 text-[13px] font-medium text-[#C5B882] transition-all hover:bg-[#C5B882]/10 active:scale-[0.98]"
+                className="inline-flex items-center rounded-lg border border-[#C5B882]/30 bg-transparent px-6 py-3 text-[15px] font-medium text-[#C5B882] transition-all hover:bg-[#C5B882]/10 active:scale-[0.98]"
               >
                 {t.proCta}
               </Link>
@@ -257,26 +255,26 @@ export default function PricingPage() {
           </div>
 
           {/* Organizations */}
-          <div className={`flex flex-col bg-[#0B0E11] p-8 lg:p-10 transition-all duration-700 delay-300 ${cardsSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
+          <div className={`flex flex-col bg-[#0B0E11] p-10 lg:p-12 transition-all duration-700 delay-300 ${cardsSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
             <div className="flex-1">
-              <h3 className="text-[20px] font-medium text-white">{t.orgName}</h3>
-              <p className="mt-1 text-[28px] font-light text-white">{t.orgPrice}</p>
-              <p className="mt-3 text-[13px] text-[#C5B882]">{t.orgTagline}</p>
+              <h3 className="text-[22px] font-medium text-white">{t.orgName}</h3>
+              <p className="mt-1.5 text-[32px] font-light text-white">{t.orgPrice}</p>
+              <p className="mt-4 text-[14px] text-[#C5B882]">{t.orgTagline}</p>
 
-              <ul className="mt-8 space-y-3.5">
+              <ul className="mt-10 space-y-4">
                 {t.orgFeatures.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2.5">
-                    <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#C5B882]" />
-                    <span className="text-[14px] text-[#999]">{feature}</span>
+                  <li key={feature} className="flex items-start gap-3">
+                    <Check className="mt-0.5 h-4.5 w-4.5 flex-shrink-0 text-[#C5B882]" />
+                    <span className="text-[16px] text-[#999]">{feature}</span>
                   </li>
                 ))}
               </ul>
             </div>
 
-            <div className="mt-12">
+            <div className="mt-14">
               <Link
                 href="/community"
-                className="inline-flex items-center rounded-lg bg-[#1E2228] px-5 py-2.5 text-[13px] font-medium text-white transition-all hover:bg-[#2A2F36] active:scale-[0.98]"
+                className="inline-flex items-center rounded-lg bg-[#1E2228] px-6 py-3 text-[15px] font-medium text-white transition-all hover:bg-[#2A2F36] active:scale-[0.98]"
               >
                 {t.orgCta}
               </Link>
