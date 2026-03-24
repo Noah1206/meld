@@ -22,6 +22,7 @@ const sandboxTranslations = {
     invalidAccess: "Invalid access",
     invalidAccessDesc: "owner and repo parameters are required.",
     backToDashboard: "Back to Dashboard",
+    reload: "Reload Page",
   },
   ko: {
     booting: "WebContainer 부팅 중",
@@ -34,6 +35,7 @@ const sandboxTranslations = {
     invalidAccess: "잘못된 접근",
     invalidAccessDesc: "owner와 repo 파라미터가 필요합니다.",
     backToDashboard: "대시보드로 돌아가기",
+    reload: "페이지 새로고침",
   },
 } as const;
 
@@ -164,15 +166,15 @@ function SandboxContent() {
             })}
           </div>
 
-          {/* 에러 시 뒤로가기 */}
+          {/* 에러 시 새로고침 */}
           {wc.status === "error" && (
             <div className="text-center">
               <p className="text-[13px] text-red-600">{wc.statusMessage}</p>
               <button
-                onClick={() => router.push("/dashboard")}
+                onClick={() => window.location.reload()}
                 className="mt-4 rounded-lg bg-[#1A1A1A] px-4 py-2 text-[13px] font-medium text-white"
               >
-                {t.backToDashboard}
+                {t.reload}
               </button>
             </div>
           )}
