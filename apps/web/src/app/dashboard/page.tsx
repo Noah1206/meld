@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -29,6 +29,8 @@ import {
   Globe,
   Monitor,
   HardDrive,
+  CreditCard,
+  ChevronRight,
 } from "lucide-react";
 import { useAuthStore } from "@/lib/store/auth-store";
 import { useLangStore } from "@/lib/store/lang-store";
@@ -486,6 +488,91 @@ function DesktopProjectCard() {
   );
 }
 
+const PLAN_LABELS: Record<string, string> = {
+  free: "Starter",
+  pro: "Pro",
+  unlimited: "Unlimited",
+};
+
+function ProfilePopover({
+  user,
+  logout,
+}: {
+  user: { githubUsername: string; avatarUrl: string | null; plan: string };
+  logout: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  const planLabel = PLAN_LABELS[user.plan] ?? "Starter";
+
+  return (
+    <div ref={popoverRef} className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-[#F5F5F4]"
+      >
+        {user.avatarUrl && (
+          <img
+            src={user.avatarUrl}
+            alt={user.githubUsername}
+            className="h-6 w-6 rounded-full"
+          />
+        )}
+        <span className="text-[13px] font-medium text-[#1A1A1A]">
+          {user.githubUsername}
+        </span>
+        <ChevronDown className={`h-3.5 w-3.5 text-[#B4B4B0] transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-xl border border-[#E8E8E4] bg-white shadow-lg">
+          {/* 플랜 표시 */}
+          <div className="border-b border-[#E8E8E4] px-4 py-3">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-[#B4B4B0]">Current Plan</p>
+            <p className="mt-0.5 text-[14px] font-semibold text-[#1A1A1A]">{planLabel}</p>
+          </div>
+
+          <div className="py-1">
+            {/* Manage Subscription */}
+            <a
+              href="/api/portal"
+              className="flex items-center gap-3 px-4 py-2.5 text-[13px] text-[#1A1A1A] transition-colors hover:bg-[#F5F5F4]"
+            >
+              <CreditCard className="h-4 w-4 text-[#787774]" />
+              <span>Manage Subscription</span>
+              <ChevronRight className="ml-auto h-3.5 w-3.5 text-[#B4B4B0]" />
+            </a>
+
+            {/* 로그아웃 */}
+            <button
+              onClick={() => {
+                setOpen(false);
+                logout();
+              }}
+              className="flex w-full items-center gap-3 px-4 py-2.5 text-[13px] text-[#1A1A1A] transition-colors hover:bg-[#F5F5F4]"
+            >
+              <LogOut className="h-4 w-4 text-[#787774]" />
+              <span>Log Out</span>
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const { user, loading, fetchUser, logout } = useAuthStore();
   const { lang, toggleLang } = useLangStore();
@@ -512,28 +599,9 @@ export default function DashboardPage() {
             </div>
             <span className="text-[16px] font-semibold text-[#1A1A1A]">Meld</span>
           </Link>
-          <div className="flex items-center gap-3">
+          <div className="relative flex items-center gap-3">
             {user && (
-              <>
-                <div className="flex items-center gap-2.5">
-                  {user.avatarUrl && (
-                    <img
-                      src={user.avatarUrl}
-                      alt={user.githubUsername}
-                      className="h-6 w-6 rounded-full"
-                    />
-                  )}
-                  <span className="text-[13px] font-medium text-[#1A1A1A]">
-                    {user.githubUsername}
-                  </span>
-                </div>
-                <button
-                  onClick={logout}
-                  className="text-[#B4B4B0] transition-colors hover:text-[#787774]"
-                >
-                  <LogOut className="h-4 w-4" />
-                </button>
-              </>
+              <ProfilePopover user={user} logout={logout} />
             )}
           </div>
         </div>

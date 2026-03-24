@@ -12,6 +12,8 @@ export interface Database {
           figma_refresh_token: string | null;
           github_access_token: string | null;
           plan: "free" | "pro" | "unlimited";
+          subscription_status: "active" | "canceled" | "past_due" | "inactive";
+          credits: number;
           polar_customer_id: string | null;
           polar_subscription_id: string | null;
           created_at: string;
@@ -27,6 +29,8 @@ export interface Database {
           figma_refresh_token?: string | null;
           github_access_token?: string | null;
           plan?: "free" | "pro" | "unlimited";
+          subscription_status?: "active" | "canceled" | "past_due" | "inactive";
+          credits?: number;
           polar_customer_id?: string | null;
           polar_subscription_id?: string | null;
           created_at?: string;
@@ -42,6 +46,8 @@ export interface Database {
           figma_refresh_token?: string | null;
           github_access_token?: string | null;
           plan?: "free" | "pro" | "unlimited";
+          subscription_status?: "active" | "canceled" | "past_due" | "inactive";
+          credits?: number;
           polar_customer_id?: string | null;
           polar_subscription_id?: string | null;
           created_at?: string;
@@ -199,6 +205,50 @@ export interface Database {
           },
           {
             foreignKeyName: "edit_history_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      payments: {
+        Row: {
+          id: string;
+          user_id: string;
+          amount: number;
+          currency: string;
+          status: "pending" | "succeeded" | "failed" | "refunded";
+          provider: string;
+          provider_payment_id: string | null;
+          plan: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          amount: number;
+          currency?: string;
+          status?: "pending" | "succeeded" | "failed" | "refunded";
+          provider: string;
+          provider_payment_id?: string | null;
+          plan?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          amount?: number;
+          currency?: string;
+          status?: "pending" | "succeeded" | "failed" | "refunded";
+          provider?: string;
+          provider_payment_id?: string | null;
+          plan?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "payments_user_id_fkey";
             columns: ["user_id"];
             isOneToOne: false;
             referencedRelation: "users";
