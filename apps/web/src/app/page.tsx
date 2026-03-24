@@ -22,6 +22,7 @@ import {
   Check,
   Bell,
   RefreshCw,
+  Download,
 } from "lucide-react";
 
 const translations = {
@@ -32,8 +33,8 @@ const translations = {
     heroDesc1: "We don't generate new code.",
     heroDesc2: "We automatically link design elements to code files,",
     heroDesc3: "and modify your existing code in place.",
-    heroCta: "Get Started",
-    heroCtaSecondary: "Open in Browser",
+    heroDownload: "Download Desktop App",
+    heroCta: "Open in Browser",
 
     // Product mockup
     mockupChat1: "Change the CTA button in this hero section to mint color",
@@ -105,9 +106,9 @@ const translations = {
 
     // Bottom CTA
     bottomTitle: "Get started now",
-    bottomDesc: "It's free. No installation. Just a browser.",
-    bottomCta: "Get Started",
-    bottomCtaSecondary: "Open in Browser",
+    bottomDesc: "Download the desktop app, or open in your browser. It's free.",
+    bottomDownload: "Download Desktop App",
+    bottomCta: "Open in Browser",
   },
   ko: {
     // Hero
@@ -116,8 +117,8 @@ const translations = {
     heroDesc1: "새 코드를 만들지 않습니다.",
     heroDesc2: "디자인 요소와 코드 파일을 자동으로 연결해서,",
     heroDesc3: "이미 작성된 코드 위에서 수정합니다.",
-    heroCta: "시작하기",
-    heroCtaSecondary: "브라우저에서 열기",
+    heroDownload: "데스크톱 앱 다운로드",
+    heroCta: "브라우저에서 열기",
 
     // Product mockup
     mockupChat1: "이 히어로 섹션의 CTA 버튼을 민트색으로 바꿔줘",
@@ -189,9 +190,9 @@ const translations = {
 
     // Bottom CTA
     bottomTitle: "지금 시작하세요",
-    bottomDesc: "무료입니다. 설치도 없습니다. 브라우저만 있으면 됩니다.",
-    bottomCta: "시작하기",
-    bottomCtaSecondary: "브라우저에서 열기",
+    bottomDesc: "데스크톱 앱을 다운로드하거나, 브라우저에서 바로 시작하세요. 무료입니다.",
+    bottomDownload: "데스크톱 앱 다운로드",
+    bottomCta: "브라우저에서 열기",
   },
 } as const;
 
@@ -327,18 +328,19 @@ export default function HomePage() {
           </p>
 
           {/* CTA */}
-          <div className="animate-fade-in-up animation-delay-300 mt-10 flex items-center gap-6">
+          <div className="animate-fade-in-up animation-delay-300 mt-10 flex items-center gap-5">
             <Link
-              href="/dashboard"
-              className="inline-flex items-center rounded-xl bg-[#F5F0E8] px-7 py-3.5 text-[15px] font-semibold text-[#1A1A1A] transition-all hover:bg-[#EDE7DB] active:scale-[0.98]"
+              href="/download"
+              className="group inline-flex items-center gap-2.5 rounded-xl bg-[#1A1A1A] px-7 py-3.5 text-[15px] font-semibold text-white transition-all hover:bg-[#333] active:scale-[0.98]"
             >
-              {t.heroCta}
+              <Download className="h-4 w-4 transition-transform group-hover:-translate-y-0.5" />
+              {t.heroDownload}
             </Link>
             <Link
               href="/dashboard"
-              className="group inline-flex items-center gap-1.5 text-[15px] text-[#999] transition-colors hover:text-[#1A1A1A]"
+              className="group inline-flex items-center gap-1.5 rounded-xl bg-[#F5F0E8] px-7 py-3.5 text-[15px] font-semibold text-[#1A1A1A] transition-all hover:bg-[#EDE7DB] active:scale-[0.98]"
             >
-              {t.heroCtaSecondary}
+              {t.heroCta}
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
           </div>
@@ -872,16 +874,17 @@ export default function HomePage() {
             className={`mt-10 flex items-center gap-6 transition-all duration-700 delay-[400ms] ease-out ${bottomCta.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
           >
             <Link
-              href="/dashboard"
-              className="inline-flex items-center rounded-xl bg-[#F5F0E8] px-7 py-3.5 text-[15px] font-semibold text-[#1A1A1A] transition-all hover:bg-[#EDE7DB] hover:shadow-lg hover:shadow-white/10 active:scale-[0.98]"
+              href="/download"
+              className="group inline-flex items-center gap-2.5 rounded-xl bg-white px-7 py-3.5 text-[15px] font-semibold text-[#1A1A1A] transition-all hover:bg-[#F5F0E8] hover:shadow-lg hover:shadow-white/10 active:scale-[0.98]"
             >
-              {t.bottomCta}
+              <Download className="h-4 w-4 transition-transform group-hover:-translate-y-0.5" />
+              {t.bottomDownload}
             </Link>
             <Link
               href="/dashboard"
               className="group inline-flex items-center gap-1.5 text-[15px] text-[#666] transition-colors hover:text-white"
             >
-              {t.bottomCtaSecondary}
+              {t.bottomCta}
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
           </div>
