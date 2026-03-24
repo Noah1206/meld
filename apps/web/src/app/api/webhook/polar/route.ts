@@ -1,17 +1,18 @@
 import { Webhooks } from "@polar-sh/nextjs";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-const PRODUCT_TO_PLAN: Record<string, string> = {
-  [process.env.POLAR_PRO_PRODUCT_ID!]: "pro",
-  [process.env.POLAR_UNLIMITED_PRODUCT_ID!]: "unlimited",
-};
+function getProductPlan(productId: string): "pro" | "unlimited" {
+  if (productId === process.env.POLAR_PRO_PRODUCT_ID) return "pro";
+  if (productId === process.env.POLAR_UNLIMITED_PRODUCT_ID) return "unlimited";
+  return "pro";
+}
 
 export const POST = Webhooks({
   webhookSecret: process.env.POLAR_WEBHOOK_SECRET!,
 
   onSubscriptionActive: async (payload) => {
     const { productId, customer } = payload.data;
-    const plan = (PRODUCT_TO_PLAN[productId] ?? "pro") as "pro" | "unlimited";
+    const plan = getProductPlan(productId);
     const externalId = customer.externalId;
     if (!externalId) return;
 
