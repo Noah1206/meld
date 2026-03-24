@@ -57,9 +57,6 @@ const translations = {
     ],
     unlimitedCta: "get Unlimited",
 
-    // Bottom
-    bottomText: "trusted by developers shipping with",
-
     // Footer
     footerTagline: "Design to Code, seamlessly.",
   },
@@ -108,8 +105,6 @@ const translations = {
     ],
     unlimitedCta: "Unlimited 시작",
 
-    bottomText: "현재 사용 중인 개발자들",
-
     footerTagline: "Design to Code, seamlessly.",
   },
 } as const;
@@ -142,7 +137,6 @@ export default function PricingPage() {
   const t = translations[lang];
 
   const cardsSection = useInView(0.1);
-  const bottomSection = useInView();
 
   return (
     <div className="min-h-screen bg-[#0B0E11] selection:bg-white selection:text-[#0B0E11]">
@@ -270,31 +264,6 @@ export default function PricingPage() {
                 </button>
               </form>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 하단 로고 스트립 */}
-      <section ref={bottomSection.ref} className="relative z-10 border-t border-[#1E2228]">
-        <div className="mx-auto max-w-[1440px] px-6 lg:px-16 py-16 lg:py-20">
-          <p className={`text-center text-[13px] text-[#555] transition-all duration-700 ${bottomSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
-            {t.bottomText}
-          </p>
-          <div className={`mt-8 flex items-center justify-center gap-x-10 sm:gap-x-14 lg:gap-x-20 transition-all duration-700 delay-200 ${bottomSection.inView ? "opacity-100" : "opacity-0"}`}>
-            {[
-              { name: "Vercel", style: "font-sans font-semibold tracking-tight" },
-              { name: "Figma", style: "font-sans font-bold" },
-              { name: "GitHub", style: "font-mono font-semibold" },
-              { name: "Supabase", style: "font-mono font-medium" },
-              { name: "Linear", style: "font-sans font-semibold" },
-            ].map((item) => (
-              <span
-                key={item.name}
-                className={`text-[16px] text-[#333] transition-colors hover:text-[#666] sm:text-[18px] ${item.style}`}
-              >
-                {item.name}
-              </span>
-            ))}
           </div>
         </div>
       </section>
