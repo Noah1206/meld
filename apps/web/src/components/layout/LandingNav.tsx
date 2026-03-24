@@ -15,7 +15,6 @@ export function LandingNav({ dark = false, activePath }: LandingNavProps) {
   const { lang } = useLangStore();
 
   const links = [
-    { href: "/docs", label: "Docs" },
     { href: "/github", label: "GitHub" },
     { href: "/download", label: lang === "ko" ? "다운로드" : "Download" },
     { href: "/pricing", label: lang === "ko" ? "가격" : "Pricing" },

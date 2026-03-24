@@ -20,7 +20,6 @@ import {
   GitBranch,
   Terminal,
   Rocket,
-  BookOpen,
   MessageCircle,
   ArrowUpRight,
   Eye,
@@ -106,8 +105,6 @@ const translations = {
     startFirstProject: "Start your first project",
 
     // Resources
-    resDocs: "Docs",
-    resDocsDesc: "Getting started guide & API reference",
     resGitHub: "GitHub",
     resGitHubDesc: "Source code & issue tracker",
     resDesktop: "Desktop App",
@@ -174,8 +171,6 @@ const translations = {
     noProjectsDesc: "위에서 새 프로젝트를 만들어보세요",
     startFirstProject: "첫 프로젝트 시작하기",
 
-    resDocs: "문서",
-    resDocsDesc: "시작 가이드와 API 레퍼런스",
     resGitHub: "GitHub",
     resGitHubDesc: "소스 코드와 이슈 트래커",
     resDesktop: "데스크톱 앱",
@@ -736,14 +731,6 @@ export default function DashboardPage() {
         {/* 하단 리소스 링크 */}
         <div className="animate-fade-in-up animation-delay-600 mt-14 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            {
-              icon: BookOpen,
-              title: t.resDocs,
-              desc: t.resDocsDesc,
-              href: "/docs",
-              color: "#787774",
-              bg: "#F7F7F5",
-            },
             {
               icon: Github,
               title: t.resGitHub,
