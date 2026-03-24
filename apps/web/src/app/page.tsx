@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useLangStore } from "@/lib/store/lang-store";
 import Link from "next/link";
+import { LandingNav } from "@/components/layout/LandingNav";
 import {
   ArrowRight,
   Blend,
@@ -25,11 +26,6 @@ import {
 
 const translations = {
   en: {
-    // Nav
-    navDocs: "Docs",
-    navGitHub: "GitHub",
-    navCta: "Get Started",
-
     // Hero
     heroTitle1: "The perfect design IDE",
     heroTitle2: "for one person",
@@ -114,11 +110,6 @@ const translations = {
     bottomCtaSecondary: "Open in Browser",
   },
   ko: {
-    // Nav
-    navDocs: "Docs",
-    navGitHub: "GitHub",
-    navCta: "시작하기",
-
     // Hero
     heroTitle1: "한 사람을 위한",
     heroTitle2: "완벽한 디자인 IDE",
@@ -308,36 +299,7 @@ export default function HomePage() {
       />
 
       {/* ===== 네비게이션 ===== */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-[1440px] items-center justify-between px-6 lg:px-16 py-4">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[#1A1A1A]">
-              <Blend className="h-3.5 w-3.5 text-white" />
-            </div>
-            <span className="text-[16px] font-semibold text-[#1A1A1A]">Meld</span>
-          </Link>
-          <div className="flex items-center gap-6">
-            <Link href="/docs" className="text-[15px] text-[#999] transition-colors hover:text-[#1A1A1A]">
-              {t.navDocs}
-            </Link>
-            <Link href="/github" className="text-[15px] text-[#999] transition-colors hover:text-[#1A1A1A]">
-              {t.navGitHub}
-            </Link>
-            <Link href="/download" className="text-[15px] text-[#999] transition-colors hover:text-[#1A1A1A]">
-              Download
-            </Link>
-            <Link href="/pricing" className="text-[15px] text-[#999] transition-colors hover:text-[#1A1A1A]">
-              Pricing
-            </Link>
-            <Link
-              href="/dashboard"
-              className="rounded-lg bg-[#F5F0E8] px-5 py-2 text-[15px] font-semibold text-[#1A1A1A] transition-colors hover:bg-[#EDE7DB]"
-            >
-              {t.navCta}
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <LandingNav activePath="/" />
 
       {/* ===== 히어로 ===== */}
       <section className="relative z-10 pt-36 pb-6 lg:pt-44 lg:pb-10">
