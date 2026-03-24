@@ -127,24 +127,27 @@ export function LocalPanel({
   ];
 
   return (
-    <div className="flex h-full flex-col bg-[#F7F7F5]">
+    <div className="flex h-full flex-col bg-white">
       {/* 탭 바 */}
-      <div className="flex">
+      <div className="flex border-b border-[#E0E0DC]">
         {TABS.map((tab) => (
           <button
             key={tab.id}
             onClick={() => !tab.disabled && setActiveTab(tab.id)}
             disabled={tab.disabled}
-            className={`flex flex-1 items-center justify-center gap-1.5 py-2.5 text-[12px] font-medium transition-colors ${
+            className={`relative flex flex-1 items-center justify-center gap-1.5 py-2.5 text-[12px] font-medium transition-colors ${
               activeTab === tab.id
-                ? "bg-white text-[#1A1A1A]"
+                ? "text-[#1A1A1A]"
                 : tab.disabled
                   ? "cursor-not-allowed text-[#D4D4D0]"
-                  : "text-[#787774] hover:text-[#1A1A1A]"
+                  : "text-[#B4B4B0] hover:text-[#787774]"
             }`}
           >
             {tab.icon}
             {tab.label}
+            {activeTab === tab.id && (
+              <span className="absolute bottom-0 left-1/4 right-1/4 h-[2px] rounded-full bg-[#1A1A1A]" />
+            )}
           </button>
         ))}
       </div>

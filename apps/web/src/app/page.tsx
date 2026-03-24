@@ -902,7 +902,19 @@ export default function HomePage() {
               </div>
               <span className="text-[12px] text-[#555]">Meld</span>
             </div>
-            <p className="font-mono text-[11px] text-[#444]">Design to Code, seamlessly.</p>
+            <div className="flex items-center gap-4">
+              <Link href="/terms" className="text-[11px] text-[#444] transition-colors hover:text-[#888]">
+                {lang === "ko" ? "이용약관" : "Terms"}
+              </Link>
+              <Link href="/privacy" className="text-[11px] text-[#444] transition-colors hover:text-[#888]">
+                {lang === "ko" ? "개인정보" : "Privacy"}
+              </Link>
+              <Link href="/refund" className="text-[11px] text-[#444] transition-colors hover:text-[#888]">
+                {lang === "ko" ? "환불" : "Refund"}
+              </Link>
+              <span className="text-[11px] text-[#333]">|</span>
+              <p className="font-mono text-[11px] text-[#444]">© 2026 Meld</p>
+            </div>
           </div>
         </div>
       </footer>

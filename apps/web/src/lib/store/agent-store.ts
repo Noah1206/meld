@@ -19,6 +19,7 @@ interface AgentState {
   projectName: string | null;
   devServerUrl: string | null;
   devServerFramework: string | null;
+  dependencies: string[];
   selectedFilePath: string | null;
   lastWriteTimestamp: number;
 
@@ -36,6 +37,7 @@ interface AgentState {
   setProjectName: (name: string | null) => void;
   setDevServerUrl: (url: string | null) => void;
   setDevServerFramework: (framework: string | null) => void;
+  setDependencies: (deps: string[]) => void;
   setSelectedFilePath: (path: string | null) => void;
   setInspectorEnabled: (enabled: boolean) => void;
   setInspectedElement: (el: InspectedElement | null) => void;
@@ -52,6 +54,7 @@ export const useAgentStore = create<AgentState>((set) => ({
   projectName: null,
   devServerUrl: null,
   devServerFramework: null,
+  dependencies: [],
   selectedFilePath: null,
   inspectorEnabled: false,
   inspectedElement: null,
@@ -64,6 +67,7 @@ export const useAgentStore = create<AgentState>((set) => ({
   setProjectName: (projectName) => set({ projectName }),
   setDevServerUrl: (devServerUrl) => set({ devServerUrl }),
   setDevServerFramework: (devServerFramework) => set({ devServerFramework }),
+  setDependencies: (dependencies) => set({ dependencies }),
   setSelectedFilePath: (selectedFilePath) => set({ selectedFilePath }),
   setInspectorEnabled: (inspectorEnabled) => set({ inspectorEnabled }),
   setInspectedElement: (inspectedElement) => set({ inspectedElement }),

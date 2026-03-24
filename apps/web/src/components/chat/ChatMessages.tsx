@@ -17,12 +17,10 @@ export function ChatMessages() {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="text-center">
-          <MessageSquare className="mx-auto h-8 w-8 text-[#D1D5DB]" />
-          <p className="mt-3 text-sm font-medium text-[#6B7280]">AI 채팅</p>
-          <p className="mt-1 text-xs text-[#9CA3AF]">
-            Figma 뷰어에서 엘리먼트를 선택하고
-            <br />
-            명령을 입력하면 AI가 코드를 수정합니다.
+          <MessageSquare className="mx-auto h-6 w-6 text-[#D4D4D0]" />
+          <p className="mt-3 text-[13px] font-medium text-[#787774]">AI 채팅</p>
+          <p className="mt-1 text-[11px] text-[#B4B4B0]">
+            엘리먼트를 선택하고 명령을 입력하세요
           </p>
         </div>
       </div>
@@ -46,15 +44,17 @@ function MessageBubble({ message }: { message: ChatMessage }) {
   return (
     <div className={`animate-fade-in-up flex ${isUser ? "justify-end" : "justify-start"}`}>
       <div
-        className={`max-w-[80%] rounded-lg px-3 py-2 text-xs ${
+        className={`max-w-[80%] rounded-lg px-3 py-2 text-[12px] leading-relaxed ${
           isUser
-            ? "bg-[#2E86C1] text-white"
-            : "bg-[#F3F4F6] text-[#374151]"
+            ? "bg-[#1A1A1A] text-white"
+            : "bg-[#F7F7F5] text-[#1A1A1A]"
         }`}
       >
         <p className="whitespace-pre-wrap">{message.content}</p>
         {message.codeEdit && message.codeEdit.filePath && (
-          <div className="mt-1.5 rounded-md bg-black/10 px-2 py-1 text-[10px] font-mono">
+          <div className={`mt-1.5 rounded-md px-2 py-1 font-mono text-[10px] ${
+            isUser ? "bg-white/10" : "bg-[#EEEEEC]"
+          }`}>
             {message.codeEdit.filePath}
           </div>
         )}
@@ -66,10 +66,10 @@ function MessageBubble({ message }: { message: ChatMessage }) {
 function TypingIndicator() {
   return (
     <div className="flex justify-start">
-      <div className="flex items-center gap-1 rounded-lg bg-[#F3F4F6] px-3 py-2">
-        <span className="animate-typing-dot h-1.5 w-1.5 rounded-full bg-[#9CA3AF]" />
-        <span className="animate-typing-dot animation-delay-150 h-1.5 w-1.5 rounded-full bg-[#9CA3AF]" />
-        <span className="animate-typing-dot animation-delay-300 h-1.5 w-1.5 rounded-full bg-[#9CA3AF]" />
+      <div className="flex items-center gap-1 rounded-lg bg-[#F7F7F5] px-3 py-2">
+        <span className="animate-typing-dot h-1.5 w-1.5 rounded-full bg-[#B4B4B0]" />
+        <span className="animate-typing-dot animation-delay-150 h-1.5 w-1.5 rounded-full bg-[#B4B4B0]" />
+        <span className="animate-typing-dot animation-delay-300 h-1.5 w-1.5 rounded-full bg-[#B4B4B0]" />
       </div>
     </div>
   );

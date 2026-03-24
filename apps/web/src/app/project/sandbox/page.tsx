@@ -69,7 +69,7 @@ function SandboxContent() {
 
   const wc = useWebContainer(owner, repo, branch);
   const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
-  const { setHandlers, setSelectedFilePath: setStoreFilePath, setConnected, setFileTree, setProjectName, setDevServerUrl } = useAgentStore();
+  const { setHandlers, setSelectedFilePath: setStoreFilePath, setConnected, setFileTree, setProjectName, setDevServerUrl, setDevServerFramework, setDependencies } = useAgentStore();
 
   // agent-store에 핸들러 등록 (ChatInput이 store에서 읽음)
   useEffect(() => {
@@ -86,7 +86,9 @@ function SandboxContent() {
     setFileTree(wc.fileTree);
     setProjectName(wc.projectName);
     setDevServerUrl(wc.devServerUrl);
-  }, [wc.connected, wc.fileTree, wc.projectName, wc.devServerUrl, setConnected, setFileTree, setProjectName, setDevServerUrl]);
+    setDevServerFramework(wc.devServerFramework);
+    setDependencies(wc.dependencies);
+  }, [wc.connected, wc.fileTree, wc.projectName, wc.devServerUrl, wc.devServerFramework, wc.dependencies, setConnected, setFileTree, setProjectName, setDevServerUrl, setDevServerFramework, setDependencies]);
 
   // 파라미터 검증
   if (!owner || !repo) {

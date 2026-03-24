@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
-import { Loader2, Send, FileCode, ArrowLeft, MousePointerClick } from "lucide-react";
+import { Loader2, Send, FileCode, ArrowLeft, MousePointerClick, ChevronDown } from "lucide-react";
 import { useFigmaStore } from "@/lib/store/figma-store";
 import { useChatStore } from "@/lib/store/chat-store";
 import { useAgentStore } from "@/lib/store/agent-store";
@@ -10,10 +10,15 @@ import { trpc } from "@/lib/trpc/client";
 import { matchByNaming } from "@/lib/mapping/engine";
 import { useDesignSystemStore } from "@/lib/store/design-system-store";
 
-const LLM_OPTIONS: { value: LLMProviderType; label: string }[] = [
-  { value: "claude", label: "Claude" },
-  { value: "chatgpt", label: "ChatGPT" },
-  { value: "gemini", label: "Gemini" },
+const LLM_OPTIONS: {
+  value: LLMProviderType;
+  label: string;
+  sub: string;
+  color: string;
+}[] = [
+  { value: "claude", label: "Claude", sub: "Sonnet 4.6", color: "#D97757" },
+  { value: "chatgpt", label: "ChatGPT", sub: "GPT-4o", color: "#10A37F" },
+  { value: "gemini", label: "Gemini", sub: "2.5 Flash", color: "#4285F4" },
 ];
 
 interface ChatInputProps {
@@ -49,6 +54,7 @@ export function ChatInput({ projectId, mode = "cloud" }: ChatInputProps) {
     setLastWrite,
     fileTree,
     devServerFramework,
+    dependencies,
     setSelectedFilePath,
     connected,
   } = useAgentStore();
@@ -108,6 +114,7 @@ export function ChatInput({ projectId, mode = "cloud" }: ChatInputProps) {
           currentCode,
           provider,
           framework: devServerFramework ?? undefined,
+          dependencies: dependencies.length > 0 ? dependencies : undefined,
           designSystemMd: getDesignMd() || undefined,
         });
 
@@ -154,7 +161,7 @@ export function ChatInput({ projectId, mode = "cloud" }: ChatInputProps) {
     } finally {
       setProcessing(false);
     }
-  }, [canSend, input, isProcessing, isLocal, selectedFilePath, readFileFn, writeFileFn, projectId, selectedNode, provider, addMessage, setProcessing, setError, editCodeMutation, devServerFramework, setLastWrite]);
+  }, [canSend, input, isProcessing, isLocal, selectedFilePath, readFileFn, writeFileFn, projectId, selectedNode, provider, addMessage, setProcessing, setError, editCodeMutation, devServerFramework, dependencies, setLastWrite, getDesignMd]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -175,16 +182,40 @@ export function ChatInput({ projectId, mode = "cloud" }: ChatInputProps) {
   const showGuide = isLocal ? !selectedFilePath : !selectedNode;
   const isDisabled = showGuide || isProcessing;
 
+  // Cursor-style model selector
+  const [modelOpen, setModelOpen] = useState(false);
+  const modelRef = useRef<HTMLDivElement>(null);
+  const selectedModel = LLM_OPTIONS.find((o) => o.value === provider) ?? LLM_OPTIONS[0];
+
+  // 외부 클릭 + Esc 닫기
+  useEffect(() => {
+    if (!modelOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (modelRef.current && !modelRef.current.contains(e.target as Node)) {
+        setModelOpen(false);
+      }
+    };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setModelOpen(false);
+    };
+    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("keydown", handleKey);
+    };
+  }, [modelOpen]);
+
   return (
     <div className="space-y-2 px-3 py-3">
       {/* Phase 3: 매핑 추천 칩 */}
       {mappingSuggestion && !isLocal && (
-        <div className="flex items-center gap-2 rounded-xl bg-blue-50 px-3 py-2">
+        <div className="flex items-center gap-2 rounded-lg border border-blue-100 bg-blue-50/50 px-3 py-2">
           <FileCode className="h-3.5 w-3.5 text-blue-500" />
           <span className="text-[11px] text-blue-600">추천 파일:</span>
           <button
             onClick={() => handleSuggestionClick(mappingSuggestion.filePath)}
-            className="flex items-center gap-1 rounded-lg bg-blue-100 px-2 py-0.5 text-[11px] font-medium text-blue-700 transition-colors hover:bg-blue-200"
+            className="flex items-center gap-1 rounded-md bg-blue-100/70 px-2 py-0.5 text-[11px] font-medium text-blue-700 transition-colors hover:bg-blue-200/70"
           >
             {mappingSuggestion.filePath.split("/").pop()}
             <span className="text-blue-400">({Math.round(mappingSuggestion.confidence * 100)}%)</span>
@@ -192,38 +223,71 @@ export function ChatInput({ projectId, mode = "cloud" }: ChatInputProps) {
         </div>
       )}
 
-      {/* 상단: 선택된 노드/파일 + LLM 선택 */}
+      {/* 상단: 선택된 노드/파일 + 모델 셀렉터 */}
       <div className="flex items-center gap-2">
         {isLocal ? (
-          <span className="truncate rounded-full bg-green-500/10 px-2.5 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-500/20">
+          <span className="truncate rounded-md border border-[#E0E0DC] bg-white px-2.5 py-1 text-[11px] font-medium text-[#1A1A1A]">
             {selectedFilePath ?? "파일을 선택하세요"}
           </span>
         ) : selectedNode ? (
-          <span className="animate-fade-in truncate rounded-full bg-[#2E86C1]/10 px-2.5 py-1 text-xs font-medium text-[#2E86C1] ring-1 ring-inset ring-[#2E86C1]/20">
+          <span className="animate-fade-in truncate rounded-md border border-[#E0E0DC] bg-white px-2.5 py-1 text-[11px] font-medium text-[#1A1A1A]">
             {selectedNode.name}
           </span>
         ) : (
-          <span className="text-xs text-[#9CA3AF]">노드를 선택하세요</span>
+          <span className="text-[11px] text-[#B4B4B0]">노드를 선택하세요</span>
         )}
         <div className="flex-1" />
-        <select
-          value={provider}
-          onChange={(e) => setProvider(e.target.value as LLMProviderType)}
-          disabled={isProcessing}
-          className="rounded-full border border-white/60 bg-white/50 px-2.5 py-1 text-xs text-[#374151] shadow-sm backdrop-blur-sm focus:border-[#2E86C1] focus:outline-none disabled:opacity-50"
-        >
-          {LLM_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
+
+        {/* Cursor-style 모델 셀렉터 */}
+        <div ref={modelRef} className="relative">
+          <button
+            onClick={() => !isProcessing && setModelOpen((v) => !v)}
+            disabled={isProcessing}
+            className="flex items-center gap-1.5 rounded-md border border-[#E0E0DC] bg-white px-2.5 py-1 text-[11px] transition-colors hover:border-[#C0C0BC] disabled:opacity-50"
+          >
+            <span
+              className="h-2 w-2 rounded-full"
+              style={{ backgroundColor: selectedModel.color }}
+            />
+            <span className="font-medium text-[#1A1A1A]">{selectedModel.label}</span>
+            <ChevronDown className="h-3 w-3 text-[#B4B4B0]" />
+          </button>
+
+          {modelOpen && (
+            <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-lg border border-[#E0E0DC] bg-white py-1 shadow-sm">
+              {LLM_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => {
+                    setProvider(opt.value);
+                    setModelOpen(false);
+                  }}
+                  className={`flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-[#F7F7F5] ${
+                    provider === opt.value ? "bg-[#F7F7F5]" : ""
+                  }`}
+                >
+                  <span
+                    className="h-2.5 w-2.5 rounded-full"
+                    style={{ backgroundColor: opt.color }}
+                  />
+                  <div className="flex-1">
+                    <p className="text-[12px] font-medium text-[#1A1A1A]">{opt.label}</p>
+                    <p className="text-[10px] text-[#B4B4B0]">{opt.sub}</p>
+                  </div>
+                  {provider === opt.value && (
+                    <span className="text-[10px] text-[#787774]">&#10003;</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Phase 6: 빈 상태 가이드 메시지 */}
       {showGuide && !isProcessing && (
-        <div className="flex items-center gap-3 rounded-2xl border border-dashed border-[#D4D4D0] bg-[#FAFAF9] px-4 py-4">
-          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-[#F0F0EE]">
+        <div className="flex items-center gap-3 rounded-lg border border-dashed border-[#E0E0DC] px-4 py-4">
+          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-[#F7F7F5]">
             {isLocal ? (
               <ArrowLeft className="h-4 w-4 animate-pulse text-[#787774]" />
             ) : (
@@ -255,14 +319,14 @@ export function ChatInput({ projectId, mode = "cloud" }: ChatInputProps) {
             value={input}
             onChange={handleInput}
             onKeyDown={handleKeyDown}
-            className="flex-1 resize-none rounded-2xl border border-white/60 bg-white/50 px-4 py-2.5 text-sm shadow-sm backdrop-blur-sm placeholder:text-[#9CA3AF] focus:border-[#2E86C1]/40 focus:outline-none focus:ring-2 focus:ring-[#2E86C1]/20 disabled:opacity-50"
+            className="flex-1 resize-none rounded-xl border border-[#E0E0DC] bg-white px-4 py-2.5 text-sm placeholder:text-[#B4B4B0] focus:border-[#1A1A1A]/20 focus:outline-none disabled:opacity-50"
             style={{ maxHeight: 120 }}
             disabled={isDisabled}
           />
           <button
             onClick={handleSend}
             disabled={!canSend || isProcessing}
-            className="flex-shrink-0 rounded-2xl bg-[#2E86C1] p-2.5 text-white shadow-lg shadow-[#2E86C1]/25 transition-all hover:bg-[#2573A8] hover:shadow-[#2E86C1]/40 hover:scale-[1.04] active:scale-[0.96] disabled:opacity-50 disabled:shadow-none"
+            className="flex-shrink-0 rounded-xl bg-[#1A1A1A] p-2.5 text-white transition-colors hover:bg-[#333] active:bg-[#000] disabled:opacity-30"
           >
             {isProcessing ? (
               <Loader2 className="h-4 w-4 animate-spin" />

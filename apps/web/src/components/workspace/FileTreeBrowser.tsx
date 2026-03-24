@@ -50,7 +50,7 @@ export function FileTreeBrowser({ files, selectedPath, onSelectFile }: FileTreeB
             placeholder="파일 검색..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg bg-[#F7F7F5] py-1.5 pl-7 pr-2.5 text-[12px] text-[#1A1A1A] placeholder:text-[#B4B4B0] focus:bg-[#EEEEEC] focus:outline-none transition-colors"
+            className="w-full rounded-lg border border-[#E0E0DC] bg-white py-1.5 pl-7 pr-2.5 text-[12px] text-[#1A1A1A] placeholder:text-[#B4B4B0] focus:border-[#C0C0BC] focus:outline-none transition-colors"
           />
         </div>
       </div>
@@ -99,14 +99,17 @@ function FileItem({
 
   return (
     <button
-      className={`flex w-full items-center gap-1.5 px-2 py-1.5 text-left text-[12px] transition-colors ${
+      className={`relative flex w-full items-center gap-1.5 px-2 py-1.5 text-left text-[12px] transition-colors ${
         isSelected
-          ? "bg-[#F7F7F5] text-[#1A1A1A]"
-          : "text-[#787774] hover:bg-[#F7F7F5] hover:text-[#1A1A1A]"
+          ? "text-[#1A1A1A]"
+          : "text-[#787774] hover:text-[#1A1A1A]"
       }`}
       style={{ paddingLeft: 8 + indent * 16 }}
       onClick={() => !isDir && onSelect(entry.path)}
     >
+      {isSelected && (
+        <span className="absolute left-0 top-1 bottom-1 w-[2px] rounded-full bg-[#1A1A1A]" />
+      )}
       {isDir ? (
         <Folder className="h-3.5 w-3.5 flex-shrink-0 text-[#787774]" />
       ) : (

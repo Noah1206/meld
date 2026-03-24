@@ -19,9 +19,9 @@ export function WorkspaceLayout({
   headerActions,
 }: WorkspaceLayoutProps) {
   return (
-    <div className="flex h-screen flex-col bg-[#EEEEEC]">
+    <div className="flex h-screen flex-col bg-[#F7F7F5]">
       {/* Header */}
-      <header className="flex h-12 items-center justify-between bg-white px-4">
+      <header className="flex h-12 items-center justify-between border-b border-[#E0E0DC] bg-white px-4">
         <div className="flex items-center gap-3">
           {onBack && (
             <button
@@ -42,7 +42,7 @@ export function WorkspaceLayout({
             <h1 className="text-[16px] font-semibold text-[#1A1A1A]">
               {projectName || "Meld"}
             </h1>
-            <span className="rounded-md bg-[#F7F7F5] px-2 py-0.5 text-[10px] font-medium text-[#B4B4B0]">
+            <span className="rounded-md border border-[#E0E0DC] px-1.5 py-0.5 text-[9px] font-medium text-[#B4B4B0]">
               Beta
             </span>
           </div>

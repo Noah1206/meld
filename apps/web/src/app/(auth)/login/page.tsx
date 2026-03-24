@@ -13,7 +13,8 @@ const translations = {
     errorGithub: "GitHub authentication failed. Please try again.",
     errorGeneral: "An error occurred during login.",
     continueGithub: "Continue with GitHub",
-    terms: "By continuing, you agree to the Terms of Service.",
+    termsPrefix: "By continuing, you agree to the ",
+    termsLink: "Terms of Service",
     termsLine2: "Only your public GitHub info will be used.",
     backHome: "Back to home",
   },
@@ -23,8 +24,9 @@ const translations = {
     errorGithub: "GitHub 인증에 실패했습니다. 다시 시도해주세요.",
     errorGeneral: "로그인 중 오류가 발생했습니다.",
     continueGithub: "GitHub로 계속하기",
-    terms: "계속 진행하면 서비스 이용약관에 동의하게 됩니다.",
-    termsLine2: "GitHub 공개 정보만 사용됩니다.",
+    termsPrefix: "계속 진행하면 ",
+    termsLink: "서비스 이용약관",
+    termsLine2: "에 동의하게 됩니다. GitHub 공개 정보만 사용됩니다.",
     backHome: "홈으로 돌아가기",
   },
 } as const;
@@ -77,7 +79,11 @@ function LoginContent() {
 
         {/* 안내 문구 */}
         <p className="mt-6 text-center text-[12px] leading-relaxed text-[#B4B4B0]">
-          {t.terms}
+          {t.termsPrefix}
+          <Link href="/terms" className="underline underline-offset-2 transition-colors hover:text-[#787774]">
+            {t.termsLink}
+          </Link>
+          {lang === "en" ? "." : ""}
           <br />
           {t.termsLine2}
         </p>

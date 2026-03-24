@@ -49,32 +49,34 @@ export function ChatPanel({ projectId, githubOwner, githubRepo, mode = "cloud" }
   return (
     <div className="flex h-full flex-col">
       {/* 탭 바 */}
-      <div className="flex bg-[#EEEEEC]">
+      <div className="flex border-b border-[#E0E0DC]">
         {TABS.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex flex-1 items-center justify-center gap-1.5 py-2.5 text-[12px] font-medium transition-colors ${
+            className={`relative flex flex-1 items-center justify-center gap-1.5 py-2.5 text-[12px] font-medium transition-colors ${
               activeTab === tab.id
-                ? "bg-[#F7F7F5] text-[#1A1A1A]"
-                : "text-[#787774] hover:text-[#1A1A1A]"
+                ? "text-[#1A1A1A]"
+                : "text-[#B4B4B0] hover:text-[#787774]"
             }`}
           >
             {tab.icon}
             {tab.label}
+            {activeTab === tab.id && (
+              <span className="absolute bottom-0 left-1/4 right-1/4 h-[2px] rounded-full bg-[#1A1A1A]" />
+            )}
           </button>
         ))}
       </div>
 
       {/* 탭 컨텐츠 */}
-      <div className="flex min-h-0 flex-1 flex-col bg-[#F7F7F5]">
+      <div className="flex min-h-0 flex-1 flex-col bg-white">
         {activeTab === "chat" && (
           <div className="relative flex min-h-0 flex-1 flex-col">
             <div className="min-h-0 flex-1 overflow-y-auto pb-4">
               <ChatMessages />
             </div>
-            <div className="pointer-events-none absolute inset-x-0 bottom-[var(--input-h,100px)] h-8 bg-gradient-to-t from-[#F7F7F5] to-transparent" />
-            <div className="flex-shrink-0 bg-[#EEEEEC] p-3">
+            <div className="flex-shrink-0 border-t border-[#E0E0DC]">
               <ChatInput projectId={projectId} mode={mode} />
             </div>
           </div>

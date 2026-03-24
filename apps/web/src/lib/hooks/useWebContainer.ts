@@ -15,6 +15,7 @@ interface UseWebContainerReturn {
   projectName: string;
   devServerUrl: string | null;
   devServerFramework: string | null;
+  dependencies: string[];
   readFile: (path: string) => Promise<string>;
   writeFile: (path: string, content: string) => Promise<boolean>;
   status: BootStatus;
@@ -37,6 +38,8 @@ export function useWebContainer(
   const [statusMessage, setStatusMessage] = useState("WebContainer 부팅 중...");
   const [fileTree, setFileTree] = useState<FileEntry[]>([]);
   const [devServerUrl, setDevServerUrl] = useState<string | null>(null);
+  const [detectedFramework, setDetectedFramework] = useState<string | null>(null);
+  const [dependencies, setDependencies] = useState<string[]>([]);
   const containerRef = useRef<WebContainer | null>(null);
   const bootedRef = useRef(false);
 
@@ -128,6 +131,33 @@ export function useWebContainer(
           return;
         }
 
+        // 4.5. package.json 파싱 → 프레임워크/의존성 감지
+        try {
+          const pkgRaw = await wc.fs.readFile("package.json", "utf-8");
+          const pkg = JSON.parse(pkgRaw);
+          const allDeps = { ...pkg.dependencies, ...pkg.devDependencies };
+          const depNames = Object.keys(allDeps);
+
+          // 프레임워크 감지
+          let fw: string | null = null;
+          if (allDeps["next"]) fw = "Next.js";
+          else if (allDeps["nuxt"]) fw = "Nuxt";
+          else if (allDeps["vue"]) fw = "Vue";
+          else if (allDeps["@angular/core"]) fw = "Angular";
+          else if (allDeps["svelte"]) fw = "Svelte";
+          else if (allDeps["react"]) fw = "React";
+
+          setDetectedFramework(fw);
+
+          // 주요 의존성만 추출 (@types, eslint 제외)
+          const keyDeps = depNames.filter(
+            (d) => !d.startsWith("@types/") && !d.startsWith("eslint"),
+          ).slice(0, 30);
+          setDependencies(keyDeps);
+        } catch {
+          // package.json 파싱 실패 시 무시
+        }
+
         // 5. dev server 시작
         setStatus("starting");
         setStatusMessage("Dev server 시작 중...");
@@ -186,7 +216,8 @@ export function useWebContainer(
     fileTree,
     projectName: owner && repo ? `${owner}/${repo}` : "",
     devServerUrl,
-    devServerFramework: null, // WebContainer에서 자동 감지 어려움
+    devServerFramework: detectedFramework,
+    dependencies,
     readFile,
     writeFile,
     status,

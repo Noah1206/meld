@@ -15,7 +15,8 @@ export function buildCodeEditPrompt(
   let systemExtra = "";
 
   if (context?.framework && context.framework !== "unknown") {
-    systemExtra += `\n이 프로젝트는 ${context.framework}를 사용합니다. 프레임워크 패턴을 따르세요.`;
+    systemExtra += `\n이 프로젝트는 ${context.framework}를 사용합니다.`;
+    systemExtra += getFrameworkGuidelines(context.framework, context.dependencies);
   }
   if (context?.dependencies?.length) {
     systemExtra += `\n사용 가능한 라이브러리: ${context.dependencies.join(", ")}`;
@@ -52,4 +53,62 @@ ${currentCode}
 사용자 명령: ${userCommand}`;
 
   return { system, user };
+}
+
+function getFrameworkGuidelines(
+  framework: string,
+  deps?: string[],
+): string {
+  const hasDep = (name: string) => deps?.some((d) => d === name || d.startsWith(name + "/"));
+  let guide = "";
+
+  switch (framework) {
+    case "Next.js":
+      guide += `
+[Next.js 가이드라인]
+- App Router 사용 시 서버 컴포넌트가 기본. 클라이언트 이벤트/훅 필요 시 파일 상단에 "use client" 추가.
+- 이미지는 next/image, 링크는 next/link 사용.
+- 서버 액션은 "use server" 함수로 작성.`;
+      break;
+    case "React":
+      guide += `
+[React 가이드라인]
+- 함수형 컴포넌트 + hooks 패턴 사용.
+- 상태 관리: useState/useReducer, 부수효과: useEffect.
+- 컴포넌트는 단일 책임 원칙을 따르세요.`;
+      break;
+    case "Vue":
+      guide += `
+[Vue 가이드라인]
+- Composition API + <script setup> 문법 우선.
+- ref()/reactive()로 반응형 상태 관리.
+- defineProps/defineEmits로 타입 안전한 props/events.`;
+      break;
+    case "Angular":
+      guide += `
+[Angular 가이드라인]
+- 컴포넌트 데코레이터 + standalone 컴포넌트 우선.
+- 서비스는 Injectable + providedIn: 'root'.
+- Reactive Forms 우선, Template-driven은 지양.`;
+      break;
+    case "Svelte":
+      guide += `
+[Svelte 가이드라인]
+- $: 반응형 선언문 사용.
+- 컴포넌트 props는 export let으로 선언.
+- 스토어는 writable/readable 사용.`;
+      break;
+  }
+
+  if (hasDep?.("tailwindcss")) {
+    guide += `\n- Tailwind CSS 사용 중: 유틸리티 클래스 우선, 인라인 style 지양.`;
+  }
+  if (hasDep?.("@shadcn") || hasDep?.("shadcn")) {
+    guide += `\n- shadcn/ui 사용 중: 기존 UI 컴포넌트를 재활용하세요 (Button, Card, Dialog 등).`;
+  }
+  if (hasDep?.("@radix-ui")) {
+    guide += `\n- Radix UI 사용 중: 접근성 기반 프리미티브를 활용하세요.`;
+  }
+
+  return guide;
 }
