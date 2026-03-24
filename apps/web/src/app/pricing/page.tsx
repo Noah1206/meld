@@ -11,105 +11,107 @@ const translations = {
   en: {
     // Hero
     heroTitle1: "choose your plan",
-    heroTitle2: "design incredible",
+    heroTitle2: "design to code",
 
     // Toggle
     yearly: "yearly billing",
     yearlySave: "save 20%",
 
     // Starter
-    starterName: "Starter",
-    starterPrice: "$0",
-    starterTagline: "design, share, ship",
+    starterName: "Meld Starter",
+    starterPrice: "Free",
+    starterTagline: "get started with Figma to Code",
     starterFeatures: [
-      "100/week MCP tool calls",
-      "Limited image generation",
-      "25 MB max image size",
-      "Limited collaboration files",
+      "3 projects",
+      "50 AI edits / month",
+      "Cloud mode only",
+      "Community support",
     ],
     starterCta: "get started",
 
     // Pro
-    proName: "Pro",
+    proName: "Meld Pro",
     proPriceMonthly: "$20",
     proPriceYearly: "$16",
-    proPer: "per user/month",
+    proPer: "/ mo",
     proFeatures: [
-      "1M/week MCP tool calls",
-      "100x more image gen per day",
-      "Video export",
-      "100 MB max image size",
-      "Unlimited collaboration files",
-      "Priority feedback",
+      "Unlimited projects",
+      "Unlimited AI edits",
+      "Cloud + Local + Sandbox mode",
+      "All AI models (Claude, GPT-4o, Gemini)",
+      "Design change tracking",
+      "Priority support",
     ],
     proCta: "get Meld Pro",
 
     // Unlimited
-    unlimitedName: "Unlimited",
-    unlimitedPrice: "—",
-    unlimitedTagline: "coming soon",
+    unlimitedName: "Meld Unlimited",
+    unlimitedPriceMonthly: "$49",
+    unlimitedPriceYearly: "$39",
+    unlimitedPer: "/ mo",
     unlimitedFeatures: [
       "Everything in Pro",
+      "Team collaboration",
       "SAML / SSO",
-      "Admin controls",
+      "Admin controls & audit logs",
       "Custom contracts",
-      "Dedicated support",
-      "Priority onboarding",
+      "Dedicated support & onboarding",
     ],
-    unlimitedCta: "contact us",
+    unlimitedCta: "get Unlimited",
 
     // Bottom
-    bottomText: "used in production by designers at",
+    bottomText: "trusted by developers shipping with",
 
     // Footer
     footerTagline: "Design to Code, seamlessly.",
   },
   ko: {
     heroTitle1: "플랜을 선택하세요",
-    heroTitle2: "놀라운 디자인을",
+    heroTitle2: "디자인을 코드로",
 
     yearly: "연간 결제",
     yearlySave: "20% 할인",
 
-    starterName: "Starter",
-    starterPrice: "$0",
-    starterTagline: "디자인, 공유, 배포",
+    starterName: "Meld Starter",
+    starterPrice: "Free",
+    starterTagline: "Figma to Code 시작하기",
     starterFeatures: [
-      "주 100회 MCP 도구 호출",
-      "제한된 이미지 생성",
-      "25 MB 최대 이미지 크기",
-      "제한된 협업 파일",
+      "3개 프로젝트",
+      "월 50회 AI 수정",
+      "클라우드 모드만",
+      "커뮤니티 지원",
     ],
     starterCta: "시작하기",
 
-    proName: "Pro",
+    proName: "Meld Pro",
     proPriceMonthly: "$20",
     proPriceYearly: "$16",
-    proPer: "유저/월",
+    proPer: "/ 월",
     proFeatures: [
-      "주 100만회 MCP 도구 호출",
-      "100배 더 많은 이미지 생성",
-      "비디오 내보내기",
-      "100 MB 최대 이미지 크기",
-      "무제한 협업 파일",
-      "우선 피드백",
+      "무제한 프로젝트",
+      "무제한 AI 수정",
+      "클라우드 + 로컬 + 샌드박스 모드",
+      "모든 AI 모델 (Claude, GPT-4o, Gemini)",
+      "디자인 변경 추적",
+      "우선 지원",
     ],
     proCta: "Meld Pro 시작",
 
-    unlimitedName: "Unlimited",
-    unlimitedPrice: "—",
-    unlimitedTagline: "출시 예정",
+    unlimitedName: "Meld Unlimited",
+    unlimitedPriceMonthly: "$49",
+    unlimitedPriceYearly: "$39",
+    unlimitedPer: "/ 월",
     unlimitedFeatures: [
       "Pro의 모든 기능",
+      "팀 협업",
       "SAML / SSO",
-      "관리자 제어",
+      "관리자 제어 & 감사 로그",
       "맞춤 계약",
-      "전담 지원",
-      "우선 온보딩",
+      "전담 지원 & 온보딩",
     ],
-    unlimitedCta: "문의하기",
+    unlimitedCta: "Unlimited 시작",
 
-    bottomText: "현재 사용 중인 디자이너들",
+    bottomText: "현재 사용 중인 개발자들",
 
     footerTagline: "Design to Code, seamlessly.",
   },
@@ -261,8 +263,17 @@ export default function PricingPage() {
           <div className={`flex flex-col bg-[#0B0E11] p-10 lg:p-12 transition-all duration-700 delay-300 ${cardsSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
             <div className="flex-1">
               <h3 className="text-[22px] font-medium text-white">{t.unlimitedName}</h3>
-              <p className="mt-1.5 text-[32px] font-light text-white">{t.unlimitedPrice}</p>
-              <p className="mt-4 text-[14px] text-[#C5B882]">{t.unlimitedTagline}</p>
+              <div className="mt-1.5 flex items-baseline gap-2.5">
+                {yearly ? (
+                  <>
+                    <span className="text-[16px] text-[#555] line-through">{t.unlimitedPriceMonthly}</span>
+                    <span className="text-[32px] font-light text-white">{t.unlimitedPriceYearly}</span>
+                  </>
+                ) : (
+                  <span className="text-[32px] font-light text-white">{t.unlimitedPriceMonthly}</span>
+                )}
+                <span className="text-[15px] text-[#555]">{t.unlimitedPer}</span>
+              </div>
 
               <ul className="mt-10 space-y-4">
                 {t.unlimitedFeatures.map((feature) => (
