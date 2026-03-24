@@ -9,6 +9,7 @@ interface WorkspaceLayoutProps {
   onBack?: () => void;
   projectName?: string;
   headerActions?: React.ReactNode;
+  sidebarSide?: "left" | "right";
 }
 
 export function WorkspaceLayout({
@@ -17,6 +18,7 @@ export function WorkspaceLayout({
   onBack,
   projectName,
   headerActions,
+  sidebarSide = "right",
 }: WorkspaceLayoutProps) {
   return (
     <div className="flex h-screen flex-col bg-[#F7F7F5]">
@@ -55,15 +57,29 @@ export function WorkspaceLayout({
 
       {/* Main Content: 2-Panel */}
       <div className="flex flex-1 gap-2 overflow-hidden p-2 pt-0">
-        {/* Left Panel */}
-        <main className="animate-fade-in flex-1 overflow-hidden rounded-b-lg bg-white">
-          {leftPanel}
-        </main>
-
-        {/* Right Panel */}
-        <aside className="animate-slide-in-right flex w-[420px] flex-shrink-0 flex-col rounded-b-lg bg-[#F7F7F5]">
-          {rightPanel}
-        </aside>
+        {sidebarSide === "left" ? (
+          <>
+            {/* Sidebar (left) */}
+            <aside className="animate-fade-in flex w-[400px] flex-shrink-0 flex-col rounded-b-lg bg-[#F7F7F5]">
+              {leftPanel}
+            </aside>
+            {/* Main (right) */}
+            <main className="animate-slide-in-right flex-1 overflow-hidden rounded-b-lg bg-white">
+              {rightPanel}
+            </main>
+          </>
+        ) : (
+          <>
+            {/* Main (left) */}
+            <main className="animate-fade-in flex-1 overflow-hidden rounded-b-lg bg-white">
+              {leftPanel}
+            </main>
+            {/* Sidebar (right) */}
+            <aside className="animate-slide-in-right flex w-[420px] flex-shrink-0 flex-col rounded-b-lg bg-[#F7F7F5]">
+              {rightPanel}
+            </aside>
+          </>
+        )}
       </div>
     </div>
   );

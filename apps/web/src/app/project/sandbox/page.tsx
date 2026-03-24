@@ -1,12 +1,12 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Loader2, Package, Download, Play, Check, AlertCircle } from "lucide-react";
 import { useLangStore } from "@/lib/store/lang-store";
 import { WorkspaceLayout } from "@/components/layout/WorkspaceLayout";
-import { LocalPanel } from "@/components/workspace/LocalPanel";
 import { ChatPanel } from "@/components/workspace/ChatPanel";
+import { PreviewFrame } from "@/components/workspace/PreviewFrame";
 import { useWebContainer } from "@/lib/hooks/useWebContainer";
 import { useAgentStore } from "@/lib/store/agent-store";
 
@@ -68,17 +68,12 @@ function SandboxContent() {
   const branch = searchParams.get("branch") ?? "main";
 
   const wc = useWebContainer(owner, repo, branch);
-  const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
-  const { setHandlers, setSelectedFilePath: setStoreFilePath, setConnected, setFileTree, setProjectName, setDevServerUrl, setDevServerFramework, setDependencies } = useAgentStore();
+  const { setHandlers, setConnected, setFileTree, setProjectName, setDevServerUrl, setDevServerFramework, setDependencies } = useAgentStore();
 
   // agent-store에 핸들러 등록 (ChatInput이 store에서 읽음)
   useEffect(() => {
     setHandlers(wc.readFile, wc.writeFile);
   }, [wc.readFile, wc.writeFile, setHandlers]);
-
-  useEffect(() => {
-    setStoreFilePath(selectedFilePath);
-  }, [selectedFilePath, setStoreFilePath]);
 
   // store 동기화
   useEffect(() => {
@@ -186,11 +181,12 @@ function SandboxContent() {
     );
   }
 
-  // ready → 워크스페이스 렌더
+  // ready → 워크스페이스 렌더 (Chat 좌측 사이드바, Preview 우측 메인)
   return (
     <WorkspaceLayout
       projectName={wc.projectName}
       onBack={() => router.push("/dashboard")}
+      sidebarSide="left"
       headerActions={
         <div className="flex items-center gap-2">
           <div className="h-2 w-2 rounded-full bg-green-500" />
@@ -198,24 +194,24 @@ function SandboxContent() {
         </div>
       }
       leftPanel={
-        <LocalPanel
-          connected={wc.connected}
-          fileTree={wc.fileTree}
-          projectName={wc.projectName}
-          devServerUrl={wc.devServerUrl}
-          devServerFramework={wc.devServerFramework}
-          readFile={wc.readFile}
-          selectedFilePath={selectedFilePath}
-          onSelectFile={setSelectedFilePath}
-        />
-      }
-      rightPanel={
         <ChatPanel
           projectId="sandbox"
           githubOwner={owner}
           githubRepo={repo}
           mode="local"
         />
+      }
+      rightPanel={
+        wc.devServerUrl ? (
+          <PreviewFrame url={wc.devServerUrl} framework={wc.devServerFramework} />
+        ) : (
+          <div className="flex h-full items-center justify-center bg-[#F7F7F5]">
+            <div className="text-center">
+              <Loader2 className="mx-auto h-5 w-5 animate-spin text-[#787774]" />
+              <p className="mt-2 text-[13px] text-[#787774]">Dev server 시작 중...</p>
+            </div>
+          </div>
+        )
       }
     />
   );

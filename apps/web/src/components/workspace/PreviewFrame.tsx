@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { RefreshCw, ExternalLink, Globe, Loader2, MousePointerClick, FileCode } from "lucide-react";
+import { RefreshCw, ExternalLink, Loader2, MousePointerClick, FileCode } from "lucide-react";
 import { useAgentStore, type InspectedElement } from "@/lib/store/agent-store";
 import { matchByNaming } from "@/lib/mapping/engine";
 import type { FileEntry } from "@figma-code-bridge/shared";
@@ -99,20 +99,19 @@ export function PreviewFrame({ url, framework }: PreviewFrameProps) {
 
   return (
     <div className="flex h-full flex-col bg-[#F7F7F5]">
-      {/* 툴바 */}
-      <div className="flex items-center gap-2 px-3 py-2">
-        <Globe className="h-3.5 w-3.5 text-[#787774]" />
-        <span className="flex-1 truncate text-[12px] text-[#787774]">{url}</span>
+      {/* 미니멀 툴바 */}
+      <div className="flex items-center gap-1 px-2 py-1.5">
         {framework && (
-          <span className="rounded-lg bg-white px-1.5 py-0.5 text-[10px] font-medium text-[#787774]">
+          <span className="rounded-md bg-[#EEEEEC] px-1.5 py-0.5 text-[10px] font-medium text-[#787774]">
             {framework}
           </span>
         )}
+        <div className="flex-1" />
 
-        {/* 인스펙터 토글 버튼 */}
+        {/* 인스펙터 토글 */}
         <button
           onClick={toggleInspector}
-          className={`rounded-lg p-1 transition-colors ${
+          className={`rounded-lg p-1.5 transition-colors ${
             inspectorEnabled
               ? "bg-blue-100 text-blue-600"
               : "text-[#B4B4B0] hover:bg-[#EEEEEC] hover:text-[#787774]"
@@ -124,7 +123,7 @@ export function PreviewFrame({ url, framework }: PreviewFrameProps) {
 
         <button
           onClick={handleRefresh}
-          className="rounded-lg p-1 text-[#B4B4B0] transition-colors hover:bg-[#EEEEEC] hover:text-[#787774]"
+          className="rounded-lg p-1.5 text-[#B4B4B0] transition-colors hover:bg-[#EEEEEC] hover:text-[#787774]"
           title="새로고침"
         >
           <RefreshCw className="h-3.5 w-3.5" />
@@ -133,7 +132,7 @@ export function PreviewFrame({ url, framework }: PreviewFrameProps) {
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="rounded-lg p-1 text-[#B4B4B0] transition-colors hover:bg-[#EEEEEC] hover:text-[#787774]"
+          className="rounded-lg p-1.5 text-[#B4B4B0] transition-colors hover:bg-[#EEEEEC] hover:text-[#787774]"
           title="새 탭에서 열기"
         >
           <ExternalLink className="h-3.5 w-3.5" />
