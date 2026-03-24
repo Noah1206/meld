@@ -261,6 +261,9 @@ export default function DownloadPage() {
             <Link href="/download" className="text-[13px] font-medium text-[#1A1A1A]">
               {t.navDownload}
             </Link>
+            <Link href="/pricing" className="text-[13px] text-[#999] transition-colors hover:text-[#1A1A1A]">
+              Pricing
+            </Link>
             <Link
               href="/dashboard"
               className="rounded-lg bg-[#F5F0E8] px-4 py-1.5 text-[13px] font-semibold text-[#1A1A1A] transition-colors hover:bg-[#EDE7DB]"
