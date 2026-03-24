@@ -70,11 +70,11 @@ export function ChatPanel({ projectId, githubOwner, githubRepo, mode = "cloud" }
       <div className="flex min-h-0 flex-1 flex-col bg-[#F7F7F5]">
         {activeTab === "chat" && (
           <div className="relative flex min-h-0 flex-1 flex-col">
-            <div className="min-h-0 flex-1 overflow-y-auto pb-2">
+            <div className="min-h-0 flex-1 overflow-y-auto pb-4">
               <ChatMessages />
             </div>
             <div className="pointer-events-none absolute inset-x-0 bottom-[var(--input-h,100px)] h-8 bg-gradient-to-t from-[#F7F7F5] to-transparent" />
-            <div className="flex-shrink-0 bg-[#EEEEEC] p-2">
+            <div className="flex-shrink-0 bg-[#EEEEEC] p-3">
               <ChatInput projectId={projectId} mode={mode} />
             </div>
           </div>

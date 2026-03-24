@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { FolderOpen, Eye, Code, Loader2, Terminal, Copy, Check } from "lucide-react";
 import { FileTreeBrowser } from "./FileTreeBrowser";
 import { PreviewFrame } from "./PreviewFrame";
+import { useAgentStore } from "@/lib/store/agent-store";
 import type { FileEntry } from "@figma-code-bridge/shared";
 
 type LeftTab = "files" | "preview";
@@ -85,6 +86,7 @@ export function LocalPanel({
   const [activeTab, setActiveTab] = useState<LeftTab>("files");
   const [fileContent, setFileContent] = useState<string | null>(null);
   const [isLoadingFile, setIsLoadingFile] = useState(false);
+  const inspectorEnabled = useAgentStore((s) => s.inspectorEnabled);
 
   const handleSelectFile = useCallback(
     async (path: string) => {
@@ -112,7 +114,14 @@ export function LocalPanel({
     {
       id: "preview",
       label: "프리뷰",
-      icon: <Eye className="h-3.5 w-3.5" />,
+      icon: (
+        <span className="relative">
+          <Eye className="h-3.5 w-3.5" />
+          {inspectorEnabled && (
+            <span className="absolute -right-1 -top-1 h-1.5 w-1.5 rounded-full bg-blue-500" />
+          )}
+        </span>
+      ),
       disabled: !devServerUrl,
     },
   ];
@@ -144,7 +153,7 @@ export function LocalPanel({
       <div className="flex flex-1 flex-col overflow-hidden bg-white">
         {activeTab === "files" && (
           <div className="flex flex-1 flex-col overflow-hidden">
-            <div className={`overflow-hidden ${selectedFilePath ? "h-1/2" : "flex-1"}`}>
+            <div className={`overflow-hidden ${selectedFilePath ? "h-[55%]" : "flex-1"}`}>
               {fileTree.length === 0 ? (
                 <div className="flex h-full items-center justify-center p-6">
                   <div className="text-center">
@@ -171,7 +180,7 @@ export function LocalPanel({
                     {selectedFilePath}
                   </span>
                 </div>
-                <div className="mx-2 mb-2 flex-1 overflow-auto rounded-lg bg-[#EEEEEC] p-3">
+                <div className="mx-2 mb-2 flex-1 overflow-auto rounded-lg bg-[#EEEEEC] p-4">
                   {isLoadingFile ? (
                     <div className="flex items-center gap-2">
                       <Loader2 className="h-3 w-3 animate-spin text-[#B4B4B0]" />

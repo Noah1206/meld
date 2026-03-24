@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type { FileEntry } from "@figma-code-bridge/shared";
+import { injectInspectorViaAgent } from "@/lib/webcontainer/inject-inspector-agent";
 
 interface ElectronAgentState {
   connected: boolean;
@@ -70,6 +71,16 @@ export function useElectronAgent(): UseElectronAgentReturn {
       projectName: result.projectName,
       projectPath: result.projectPath,
     }));
+
+    // 인스펙터 스크립트 주입 (dev server 시작 전, 실패해도 무시)
+    try {
+      await injectInspectorViaAgent(
+        (p) => agent.readFile(p),
+        (p, c) => agent.writeFile(p, c),
+      );
+    } catch {
+      // 인스펙터는 optional feature
+    }
 
     // dev server 시작
     agent.startDevServer(result.projectPath);

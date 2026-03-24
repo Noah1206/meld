@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useState, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useLangStore } from "@/lib/store/lang-store";
@@ -9,6 +9,7 @@ import { LocalPanel } from "@/components/workspace/LocalPanel";
 import { ChatPanel } from "@/components/workspace/ChatPanel";
 import { useAgentConnection } from "@/lib/hooks/useAgentConnection";
 import { useAgentStore } from "@/lib/store/agent-store";
+import { injectInspectorViaAgent } from "@/lib/webcontainer/inject-inspector-agent";
 
 const translations = {
   en: { projectName: "Local Project", connected: "Agent connected", waiting: "Waiting for connection" },
@@ -62,6 +63,17 @@ function LocalProjectContent() {
   useEffect(() => {
     setDevServerFramework(agent.devServerFramework);
   }, [agent.devServerFramework, setDevServerFramework]);
+
+  // 에이전트 연결 시 인스펙터 스크립트 주입
+  const injectedRef = useRef(false);
+  useEffect(() => {
+    if (!agent.connected || injectedRef.current) return;
+    injectedRef.current = true;
+
+    injectInspectorViaAgent(agent.readFile, agent.writeFile).catch(() => {
+      // 인스펙터는 optional feature
+    });
+  }, [agent.connected, agent.readFile, agent.writeFile]);
 
   return (
     <WorkspaceLayout

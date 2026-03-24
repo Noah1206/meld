@@ -54,14 +54,14 @@ export function WorkspaceLayout({
       </header>
 
       {/* Main Content: 2-Panel */}
-      <div className="flex flex-1 gap-[3px] overflow-hidden p-[3px] pt-0">
+      <div className="flex flex-1 gap-2 overflow-hidden p-2 pt-0">
         {/* Left Panel */}
         <main className="animate-fade-in flex-1 overflow-hidden rounded-b-lg bg-white">
           {leftPanel}
         </main>
 
         {/* Right Panel */}
-        <aside className="animate-slide-in-right flex w-[380px] flex-shrink-0 flex-col rounded-b-lg bg-[#F7F7F5]">
+        <aside className="animate-slide-in-right flex w-[420px] flex-shrink-0 flex-col rounded-b-lg bg-[#F7F7F5]">
           {rightPanel}
         </aside>
       </div>

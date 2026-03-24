@@ -232,10 +232,10 @@ export function ChatInput({ projectId, mode = "cloud" }: ChatInputProps) {
           </div>
           <div>
             <p className="text-[12px] font-medium text-[#1A1A1A]">
-              {isLocal ? "좌측 파일 트리에서 수정할 파일을 선택하세요" : "Figma 뷰어에서 수정할 엘리먼트를 클릭하세요"}
+              {isLocal ? "프리뷰에서 엘리먼트를 클릭하거나, 파일 트리에서 파일을 선택하세요" : "Figma 뷰어에서 수정할 엘리먼트를 클릭하세요"}
             </p>
             <p className="text-[11px] text-[#B4B4B0]">
-              {isLocal ? "파일을 선택하면 AI에게 수정 명령을 내릴 수 있어요" : "엘리먼트를 선택하면 AI가 해당 컴포넌트를 수정해요"}
+              {isLocal ? "인스펙터로 엘리먼트를 선택하면 자동으로 파일이 매핑돼요" : "엘리먼트를 선택하면 AI가 해당 컴포넌트를 수정해요"}
             </p>
           </div>
         </div>

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { WebContainer } from "@webcontainer/api";
 import type { FileEntry } from "@figma-code-bridge/shared";
 import { loadRepoToFileSystemTree } from "@/lib/webcontainer/repo-loader";
+import { injectInspector } from "@/lib/webcontainer/inject-inspector";
 import { trpc } from "@/lib/trpc/client";
 
 type BootStatus = "booting" | "cloning" | "installing" | "starting" | "ready" | "error";
@@ -101,6 +102,13 @@ export function useWebContainer(
 
         // 3. WebContainer에 마운트
         await wc.mount(fsTree);
+
+        // 3.5. 인스펙터 스크립트 주입 (실패해도 무시)
+        try {
+          await injectInspector(wc);
+        } catch {
+          // 인스펙터는 optional feature — 실패 시 무시
+        }
 
         // 파일 트리 빌드
         const tree = buildFileTree(filePaths);

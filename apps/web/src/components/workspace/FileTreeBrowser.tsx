@@ -56,7 +56,7 @@ export function FileTreeBrowser({ files, selectedPath, onSelectFile }: FileTreeB
       </div>
 
       {/* 파일 리스트 */}
-      <div className="flex-1 overflow-y-auto py-1">
+      <div className="flex-1 overflow-y-auto py-2">
         {filteredFiles
           ? filteredFiles.map((entry) => (
               <FileItem
@@ -99,7 +99,7 @@ function FileItem({
 
   return (
     <button
-      className={`flex w-full items-center gap-1.5 px-2 py-1 text-left text-[12px] transition-colors ${
+      className={`flex w-full items-center gap-1.5 px-2 py-1.5 text-left text-[12px] transition-colors ${
         isSelected
           ? "bg-[#F7F7F5] text-[#1A1A1A]"
           : "text-[#787774] hover:bg-[#F7F7F5] hover:text-[#1A1A1A]"
