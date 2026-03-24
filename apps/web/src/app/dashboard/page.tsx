@@ -22,9 +22,7 @@ import {
   Rocket,
   BookOpen,
   MessageCircle,
-  Keyboard,
   ArrowUpRight,
-  Shield,
   Eye,
   ChevronDown,
   Search,
@@ -522,10 +520,6 @@ export default function DashboardPage() {
           <div className="flex items-center gap-3">
             {user && (
               <>
-                <button className="hidden items-center gap-1.5 rounded-lg bg-[#F7F7F5] px-2.5 py-1.5 text-[11px] text-[#B4B4B0] transition-all hover:bg-[#EEEEEC] hover:text-[#787774] sm:flex">
-                  <Keyboard className="h-3 w-3" />
-                  <kbd className="font-mono text-[10px]">⌘K</kbd>
-                </button>
                 <div className="flex items-center gap-2.5">
                   {user.avatarUrl && (
                     <img
@@ -796,7 +790,7 @@ export default function DashboardPage() {
       {/* 언어 토글 (고정) */}
       <button
         onClick={toggleLang}
-        className="fixed bottom-6 right-6 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-white text-[12px] font-semibold text-[#1A1A1A] shadow-lg ring-1 ring-black/[0.08] transition-all hover:scale-105 hover:shadow-xl active:scale-95"
+        className="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-white text-[14px] font-semibold text-[#1A1A1A] shadow-lg ring-1 ring-black/[0.08] transition-all hover:scale-105 hover:shadow-xl active:scale-95"
       >
         {lang === "en" ? "KO" : "EN"}
       </button>
