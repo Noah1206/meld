@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "FigmaCodeBridge",
-  description: "Figma 디자인과 AI 코드 수정을 통합하는 플랫폼",
+  title: "Meld",
+  description: "Design to Code, seamlessly.",
 };
 
 export default function RootLayout({

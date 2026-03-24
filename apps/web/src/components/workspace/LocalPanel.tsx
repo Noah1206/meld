@@ -10,7 +10,7 @@ type LeftTab = "files" | "preview";
 
 function AgentDisconnectedGuide() {
   const [copied, setCopied] = useState(false);
-  const command = "npx figma-code-bridge";
+  const command = "npx meld";
 
   const handleCopy = () => {
     navigator.clipboard.writeText(command);

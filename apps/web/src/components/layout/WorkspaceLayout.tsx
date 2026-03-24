@@ -40,7 +40,7 @@ export function WorkspaceLayout({
               </div>
             </Link>
             <h1 className="text-[16px] font-semibold text-[#1A1A1A]">
-              {projectName || "FigmaCodeBridge"}
+              {projectName || "Meld"}
             </h1>
             <span className="rounded-md bg-[#F7F7F5] px-2 py-0.5 text-[10px] font-medium text-[#B4B4B0]">
               Beta

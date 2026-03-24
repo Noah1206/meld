@@ -510,7 +510,7 @@ export default function DashboardPage() {
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1A1A1A]">
               <Blend className="h-3.5 w-3.5 text-white" />
             </div>
-            <span className="text-[16px] font-semibold text-[#1A1A1A]">FigmaCodeBridge</span>
+            <span className="text-[16px] font-semibold text-[#1A1A1A]">Meld</span>
           </Link>
           <div className="flex items-center gap-3">
             {user && (
@@ -592,7 +592,7 @@ export default function DashboardPage() {
               </div>
               <Terminal className="h-3.5 w-3.5 text-[#B4B4B0]" />
               <span className="text-[12px] text-[#787774]">{t.localAgent}</span>
-              <code className="rounded bg-[#F7F7F5] px-1.5 py-0.5 text-[10px] text-[#787774]">npx figma-code-bridge</code>
+              <code className="rounded bg-[#F7F7F5] px-1.5 py-0.5 text-[10px] text-[#787774]">npx meld</code>
             </div>
           </div>
         </div>

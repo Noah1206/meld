@@ -600,7 +600,7 @@ export default function HomePage() {
               </p>
               <div className="mt-4 overflow-hidden rounded-md bg-[#1A1A1A] px-3 py-2 font-mono text-[11px]">
                 <span className="text-[#666]">$</span>
-                <span className="text-[#999]"> npx figma-code-bridge --port 3100</span>
+                <span className="text-[#999]"> npx meld --port 3100</span>
               </div>
             </div>
 

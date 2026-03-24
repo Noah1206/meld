@@ -412,7 +412,7 @@ export default function DownloadPage() {
               {t.cliDesc}
             </p>
             <div className={`mt-8 transition-all duration-700 delay-200 ${cliSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
-              <CopyCommand command="npx figma-code-bridge" copiedLabel={t.cliCopied} />
+              <CopyCommand command="npx meld" copiedLabel={t.cliCopied} />
             </div>
           </div>
         </div>

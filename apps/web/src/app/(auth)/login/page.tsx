@@ -44,7 +44,7 @@ function LoginContent() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1A1A1A]">
               <Blend className="h-4 w-4 text-white" />
             </div>
-            <span className="text-[16px] font-semibold text-[#1A1A1A]">FigmaCodeBridge</span>
+            <span className="text-[16px] font-semibold text-[#1A1A1A]">Meld</span>
           </Link>
         </div>
 

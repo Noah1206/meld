@@ -32,7 +32,7 @@ const translations = {
     chGeneral: "#general",
     chGeneralDesc: "Chat freely and share your experiences.",
     chShowcase: "#showcase",
-    chShowcaseDesc: "Show off what you've built with FigmaCodeBridge.",
+    chShowcaseDesc: "Show off what you've built with Meld.",
 
     guidelinesTitle: "Community Guidelines",
     guideline1: "Be respectful and kind to each other.",
@@ -65,7 +65,7 @@ const translations = {
     chGeneral: "#일반",
     chGeneralDesc: "자유롭게 대화하고 경험을 나누세요.",
     chShowcase: "#쇼케이스",
-    chShowcaseDesc: "FigmaCodeBridge로 만든 결과물을 자랑하세요.",
+    chShowcaseDesc: "Meld로 만든 결과물을 자랑하세요.",
 
     guidelinesTitle: "커뮤니티 가이드라인",
     guideline1: "서로 존중하고 친절하게 대화해 주세요.",
@@ -129,7 +129,7 @@ export default function CommunityPage() {
         {/* Discord 메인 카드 */}
         <div className="animate-fade-in-up animation-delay-150 mb-10">
           <a
-            href="https://discord.gg/figmacodebridge"
+            href="https://discord.gg/meld"
             target="_blank"
             rel="noopener noreferrer"
             className="group flex flex-col items-center rounded-2xl bg-[#F7F7F5] p-10 text-center transition-colors hover:bg-[#F0F0EE]"
@@ -186,7 +186,7 @@ export default function CommunityPage() {
           <h2 className="text-[20px] font-bold tracking-[-0.01em] text-[#1A1A1A]">{t.otherChannels}</h2>
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
             <a
-              href="https://github.com/figma-code-bridge/discussions"
+              href="https://github.com/meld-studio/discussions"
               target="_blank"
               rel="noopener noreferrer"
               className="group flex items-center gap-3 rounded-xl bg-[#F7F7F5] p-4 transition-colors hover:bg-[#F0F0EE]"
@@ -199,7 +199,7 @@ export default function CommunityPage() {
               <ArrowUpRight className="h-3.5 w-3.5 text-[#D4D4D0] transition-colors group-hover:text-[#787774]" />
             </a>
             <a
-              href="https://twitter.com/figmacodebridge"
+              href="https://twitter.com/meld_studio"
               target="_blank"
               rel="noopener noreferrer"
               className="group flex items-center gap-3 rounded-xl bg-[#F7F7F5] p-4 transition-colors hover:bg-[#F0F0EE]"

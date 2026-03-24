@@ -21,8 +21,8 @@ const translations = {
     title: "GitHub",
     subtitle: "Check out the source code and file issues.",
 
-    repoName: "figma-code-bridge",
-    repoDesc: "Figma + AI code editing platform",
+    repoName: "Meld",
+    repoDesc: "Design to Code, seamlessly",
 
     sourceCode: "Source Code",
     sourceCodeDesc: "View all source code",
@@ -34,7 +34,7 @@ const translations = {
     starDesc: "Star the project",
 
     contributing: "Contributing",
-    contributingDesc: "FigmaCodeBridge is an open-source project. Anyone can contribute code.",
+    contributingDesc: "Meld is an open-source project. Anyone can contribute code.",
     contribStep1: "Fork the repository",
     contribStep2: "Create a new branch",
     contribStep3: "Commit your changes",
@@ -49,8 +49,8 @@ const translations = {
     title: "GitHub",
     subtitle: "소스 코드를 확인하고 이슈를 등록하세요.",
 
-    repoName: "figma-code-bridge",
-    repoDesc: "Figma + AI 코드 수정 플랫폼",
+    repoName: "Meld",
+    repoDesc: "Design to Code, seamlessly",
 
     sourceCode: "소스 코드",
     sourceCodeDesc: "전체 소스 코드 보기",
@@ -62,7 +62,7 @@ const translations = {
     starDesc: "프로젝트에 스타 주기",
 
     contributing: "기여하기",
-    contributingDesc: "FigmaCodeBridge는 오픈소스 프로젝트입니다. 누구나 코드에 기여할 수 있습니다.",
+    contributingDesc: "Meld는 오픈소스 프로젝트입니다. 누구나 코드에 기여할 수 있습니다.",
     contribStep1: "레포지토리를 Fork 합니다",
     contribStep2: "새 브랜치를 생성합니다",
     contribStep3: "변경사항을 커밋합니다",
@@ -79,10 +79,10 @@ export default function GitHubPage() {
   const t = translations[lang];
 
   const quickLinks = [
-    { icon: FileCode, title: t.sourceCode, desc: t.sourceCodeDesc, href: "https://github.com/figma-code-bridge" },
-    { icon: AlertCircle, title: t.issues, desc: t.issuesDesc, href: "https://github.com/figma-code-bridge/issues" },
-    { icon: GitPullRequest, title: t.pullRequests, desc: t.pullRequestsDesc, href: "https://github.com/figma-code-bridge/pulls" },
-    { icon: Star, title: t.star, desc: t.starDesc, href: "https://github.com/figma-code-bridge" },
+    { icon: FileCode, title: t.sourceCode, desc: t.sourceCodeDesc, href: "https://github.com/meld-studio" },
+    { icon: AlertCircle, title: t.issues, desc: t.issuesDesc, href: "https://github.com/meld-studio/issues" },
+    { icon: GitPullRequest, title: t.pullRequests, desc: t.pullRequestsDesc, href: "https://github.com/meld-studio/pulls" },
+    { icon: Star, title: t.star, desc: t.starDesc, href: "https://github.com/meld-studio" },
   ];
 
   const contribSteps = [t.contribStep1, t.contribStep2, t.contribStep3, t.contribStep4];
@@ -125,7 +125,7 @@ export default function GitHubPage() {
         {/* 메인 링크 카드 */}
         <div className="animate-fade-in-up animation-delay-150 mb-10">
           <a
-            href="https://github.com/figma-code-bridge"
+            href="https://github.com/meld-studio"
             target="_blank"
             rel="noopener noreferrer"
             className="group flex items-center justify-between rounded-2xl bg-[#F7F7F5] p-6 transition-colors hover:bg-[#F0F0EE]"
