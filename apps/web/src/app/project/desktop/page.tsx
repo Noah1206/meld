@@ -3,14 +3,36 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { FolderOpen, Loader2, Monitor } from "lucide-react";
+import { useLangStore } from "@/lib/store/lang-store";
 import { WorkspaceLayout } from "@/components/layout/WorkspaceLayout";
 import { LocalPanel } from "@/components/workspace/LocalPanel";
 import { ChatPanel } from "@/components/workspace/ChatPanel";
 import { useElectronAgent } from "@/lib/hooks/useElectronAgent";
 import { useAgentStore } from "@/lib/store/agent-store";
 
+const translations = {
+  en: {
+    openProject: "Open Project",
+    openProjectDesc: "Select a local project folder to start AI code editing.",
+    selectFolder: "Select Folder",
+    selectingFolder: "Selecting folder...",
+    backToDashboard: "Back to Dashboard",
+    projectFallback: "Project",
+  },
+  ko: {
+    openProject: "프로젝트 열기",
+    openProjectDesc: "로컬 프로젝트 폴더를 선택해서 AI 코드 수정을 시작하세요.",
+    selectFolder: "폴더 선택",
+    selectingFolder: "폴더 선택 중...",
+    backToDashboard: "대시보드로 돌아가기",
+    projectFallback: "프로젝트",
+  },
+} as const;
+
 export default function DesktopProjectPage() {
   const router = useRouter();
+  const { lang } = useLangStore();
+  const t = translations[lang];
   const agent = useElectronAgent();
   const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
   const [isOpening, setIsOpening] = useState(false);
@@ -59,10 +81,10 @@ export default function DesktopProjectPage() {
           </div>
           <div>
             <h1 className="text-[20px] font-bold text-[#1A1A1A]">
-              프로젝트 열기
+              {t.openProject}
             </h1>
             <p className="mt-1.5 text-[13px] text-[#787774]">
-              로컬 프로젝트 폴더를 선택해서 AI 코드 수정을 시작하세요.
+              {t.openProjectDesc}
             </p>
           </div>
           <button
@@ -75,13 +97,13 @@ export default function DesktopProjectPage() {
             ) : (
               <FolderOpen className="h-4 w-4" />
             )}
-            {isOpening ? "폴더 선택 중..." : "폴더 선택"}
+            {isOpening ? t.selectingFolder : t.selectFolder}
           </button>
           <button
             onClick={() => router.push("/dashboard")}
             className="text-[12px] text-[#B4B4B0] transition-colors hover:text-[#787774]"
           >
-            대시보드로 돌아가기
+            {t.backToDashboard}
           </button>
         </div>
       </div>
@@ -91,7 +113,7 @@ export default function DesktopProjectPage() {
   // 프로젝트 열림: 워크스페이스
   return (
     <WorkspaceLayout
-      projectName={agent.projectName ?? "프로젝트"}
+      projectName={agent.projectName ?? t.projectFallback}
       onBack={() => router.push("/dashboard")}
       headerActions={
         <div className="flex items-center gap-2">

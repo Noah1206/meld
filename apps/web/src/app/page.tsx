@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useLangStore } from "@/lib/store/lang-store";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -265,7 +266,7 @@ function useTypewriter(text: string, speed = 40) {
 }
 
 export default function HomePage() {
-  const [lang, setLang] = useState<Lang>("en");
+  const { lang, toggleLang } = useLangStore();
   const t = translations[lang];
 
   const { displayed: title1, done: title1Done } = useTypewriter(t.heroTitle1, 50);
@@ -946,7 +947,7 @@ export default function HomePage() {
 
       {/* ===== 언어 토글 (고정) ===== */}
       <button
-        onClick={() => setLang(lang === "en" ? "ko" : "en")}
+        onClick={toggleLang}
         className="fixed bottom-6 right-6 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-white text-[12px] font-semibold text-[#1A1A1A] shadow-lg ring-1 ring-black/[0.08] transition-all hover:scale-105 hover:shadow-xl active:scale-95"
       >
         {lang === "en" ? "KO" : "EN"}

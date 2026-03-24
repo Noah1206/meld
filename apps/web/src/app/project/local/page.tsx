@@ -3,14 +3,22 @@
 import { Suspense, useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import { useLangStore } from "@/lib/store/lang-store";
 import { WorkspaceLayout } from "@/components/layout/WorkspaceLayout";
 import { LocalPanel } from "@/components/workspace/LocalPanel";
 import { ChatPanel } from "@/components/workspace/ChatPanel";
 import { useAgentConnection } from "@/lib/hooks/useAgentConnection";
 import { useAgentStore } from "@/lib/store/agent-store";
 
+const translations = {
+  en: { projectName: "Local Project", connected: "Agent connected", waiting: "Waiting for connection" },
+  ko: { projectName: "로컬 프로젝트", connected: "에이전트 연결됨", waiting: "연결 대기 중" },
+} as const;
+
 function LocalProjectContent() {
   const router = useRouter();
+  const { lang } = useLangStore();
+  const t = translations[lang];
   const searchParams = useSearchParams();
   const agentUrl = searchParams.get("agent") ?? "ws://localhost:3100";
 
@@ -57,7 +65,7 @@ function LocalProjectContent() {
 
   return (
     <WorkspaceLayout
-      projectName={agent.projectName ?? "로컬 프로젝트"}
+      projectName={agent.projectName ?? t.projectName}
       onBack={() => router.push("/dashboard")}
       headerActions={
         <div className="flex items-center gap-2">
@@ -65,7 +73,7 @@ function LocalProjectContent() {
             className={`h-2 w-2 rounded-full ${agent.connected ? "bg-[#1A1A1A]" : "bg-[#B4B4B0]"}`}
           />
           <span className="text-[12px] text-[#787774]">
-            {agent.connected ? "에이전트 연결됨" : "연결 대기 중"}
+            {agent.connected ? t.connected : t.waiting}
           </span>
         </div>
       }

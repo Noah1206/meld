@@ -6,9 +6,71 @@ import Link from "next/link";
 import { ArrowLeft, Loader2, Search, Lock, Check, Link as LinkIcon, X, Blend } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import { FigmaClient } from "@/lib/figma/client";
+import { useLangStore } from "@/lib/store/lang-store";
+
+const translations = {
+  en: {
+    back: "Back",
+    save: "Save",
+    title: "New Project",
+    subtitle: "Connect a Figma file and GitHub repo",
+    projectName: "Project Name",
+    projectNamePlaceholder: "e.g. Landing Page Redesign",
+    figmaConnect: "Figma File Connection",
+    figmaHint: "Copy a share link from Figma and paste it here",
+    figmaPlaceholder: "Paste Figma share link",
+    figmaValidating: "Checking",
+    figmaValidate: "Check",
+    figmaInvalidUrl: "Invalid Figma URL.",
+    figmaFailed: "Figma file validation failed",
+    figmaGuideTitle: "How to get the link",
+    figmaGuide1: "Open the file in Figma",
+    figmaGuide2Share: "Share",
+    figmaGuide2: "Click the {share} button in the top right",
+    figmaGuide3Copy: "Copy link",
+    figmaGuide3: "Click {copy} and paste it here",
+    githubRepo: "GitHub Repository",
+    githubDeselect: "Deselect",
+    githubSearchPlaceholder: "Search repositories...",
+    githubLoading: "Loading...",
+    githubLoadError: "Could not load repositories",
+    githubNoResults: "No results found",
+    githubNoRepos: "No repositories",
+  },
+  ko: {
+    back: "뒤로",
+    save: "저장",
+    title: "새 프로젝트",
+    subtitle: "Figma 파일과 GitHub 레포를 연결하세요",
+    projectName: "프로젝트 이름",
+    projectNamePlaceholder: "예: 랜딩 페이지 리디자인",
+    figmaConnect: "Figma 파일 연결",
+    figmaHint: "Figma에서 공유 링크를 복사하여 붙여넣으세요",
+    figmaPlaceholder: "Figma 공유 링크 붙여넣기",
+    figmaValidating: "확인 중",
+    figmaValidate: "확인",
+    figmaInvalidUrl: "유효하지 않은 Figma URL입니다.",
+    figmaFailed: "Figma 파일 검증 실패",
+    figmaGuideTitle: "링크 가져오는 방법",
+    figmaGuide1: "Figma에서 파일을 엽니다",
+    figmaGuide2Share: "공유하기",
+    figmaGuide2: "우측 상단 {share} 버튼 클릭",
+    figmaGuide3Copy: "링크 복사",
+    figmaGuide3: "{copy}를 눌러 여기에 붙여넣기",
+    githubRepo: "GitHub 레포지토리",
+    githubDeselect: "선택 해제",
+    githubSearchPlaceholder: "레포지토리 검색...",
+    githubLoading: "불러오는 중...",
+    githubLoadError: "레포지토리를 불러올 수 없습니다",
+    githubNoResults: "검색 결과가 없습니다",
+    githubNoRepos: "레포지토리가 없습니다",
+  },
+} as const;
 
 export default function NewProjectPage() {
   const router = useRouter();
+  const { lang } = useLangStore();
+  const t = translations[lang];
   const [name, setName] = useState("");
   const [selectedRepo, setSelectedRepo] = useState<{ owner: string; name: string } | null>(null);
   const [repoSearch, setRepoSearch] = useState("");
@@ -38,7 +100,7 @@ export default function NewProjectPage() {
   const handleFigmaValidate = async () => {
     const parsed = FigmaClient.extractFileKey(figmaUrl);
     if (!parsed) {
-      setFigmaError("유효하지 않은 Figma URL입니다.");
+      setFigmaError(t.figmaInvalidUrl);
       return;
     }
 
@@ -50,7 +112,7 @@ export default function NewProjectPage() {
       setFigmaFileKey(result.fileKey);
       setFigmaFileName(result.fileName);
     } catch (err) {
-      setFigmaError(err instanceof Error ? err.message : "Figma 파일 검증 실패");
+      setFigmaError(err instanceof Error ? err.message : t.figmaFailed);
     } finally {
       setFigmaValidating(false);
     }
@@ -79,7 +141,7 @@ export default function NewProjectPage() {
       const created = project as { id: string };
       router.push(`/project/${created.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "프로젝트 생성 실패");
+      setError(err instanceof Error ? err.message : (lang === "ko" ? "프로젝트 생성 실패" : "Failed to create project"));
     }
   };
 
@@ -93,7 +155,7 @@ export default function NewProjectPage() {
             className="flex items-center gap-1.5 text-[13px] text-[#787774] transition-colors hover:text-[#1A1A1A]"
           >
             <ArrowLeft className="h-4 w-4" />
-            뒤로
+            {t.back}
           </button>
           <Link href="/" className="flex items-center gap-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1A1A1A]">
@@ -108,7 +170,7 @@ export default function NewProjectPage() {
             {createMutation.isPending && (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             )}
-            저장
+            {t.save}
           </button>
         </div>
       </header>
@@ -117,10 +179,10 @@ export default function NewProjectPage() {
       <main className="mx-auto max-w-[1440px] px-6 lg:px-16 pt-10 pb-20">
         <div className="animate-fade-in-up mb-8">
           <h1 className="text-[28px] font-bold tracking-[-0.02em] text-[#1A1A1A]">
-            새 프로젝트
+            {t.title}
           </h1>
           <p className="mt-1.5 text-[14px] text-[#787774]">
-            Figma 파일과 GitHub 레포를 연결하세요
+            {t.subtitle}
           </p>
         </div>
 
@@ -134,11 +196,11 @@ export default function NewProjectPage() {
           {/* 프로젝트 이름 */}
           <div className="space-y-2">
             <label className="text-[13px] font-semibold text-[#1A1A1A]">
-              프로젝트 이름
+              {t.projectName}
             </label>
             <input
               type="text"
-              placeholder="예: 랜딩 페이지 리디자인"
+              placeholder={t.projectNamePlaceholder}
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full rounded-xl bg-[#F7F7F5] px-4 py-3 text-[14px] text-[#1A1A1A] ring-1 ring-black/[0.04] placeholder:text-[#B4B4B0] transition-colors focus:bg-[#EEEEEC] focus:ring-black/[0.08] focus:outline-none"
@@ -148,10 +210,10 @@ export default function NewProjectPage() {
           {/* Figma URL */}
           <div className="space-y-2">
             <label className="text-[13px] font-semibold text-[#1A1A1A]">
-              Figma 파일 연결
+              {t.figmaConnect}
             </label>
             <p className="text-[12px] text-[#B4B4B0]">
-              Figma에서 공유 링크를 복사하여 붙여넣으세요
+              {t.figmaHint}
             </p>
 
             {figmaFileName ? (
@@ -172,7 +234,7 @@ export default function NewProjectPage() {
                 <div className="flex gap-2">
                   <input
                     type="text"
-                    placeholder="Figma 공유 링크 붙여넣기"
+                    placeholder={t.figmaPlaceholder}
                     value={figmaUrl}
                     onChange={(e) => {
                       setFigmaUrl(e.target.value);
@@ -192,25 +254,25 @@ export default function NewProjectPage() {
                     ) : (
                       <LinkIcon className="h-3.5 w-3.5" />
                     )}
-                    {figmaValidating ? "확인 중" : "확인"}
+                    {figmaValidating ? t.figmaValidating : t.figmaValidate}
                   </button>
                 </div>
 
                 {/* 가이드 */}
                 <div className="rounded-xl bg-[#F7F7F5] px-4 py-3.5 ring-1 ring-black/[0.04]">
-                  <p className="mb-2.5 text-[12px] font-semibold text-[#1A1A1A]">링크 가져오는 방법</p>
+                  <p className="mb-2.5 text-[12px] font-semibold text-[#1A1A1A]">{t.figmaGuideTitle}</p>
                   <ol className="space-y-2 text-[12px] text-[#787774]">
                     <li className="flex gap-2">
                       <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-lg bg-[#EEEEEC] text-[10px] font-semibold text-[#787774]">1</span>
-                      <span>Figma에서 파일을 엽니다</span>
+                      <span>{t.figmaGuide1}</span>
                     </li>
                     <li className="flex gap-2">
                       <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-lg bg-[#EEEEEC] text-[10px] font-semibold text-[#787774]">2</span>
-                      <span>우측 상단 <span className="font-medium text-[#1A1A1A]">공유하기</span> 버튼 클릭</span>
+                      <span>{t.figmaGuide2.split("{share}")[0]}<span className="font-medium text-[#1A1A1A]">{t.figmaGuide2Share}</span>{t.figmaGuide2.split("{share}")[1]}</span>
                     </li>
                     <li className="flex gap-2">
                       <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-lg bg-[#EEEEEC] text-[10px] font-semibold text-[#787774]">3</span>
-                      <span><span className="font-medium text-[#1A1A1A]">링크 복사</span>를 눌러 여기에 붙여넣기</span>
+                      <span>{t.figmaGuide3.split("{copy}")[0]}<span className="font-medium text-[#1A1A1A]">{t.figmaGuide3Copy}</span>{t.figmaGuide3.split("{copy}")[1]}</span>
                     </li>
                   </ol>
                 </div>
@@ -226,14 +288,14 @@ export default function NewProjectPage() {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <label className="text-[13px] font-semibold text-[#1A1A1A]">
-                GitHub 레포지토리
+                {t.githubRepo}
               </label>
               {selectedRepo && (
                 <button
                   onClick={() => setSelectedRepo(null)}
                   className="text-[12px] text-[#B4B4B0] transition-colors hover:text-[#787774]"
                 >
-                  선택 해제
+                  {t.githubDeselect}
                 </button>
               )}
             </div>
@@ -254,7 +316,7 @@ export default function NewProjectPage() {
                   <Search className="h-4 w-4 flex-shrink-0 text-[#B4B4B0]" />
                   <input
                     type="text"
-                    placeholder="레포지토리 검색..."
+                    placeholder={t.githubSearchPlaceholder}
                     value={repoSearch}
                     onChange={(e) => setRepoSearch(e.target.value)}
                     className="flex-1 bg-transparent text-[14px] text-[#1A1A1A] placeholder:text-[#B4B4B0] focus:outline-none"
@@ -269,15 +331,15 @@ export default function NewProjectPage() {
                   {reposQuery.isLoading ? (
                     <div className="flex items-center justify-center gap-2 py-10">
                       <Loader2 className="h-4 w-4 animate-spin text-[#787774]" />
-                      <span className="text-[13px] text-[#787774]">불러오는 중...</span>
+                      <span className="text-[13px] text-[#787774]">{t.githubLoading}</span>
                     </div>
                   ) : reposQuery.isError ? (
                     <div className="px-4 py-8 text-center text-[13px] text-[#DC2626]">
-                      레포지토리를 불러올 수 없습니다
+                      {t.githubLoadError}
                     </div>
                   ) : filteredRepos.length === 0 ? (
                     <div className="px-4 py-8 text-center text-[13px] text-[#B4B4B0]">
-                      {repoSearch ? "검색 결과가 없습니다" : "레포지토리가 없습니다"}
+                      {repoSearch ? t.githubNoResults : t.githubNoRepos}
                     </div>
                   ) : (
                     filteredRepos.map((repo) => (

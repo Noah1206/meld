@@ -3,9 +3,11 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Blend } from "lucide-react";
+import { useLangStore } from "@/lib/store/lang-store";
 
 export default function GitHubCallbackPage() {
   const router = useRouter();
+  const { lang } = useLangStore();
 
   useEffect(() => {
     router.replace("/login?error=github_auth_failed");
@@ -18,7 +20,7 @@ export default function GitHubCallbackPage() {
       </div>
       <div className="mt-5 flex items-center gap-2 text-[#787774]">
         <div className="h-4 w-4 animate-spin rounded-full bg-[#EEEEEC]" style={{ borderTop: "2px solid #787774" }} />
-        <span className="text-[14px]">GitHub 인증 처리 중...</span>
+        <span className="text-[14px]">{lang === "ko" ? "GitHub 인증 처리 중..." : "Processing GitHub auth..."}</span>
       </div>
     </div>
   );

@@ -3,44 +3,56 @@
 import { Suspense, useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Loader2, Package, Download, Play, Check, AlertCircle } from "lucide-react";
+import { useLangStore } from "@/lib/store/lang-store";
 import { WorkspaceLayout } from "@/components/layout/WorkspaceLayout";
 import { LocalPanel } from "@/components/workspace/LocalPanel";
 import { ChatPanel } from "@/components/workspace/ChatPanel";
 import { useWebContainer } from "@/lib/hooks/useWebContainer";
 import { useAgentStore } from "@/lib/store/agent-store";
 
-// 부팅 상태별 아이콘 + 설명
-const STATUS_CONFIG = {
-  booting: {
-    icon: <Package className="h-5 w-5" />,
-    title: "WebContainer 부팅 중",
-    color: "text-[#787774]",
+const sandboxTranslations = {
+  en: {
+    booting: "Booting WebContainer",
+    cloning: "Loading GitHub repo",
+    installing: "Installing dependencies",
+    starting: "Starting dev server",
+    ready: "Ready",
+    error: "Error occurred",
+    openProject: "Opening project",
+    invalidAccess: "Invalid access",
+    invalidAccessDesc: "owner and repo parameters are required.",
+    backToDashboard: "Back to Dashboard",
   },
-  cloning: {
-    icon: <Download className="h-5 w-5" />,
-    title: "GitHub 레포 로드 중",
-    color: "text-[#787774]",
+  ko: {
+    booting: "WebContainer 부팅 중",
+    cloning: "GitHub 레포 로드 중",
+    installing: "의존성 설치 중",
+    starting: "Dev server 시작 중",
+    ready: "준비 완료",
+    error: "오류 발생",
+    openProject: "프로젝트 열기",
+    invalidAccess: "잘못된 접근",
+    invalidAccessDesc: "owner와 repo 파라미터가 필요합니다.",
+    backToDashboard: "대시보드로 돌아가기",
   },
-  installing: {
-    icon: <Loader2 className="h-5 w-5 animate-spin" />,
-    title: "의존성 설치 중",
-    color: "text-[#787774]",
-  },
-  starting: {
-    icon: <Play className="h-5 w-5" />,
-    title: "Dev server 시작 중",
-    color: "text-[#787774]",
-  },
-  ready: {
-    icon: <Check className="h-5 w-5" />,
-    title: "준비 완료",
-    color: "text-[#1A1A1A]",
-  },
-  error: {
-    icon: <AlertCircle className="h-5 w-5" />,
-    title: "오류 발생",
-    color: "text-red-600",
-  },
+} as const;
+
+const STATUS_ICONS = {
+  booting: <Package className="h-5 w-5" />,
+  cloning: <Download className="h-5 w-5" />,
+  installing: <Loader2 className="h-5 w-5 animate-spin" />,
+  starting: <Play className="h-5 w-5" />,
+  ready: <Check className="h-5 w-5" />,
+  error: <AlertCircle className="h-5 w-5" />,
+} as const;
+
+const STATUS_COLORS = {
+  booting: "text-[#787774]",
+  cloning: "text-[#787774]",
+  installing: "text-[#787774]",
+  starting: "text-[#787774]",
+  ready: "text-[#1A1A1A]",
+  error: "text-red-600",
 } as const;
 
 // 진행률 바 단계
@@ -48,6 +60,8 @@ const STEPS = ["booting", "cloning", "installing", "starting", "ready"] as const
 
 function SandboxContent() {
   const router = useRouter();
+  const { lang } = useLangStore();
+  const t = sandboxTranslations[lang];
   const searchParams = useSearchParams();
   const owner = searchParams.get("owner");
   const repo = searchParams.get("repo");
@@ -80,13 +94,13 @@ function SandboxContent() {
       <div className="flex h-screen items-center justify-center bg-white">
         <div className="text-center">
           <AlertCircle className="mx-auto h-8 w-8 text-[#B4B4B0]" />
-          <p className="mt-3 text-[14px] font-medium text-[#1A1A1A]">잘못된 접근</p>
-          <p className="mt-1 text-[13px] text-[#787774]">owner와 repo 파라미터가 필요합니다.</p>
+          <p className="mt-3 text-[14px] font-medium text-[#1A1A1A]">{t.invalidAccess}</p>
+          <p className="mt-1 text-[13px] text-[#787774]">{t.invalidAccessDesc}</p>
           <button
             onClick={() => router.push("/dashboard")}
             className="mt-4 rounded-lg bg-[#1A1A1A] px-4 py-2 text-[13px] font-medium text-white"
           >
-            대시보드로 돌아가기
+            {t.backToDashboard}
           </button>
         </div>
       </div>
@@ -96,14 +110,13 @@ function SandboxContent() {
   // 부팅 ~ 설치 중: 풀스크린 진행 UI
   if (wc.status !== "ready") {
     const currentStepIndex = STEPS.indexOf(wc.status as typeof STEPS[number]);
-    const config = STATUS_CONFIG[wc.status];
 
     return (
       <div className="flex h-screen flex-col items-center justify-center bg-white">
         <div className="w-full max-w-md space-y-8 px-6">
           {/* 프로젝트 이름 */}
           <div className="text-center">
-            <p className="text-[13px] text-[#B4B4B0]">프로젝트 열기</p>
+            <p className="text-[13px] text-[#B4B4B0]">{t.openProject}</p>
             <h1 className="mt-1 text-[20px] font-bold text-[#1A1A1A]">
               {owner}/{repo}
             </h1>
@@ -112,7 +125,9 @@ function SandboxContent() {
           {/* 진행 단계 */}
           <div className="space-y-3">
             {STEPS.map((step, i) => {
-              const stepConfig = STATUS_CONFIG[step];
+              const stepTitle = t[step as keyof typeof t] as string;
+              const stepColor = STATUS_COLORS[step];
+              const stepIcon = STATUS_ICONS[step];
               const isActive = step === wc.status;
               const isDone = i < currentStepIndex;
               const isError = wc.status === "error" && i === currentStepIndex;
@@ -128,18 +143,18 @@ function SandboxContent() {
                         : "opacity-30"
                   }`}
                 >
-                  <div className={isError ? "text-red-500" : isDone ? "text-[#1A1A1A]" : stepConfig.color}>
+                  <div className={isError ? "text-red-500" : isDone ? "text-[#1A1A1A]" : stepColor}>
                     {isDone ? (
                       <Check className="h-5 w-5" />
                     ) : isActive ? (
                       <Loader2 className="h-5 w-5 animate-spin" />
                     ) : (
-                      stepConfig.icon
+                      stepIcon
                     )}
                   </div>
                   <div className="flex-1">
                     <p className={`text-[13px] font-medium ${isDone ? "text-[#787774]" : "text-[#1A1A1A]"}`}>
-                      {stepConfig.title}
+                      {stepTitle}
                     </p>
                     {isActive && (
                       <p className="mt-0.5 text-[12px] text-[#787774]">
@@ -160,7 +175,7 @@ function SandboxContent() {
                 onClick={() => router.push("/dashboard")}
                 className="mt-4 rounded-lg bg-[#1A1A1A] px-4 py-2 text-[13px] font-medium text-white"
               >
-                대시보드로 돌아가기
+                {t.backToDashboard}
               </button>
             </div>
           )}

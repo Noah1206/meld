@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useLangStore } from "@/lib/store/lang-store";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -133,8 +134,6 @@ const translations = {
   },
 } as const;
 
-type Lang = keyof typeof translations;
-
 function useInView(threshold = 0.15) {
   const ref = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState(false);
@@ -206,7 +205,7 @@ function PlatformIcon({ platform }: { platform: Platform }) {
 }
 
 export default function DownloadPage() {
-  const [lang, setLang] = useState<Lang>("en");
+  const { lang } = useLangStore();
   const [detectedPlatform, setDetectedPlatform] = useState<Platform>("mac");
   const t = translations[lang];
 
@@ -472,13 +471,6 @@ export default function DownloadPage() {
         </div>
       </footer>
 
-      {/* 언어 토글 (고정) */}
-      <button
-        onClick={() => setLang(lang === "en" ? "ko" : "en")}
-        className="fixed bottom-6 right-6 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-white text-[12px] font-semibold text-[#1A1A1A] shadow-lg ring-1 ring-black/[0.08] transition-all hover:scale-105 hover:shadow-xl active:scale-95"
-      >
-        {lang === "en" ? "KO" : "EN"}
-      </button>
     </div>
   );
 }

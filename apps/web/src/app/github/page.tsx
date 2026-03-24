@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -11,8 +13,80 @@ import {
   FileCode,
   Users,
 } from "lucide-react";
+import { useLangStore } from "@/lib/store/lang-store";
+
+const translations = {
+  en: {
+    back: "Dashboard",
+    title: "GitHub",
+    subtitle: "Check out the source code and file issues.",
+
+    repoName: "figma-code-bridge",
+    repoDesc: "Figma + AI code editing platform",
+
+    sourceCode: "Source Code",
+    sourceCodeDesc: "View all source code",
+    issues: "Issue Tracker",
+    issuesDesc: "Bug reports & feature requests",
+    pullRequests: "Pull Requests",
+    pullRequestsDesc: "Code contributions & reviews",
+    star: "Star",
+    starDesc: "Star the project",
+
+    contributing: "Contributing",
+    contributingDesc: "FigmaCodeBridge is an open-source project. Anyone can contribute code.",
+    contribStep1: "Fork the repository",
+    contribStep2: "Create a new branch",
+    contribStep3: "Commit your changes",
+    contribStep4: "Create a Pull Request",
+
+    techStack: "Tech Stack",
+
+    backToDashboard: "Back to Dashboard",
+  },
+  ko: {
+    back: "대시보드",
+    title: "GitHub",
+    subtitle: "소스 코드를 확인하고 이슈를 등록하세요.",
+
+    repoName: "figma-code-bridge",
+    repoDesc: "Figma + AI 코드 수정 플랫폼",
+
+    sourceCode: "소스 코드",
+    sourceCodeDesc: "전체 소스 코드 보기",
+    issues: "이슈 트래커",
+    issuesDesc: "버그 리포트 및 기능 요청",
+    pullRequests: "Pull Requests",
+    pullRequestsDesc: "코드 기여 및 리뷰",
+    star: "Star",
+    starDesc: "프로젝트에 스타 주기",
+
+    contributing: "기여하기",
+    contributingDesc: "FigmaCodeBridge는 오픈소스 프로젝트입니다. 누구나 코드에 기여할 수 있습니다.",
+    contribStep1: "레포지토리를 Fork 합니다",
+    contribStep2: "새 브랜치를 생성합니다",
+    contribStep3: "변경사항을 커밋합니다",
+    contribStep4: "Pull Request를 생성합니다",
+
+    techStack: "기술 스택",
+
+    backToDashboard: "대시보드로 돌아가기",
+  },
+} as const;
 
 export default function GitHubPage() {
+  const { lang } = useLangStore();
+  const t = translations[lang];
+
+  const quickLinks = [
+    { icon: FileCode, title: t.sourceCode, desc: t.sourceCodeDesc, href: "https://github.com/figma-code-bridge" },
+    { icon: AlertCircle, title: t.issues, desc: t.issuesDesc, href: "https://github.com/figma-code-bridge/issues" },
+    { icon: GitPullRequest, title: t.pullRequests, desc: t.pullRequestsDesc, href: "https://github.com/figma-code-bridge/pulls" },
+    { icon: Star, title: t.star, desc: t.starDesc, href: "https://github.com/figma-code-bridge" },
+  ];
+
+  const contribSteps = [t.contribStep1, t.contribStep2, t.contribStep3, t.contribStep4];
+
   return (
     <div className="min-h-screen bg-white">
       {/* 헤더 */}
@@ -23,7 +97,7 @@ export default function GitHubPage() {
             className="flex items-center gap-1.5 text-[13px] text-[#787774] transition-colors hover:text-[#1A1A1A]"
           >
             <ArrowLeft className="h-4 w-4" />
-            대시보드
+            {t.back}
           </Link>
           <Link href="/" className="flex items-center gap-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1A1A1A]">
@@ -40,11 +114,11 @@ export default function GitHubPage() {
           <div className="flex items-center gap-3">
             <Github className="h-8 w-8 text-[#1A1A1A]" />
             <h1 className="text-[36px] font-bold tracking-[-0.02em] text-[#1A1A1A]">
-              GitHub
+              {t.title}
             </h1>
           </div>
           <p className="mt-2 text-[15px] text-[#787774]">
-            소스 코드를 확인하고 이슈를 등록하세요.
+            {t.subtitle}
           </p>
         </div>
 
@@ -57,8 +131,8 @@ export default function GitHubPage() {
             className="group flex items-center justify-between rounded-2xl bg-[#F7F7F5] p-6 transition-colors hover:bg-[#F0F0EE]"
           >
             <div>
-              <p className="text-[18px] font-bold text-[#1A1A1A]">figma-code-bridge</p>
-              <p className="mt-1 text-[13px] text-[#787774]">Figma + AI 코드 수정 플랫폼</p>
+              <p className="text-[18px] font-bold text-[#1A1A1A]">{t.repoName}</p>
+              <p className="mt-1 text-[13px] text-[#787774]">{t.repoDesc}</p>
             </div>
             <ArrowUpRight className="h-5 w-5 text-[#B4B4B0] transition-colors group-hover:text-[#787774]" />
           </a>
@@ -66,34 +140,9 @@ export default function GitHubPage() {
 
         {/* 퀵 링크 */}
         <div className="animate-fade-in-up animation-delay-300 mb-14 grid gap-3 sm:grid-cols-2">
-          {[
-            {
-              icon: FileCode,
-              title: "소스 코드",
-              desc: "전체 소스 코드 보기",
-              href: "https://github.com/figma-code-bridge",
-            },
-            {
-              icon: AlertCircle,
-              title: "이슈 트래커",
-              desc: "버그 리포트 및 기능 요청",
-              href: "https://github.com/figma-code-bridge/issues",
-            },
-            {
-              icon: GitPullRequest,
-              title: "Pull Requests",
-              desc: "코드 기여 및 리뷰",
-              href: "https://github.com/figma-code-bridge/pulls",
-            },
-            {
-              icon: Star,
-              title: "Star",
-              desc: "프로젝트에 스타 주기",
-              href: "https://github.com/figma-code-bridge",
-            },
-          ].map((item) => (
+          {quickLinks.map((item) => (
             <a
-              key={item.title}
+              key={item.href + item.title}
               href={item.href}
               target="_blank"
               rel="noopener noreferrer"
@@ -113,24 +162,18 @@ export default function GitHubPage() {
 
         {/* 기여하기 */}
         <section className="animate-fade-in-up animation-delay-450 mb-14">
-          <h2 className="text-[20px] font-bold tracking-[-0.01em] text-[#1A1A1A]">기여하기</h2>
+          <h2 className="text-[20px] font-bold tracking-[-0.01em] text-[#1A1A1A]">{t.contributing}</h2>
           <p className="mt-2 text-[14px] leading-relaxed text-[#787774]">
-            FigmaCodeBridge는 오픈소스 프로젝트입니다.
-            누구나 코드에 기여할 수 있습니다.
+            {t.contributingDesc}
           </p>
 
           <div className="mt-6 space-y-3">
-            {[
-              { step: "1", text: "레포지토리를 Fork 합니다" },
-              { step: "2", text: "새 브랜치를 생성합니다" },
-              { step: "3", text: "변경사항을 커밋합니다" },
-              { step: "4", text: "Pull Request를 생성합니다" },
-            ].map((item) => (
-              <div key={item.step} className="flex items-center gap-3 rounded-xl bg-[#F7F7F5] px-4 py-3">
+            {contribSteps.map((text, i) => (
+              <div key={i} className="flex items-center gap-3 rounded-xl bg-[#F7F7F5] px-4 py-3">
                 <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-lg bg-white text-[12px] font-bold text-[#1A1A1A]">
-                  {item.step}
+                  {i + 1}
                 </span>
-                <span className="text-[13px] text-[#787774]">{item.text}</span>
+                <span className="text-[13px] text-[#787774]">{text}</span>
               </div>
             ))}
           </div>
@@ -138,7 +181,7 @@ export default function GitHubPage() {
 
         {/* 기술 스택 */}
         <section className="animate-fade-in-up animation-delay-600 mb-14">
-          <h2 className="text-[20px] font-bold tracking-[-0.01em] text-[#1A1A1A]">기술 스택</h2>
+          <h2 className="text-[20px] font-bold tracking-[-0.01em] text-[#1A1A1A]">{t.techStack}</h2>
           <div className="mt-6 flex flex-wrap gap-2">
             {[
               "Next.js 15",
@@ -166,7 +209,7 @@ export default function GitHubPage() {
             href="/dashboard"
             className="inline-flex items-center gap-2 text-[14px] font-medium text-[#1A1A1A] transition-colors hover:text-[#787774]"
           >
-            대시보드로 돌아가기
+            {t.backToDashboard}
             <ArrowLeft className="h-4 w-4 rotate-180" />
           </Link>
         </div>

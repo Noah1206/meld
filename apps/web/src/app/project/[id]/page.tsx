@@ -1,6 +1,7 @@
 "use client";
 
 import { RefreshCw } from "lucide-react";
+import { useLangStore } from "@/lib/store/lang-store";
 import { WorkspaceLayout } from "@/components/layout/WorkspaceLayout";
 import { FigmaPanel } from "@/components/workspace/FigmaPanel";
 import { ChatPanel } from "@/components/workspace/ChatPanel";
@@ -14,6 +15,7 @@ type ProjectRow = Database["public"]["Tables"]["projects"]["Row"];
 export default function ProjectPage() {
   const params = useParams();
   const router = useRouter();
+  const { lang } = useLangStore();
   const projectId = params.id as string;
 
   const { data } = trpc.project.get.useQuery({ id: projectId });
@@ -33,7 +35,7 @@ export default function ProjectPage() {
             className="flex items-center gap-1.5 rounded-lg bg-[#F7F7F5] px-3 py-1.5 text-[12px] font-medium text-[#787774] transition-all hover:bg-[#EEEEEC] active:scale-[0.98] disabled:opacity-40"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${isSyncing ? "animate-spin" : ""}`} />
-            동기화
+            {lang === "ko" ? "동기화" : "Sync"}
           </button>
         ) : undefined
       }

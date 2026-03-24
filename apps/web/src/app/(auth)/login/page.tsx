@@ -4,10 +4,36 @@ import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Github, Blend, ArrowRight } from "lucide-react";
+import { useLangStore } from "@/lib/store/lang-store";
+
+const translations = {
+  en: {
+    title: "Welcome back",
+    subtitle: "Get started with your GitHub account",
+    errorGithub: "GitHub authentication failed. Please try again.",
+    errorGeneral: "An error occurred during login.",
+    continueGithub: "Continue with GitHub",
+    terms: "By continuing, you agree to the Terms of Service.",
+    termsLine2: "Only your public GitHub info will be used.",
+    backHome: "Back to home",
+  },
+  ko: {
+    title: "다시 오신 걸 환영해요",
+    subtitle: "GitHub 계정으로 시작하세요",
+    errorGithub: "GitHub 인증에 실패했습니다. 다시 시도해주세요.",
+    errorGeneral: "로그인 중 오류가 발생했습니다.",
+    continueGithub: "GitHub로 계속하기",
+    terms: "계속 진행하면 서비스 이용약관에 동의하게 됩니다.",
+    termsLine2: "GitHub 공개 정보만 사용됩니다.",
+    backHome: "홈으로 돌아가기",
+  },
+} as const;
 
 function LoginContent() {
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
+  const { lang } = useLangStore();
+  const t = translations[lang];
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-white">
@@ -25,19 +51,17 @@ function LoginContent() {
         {/* 타이틀 */}
         <div className="mb-8 text-center">
           <h1 className="text-[24px] font-bold tracking-[-0.02em] text-[#1A1A1A]">
-            다시 오신 걸 환영해요
+            {t.title}
           </h1>
           <p className="mt-2 text-[14px] text-[#787774]">
-            GitHub 계정으로 시작하세요
+            {t.subtitle}
           </p>
         </div>
 
         {/* 에러 메시지 */}
         {error && (
           <div className="animate-fade-in mb-6 rounded-xl bg-[#FEF2F2] px-4 py-3 text-[13px] text-[#DC2626]">
-            {error === "github_auth_failed"
-              ? "GitHub 인증에 실패했습니다. 다시 시도해주세요."
-              : "로그인 중 오류가 발생했습니다."}
+            {error === "github_auth_failed" ? t.errorGithub : t.errorGeneral}
           </div>
         )}
 
@@ -47,15 +71,15 @@ function LoginContent() {
           className="group flex w-full items-center justify-center gap-2.5 rounded-xl bg-[#1A1A1A] px-4 py-3.5 text-[14px] font-semibold text-white transition-all hover:bg-[#333] active:scale-[0.98]"
         >
           <Github className="h-5 w-5" />
-          GitHub로 계속하기
+          {t.continueGithub}
           <ArrowRight className="h-4 w-4 text-white/40 transition-transform group-hover:translate-x-0.5 group-hover:text-white/70" />
         </a>
 
         {/* 안내 문구 */}
         <p className="mt-6 text-center text-[12px] leading-relaxed text-[#B4B4B0]">
-          계속 진행하면 서비스 이용약관에 동의하게 됩니다.
+          {t.terms}
           <br />
-          GitHub 공개 정보만 사용됩니다.
+          {t.termsLine2}
         </p>
 
         {/* 홈으로 */}
@@ -64,7 +88,7 @@ function LoginContent() {
             href="/"
             className="text-[13px] text-[#B4B4B0] transition-colors hover:text-[#787774]"
           >
-            홈으로 돌아가기
+            {t.backHome}
           </Link>
         </div>
       </div>
