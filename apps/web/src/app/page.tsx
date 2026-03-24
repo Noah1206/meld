@@ -303,9 +303,9 @@ export default function HomePage() {
       <LandingNav activePath="/" />
 
       {/* ===== 히어로 ===== */}
-      <section className="relative z-10 pt-36 pb-6 lg:pt-44 lg:pb-10">
+      <section className="relative z-10 pt-36 pb-6 lg:pt-48 lg:pb-12">
         <div className="mx-auto max-w-[1440px] px-6 lg:px-16">
-          <h1 className="text-[48px] font-bold leading-[1.05] tracking-[-0.04em] text-[#1A1A1A] sm:text-[64px] lg:text-[76px] xl:text-[88px]">
+          <h1 className="text-[48px] font-bold leading-[1.02] tracking-[-0.04em] text-[#1A1A1A] sm:text-[72px] lg:text-[96px] xl:text-[112px] 2xl:text-[128px]">
             {title1}
             {!title1Done && <span className="inline-block w-[3px] h-[0.9em] bg-[#1A1A1A] align-middle ml-1 animate-blink" />}
             {title1Done && (
@@ -319,7 +319,7 @@ export default function HomePage() {
             )}
           </h1>
 
-          <p className="animate-fade-in-up animation-delay-150 mt-6 max-w-lg text-[17px] leading-[1.7] text-[#999]">
+          <p className="animate-fade-in-up animation-delay-150 mt-8 max-w-xl text-[17px] leading-[1.7] text-[#999] lg:text-[19px]">
             {t.heroDesc1}
             <br />
             {t.heroDesc2}
