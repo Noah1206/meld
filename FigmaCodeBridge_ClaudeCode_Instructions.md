@@ -566,18 +566,18 @@ SUPABASE_SERVICE_ROLE_KEY=
 # Figma OAuth
 FIGMA_CLIENT_ID=
 FIGMA_CLIENT_SECRET=
-FIGMA_REDIRECT_URI=http://localhost:3000/callback/figma
+FIGMA_REDIRECT_URI=https://meld-psi.vercel.app/api/auth/figma
 
 # GitHub OAuth
 GITHUB_CLIENT_ID=
 GITHUB_CLIENT_SECRET=
-GITHUB_REDIRECT_URI=http://localhost:3000/callback/github
+GITHUB_REDIRECT_URI=https://meld-psi.vercel.app/api/auth/github
 
 # Anthropic
 ANTHROPIC_API_KEY=
 
 # App
-NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_APP_URL=https://meld-psi.vercel.app
 ```
 
 ---

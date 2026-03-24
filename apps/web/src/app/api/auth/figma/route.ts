@@ -7,7 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
   const code = searchParams.get("code");
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:9000";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://meld-psi.vercel.app";
 
   // 로그인된 사용자만 Figma 연결 가능
   const session = await getSession();

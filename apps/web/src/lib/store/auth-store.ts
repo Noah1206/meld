@@ -6,7 +6,7 @@ interface AuthUser {
   email: string | null;
   avatarUrl: string | null;
   hasFigmaToken: boolean;
-  plan: "free" | "pro" | "team";
+  plan: "free" | "pro" | "unlimited";
 }
 
 interface AuthStore {

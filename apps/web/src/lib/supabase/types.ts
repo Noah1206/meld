@@ -11,7 +11,9 @@ export interface Database {
           figma_access_token: string | null;
           figma_refresh_token: string | null;
           github_access_token: string | null;
-          plan: "free" | "pro" | "team";
+          plan: "free" | "pro" | "unlimited";
+          polar_customer_id: string | null;
+          polar_subscription_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -24,7 +26,9 @@ export interface Database {
           figma_access_token?: string | null;
           figma_refresh_token?: string | null;
           github_access_token?: string | null;
-          plan?: "free" | "pro" | "team";
+          plan?: "free" | "pro" | "unlimited";
+          polar_customer_id?: string | null;
+          polar_subscription_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -37,7 +41,9 @@ export interface Database {
           figma_access_token?: string | null;
           figma_refresh_token?: string | null;
           github_access_token?: string | null;
-          plan?: "free" | "pro" | "team";
+          plan?: "free" | "pro" | "unlimited";
+          polar_customer_id?: string | null;
+          polar_subscription_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };

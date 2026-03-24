@@ -22,7 +22,7 @@ export function startServer({ port, rootDir }: ServerOptions) {
   console.log(`\n  ⚡ FigmaCodeBridge Agent`);
   console.log(`  📁 프로젝트: ${rootDir}`);
   console.log(`  🔗 WebSocket: ws://localhost:${port}`);
-  console.log(`  → 웹앱에서 연결: http://localhost:9000/project/local?agent=ws://localhost:${port}`);
+  console.log(`  → 웹앱에서 연결: https://meld-psi.vercel.app/project/local?agent=ws://localhost:${port}`);
   console.log(`\n  Ctrl+C로 종료\n`);
 
   // 파일 변경 감지

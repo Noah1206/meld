@@ -58,11 +58,11 @@ export async function GET(req: NextRequest) {
     });
 
     // 5. 대시보드로 리다이렉트
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:9000";
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://meld-psi.vercel.app";
     return Response.redirect(`${appUrl}/dashboard`);
   } catch (err) {
     console.error("GitHub OAuth 에러:", err);
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:9000";
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://meld-psi.vercel.app";
     return Response.redirect(
       `${appUrl}/login?error=github_auth_failed`
     );

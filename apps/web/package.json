@@ -14,6 +14,8 @@
   "dependencies": {
     "@figma-code-bridge/shared": "workspace:*",
     "@octokit/rest": "^22.0.1",
+    "@polar-sh/nextjs": "^0.9.5",
+    "@polar-sh/sdk": "^0.46.6",
     "@supabase/supabase-js": "^2.99.3",
     "@tanstack/react-query": "^5.91.3",
     "@trpc/client": "^11.14.1",

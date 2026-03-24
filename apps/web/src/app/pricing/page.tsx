@@ -5,6 +5,7 @@ import { useLangStore } from "@/lib/store/lang-store";
 import Link from "next/link";
 import { LandingNav } from "@/components/layout/LandingNav";
 import { Blend, Check, ArrowRight } from "lucide-react";
+import { createCheckout } from "./actions";
 
 const translations = {
   en: {
@@ -245,12 +246,14 @@ export default function PricingPage() {
             </div>
 
             <div className="mt-14">
-              <Link
-                href="/dashboard"
-                className="inline-flex items-center rounded-lg border border-[#C5B882]/30 bg-transparent px-6 py-3 text-[15px] font-medium text-[#C5B882] transition-all hover:bg-[#C5B882]/10 active:scale-[0.98]"
-              >
-                {t.proCta}
-              </Link>
+              <form action={createCheckout.bind(null, "pro")}>
+                <button
+                  type="submit"
+                  className="inline-flex items-center rounded-lg border border-[#C5B882]/30 bg-transparent px-6 py-3 text-[15px] font-medium text-[#C5B882] transition-all hover:bg-[#C5B882]/10 active:scale-[0.98]"
+                >
+                  {t.proCta}
+                </button>
+              </form>
             </div>
           </div>
 
@@ -272,12 +275,14 @@ export default function PricingPage() {
             </div>
 
             <div className="mt-14">
-              <Link
-                href="/community"
-                className="inline-flex items-center rounded-lg bg-[#1E2228] px-6 py-3 text-[15px] font-medium text-white transition-all hover:bg-[#2A2F36] active:scale-[0.98]"
-              >
-                {t.unlimitedCta}
-              </Link>
+              <form action={createCheckout.bind(null, "unlimited")}>
+                <button
+                  type="submit"
+                  className="inline-flex items-center rounded-lg bg-[#1E2228] px-6 py-3 text-[15px] font-medium text-white transition-all hover:bg-[#2A2F36] active:scale-[0.98]"
+                >
+                  {t.unlimitedCta}
+                </button>
+              </form>
             </div>
           </div>
         </div>
