@@ -2,9 +2,12 @@
 
 import { useRef, useEffect, useState } from "react";
 import { useLangStore } from "@/lib/store/lang-store";
+import { useAuthStore } from "@/lib/store/auth-store";
 import Link from "next/link";
 import { LandingNav } from "@/components/layout/LandingNav";
 import { Blend, Check, ArrowRight } from "lucide-react";
+
+const PLAN_RANK: Record<string, number> = { free: 0, pro: 1, unlimited: 2 };
 
 const translations = {
   en: {
@@ -56,6 +59,11 @@ const translations = {
     ],
     unlimitedCta: "get Unlimited",
 
+    // Plan state
+    currentPlan: "Current Plan",
+    upgrade: "Upgrade",
+    manage: "Manage Subscription",
+
     // Footer
     footerTagline: "Design to Code, seamlessly.",
   },
@@ -104,6 +112,10 @@ const translations = {
     ],
     unlimitedCta: "Unlimited 시작",
 
+    currentPlan: "현재 플랜",
+    upgrade: "업그레이드",
+    manage: "구독 관리",
+
     footerTagline: "Design to Code, seamlessly.",
   },
 } as const;
@@ -131,10 +143,74 @@ function useInView(threshold = 0.15) {
   return { ref, inView };
 }
 
+function PlanButton({
+  plan,
+  currentPlan,
+  label,
+  t,
+  variant,
+}: {
+  plan: "free" | "pro" | "unlimited";
+  currentPlan: string | null;
+  label: string;
+  t: { currentPlan: string; upgrade: string; manage: string };
+  variant: "starter" | "pro" | "unlimited";
+}) {
+  const isCurrent = currentPlan === plan;
+  const isUpgrade = currentPlan ? (PLAN_RANK[plan] ?? 0) > (PLAN_RANK[currentPlan] ?? 0) : false;
+  const isDowngrade = currentPlan ? (PLAN_RANK[plan] ?? 0) < (PLAN_RANK[currentPlan] ?? 0) : false;
+
+  // 현재 플랜
+  if (isCurrent) {
+    return (
+      <span className="inline-flex items-center rounded-lg border border-[#C5B882]/30 bg-[#C5B882]/10 px-6 py-3 text-[15px] font-medium text-[#C5B882]">
+        {t.currentPlan}
+      </span>
+    );
+  }
+
+  // 다운그레이드 → 구독 관리 (Polar 포털)
+  if (isDowngrade) {
+    return (
+      <a
+        href="/api/portal"
+        className="inline-flex items-center rounded-lg border border-[#333] px-6 py-3 text-[15px] font-medium text-[#555] transition-all hover:border-[#555] hover:text-[#999]"
+      >
+        {t.manage}
+      </a>
+    );
+  }
+
+  // 업그레이드 또는 비로그인
+  const href = plan === "free" ? "/dashboard" : `/api/checkout?plan=${plan}`;
+  const text = currentPlan && isUpgrade ? t.upgrade : label;
+
+  const styles = {
+    starter: "bg-[#1E2228] text-white hover:bg-[#2A2F36]",
+    pro: "border border-[#C5B882]/30 bg-transparent text-[#C5B882] hover:bg-[#C5B882]/10",
+    unlimited: "bg-[#1E2228] text-white hover:bg-[#2A2F36]",
+  };
+
+  return (
+    <a
+      href={href}
+      className={`inline-flex items-center rounded-lg px-6 py-3 text-[15px] font-medium transition-all active:scale-[0.98] ${styles[variant]}`}
+    >
+      {text}
+    </a>
+  );
+}
+
 export default function PricingPage() {
   const { lang, toggleLang } = useLangStore();
+  const { user, fetchUser } = useAuthStore();
   const t = translations[lang];
 
+  useEffect(() => {
+    fetchUser();
+  }, [fetchUser]);
+
+  const currentPlan = user?.plan ?? null;
   const cardsSection = useInView(0.1);
 
   return (
@@ -186,12 +262,7 @@ export default function PricingPage() {
             </div>
 
             <div className="mt-14">
-              <Link
-                href="/dashboard"
-                className="inline-flex items-center rounded-lg bg-[#1E2228] px-6 py-3 text-[15px] font-medium text-white transition-all hover:bg-[#2A2F36] active:scale-[0.98]"
-              >
-                {t.starterCta}
-              </Link>
+              <PlanButton plan="free" currentPlan={currentPlan} label={t.starterCta} t={t} variant="starter" />
             </div>
           </div>
 
@@ -219,12 +290,7 @@ export default function PricingPage() {
             </div>
 
             <div className="mt-14">
-              <a
-                href="/api/checkout?plan=pro"
-                className="inline-flex items-center rounded-lg border border-[#C5B882]/30 bg-transparent px-6 py-3 text-[15px] font-medium text-[#C5B882] transition-all hover:bg-[#C5B882]/10 active:scale-[0.98]"
-              >
-                {t.proCta}
-              </a>
+              <PlanButton plan="pro" currentPlan={currentPlan} label={t.proCta} t={t} variant="pro" />
             </div>
           </div>
 
@@ -252,12 +318,7 @@ export default function PricingPage() {
             </div>
 
             <div className="mt-14">
-              <a
-                href="/api/checkout?plan=unlimited"
-                className="inline-flex items-center rounded-lg bg-[#1E2228] px-6 py-3 text-[15px] font-medium text-white transition-all hover:bg-[#2A2F36] active:scale-[0.98]"
-              >
-                {t.unlimitedCta}
-              </a>
+              <PlanButton plan="unlimited" currentPlan={currentPlan} label={t.unlimitedCta} t={t} variant="unlimited" />
             </div>
           </div>
         </div>
