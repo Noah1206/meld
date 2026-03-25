@@ -6,6 +6,12 @@ import { cleanup as cleanupDevServer } from "./dev-server.js";
 const APP_URL = "https://meld-psi.vercel.app";
 let mainWindow: BrowserWindow | null = null;
 
+function getSplashPath() {
+  return app.isPackaged
+    ? path.join(process.resourcesPath, "splash.html")
+    : path.join(__dirname, "../resources/splash.html");
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1400,
@@ -14,6 +20,8 @@ function createWindow() {
     minHeight: 600,
     titleBarStyle: "hiddenInset",
     trafficLightPosition: { x: 16, y: 16 },
+    show: false,
+    backgroundColor: "#0A0A0A",
     webPreferences: {
       preload: path.join(__dirname, "../preload/index.js"),
       contextIsolation: true,
@@ -23,12 +31,22 @@ function createWindow() {
   });
 
   const isDev = !app.isPackaged;
+
   if (isDev) {
+    mainWindow.show();
     mainWindow.loadURL("http://localhost:3000/dashboard");
     mainWindow.webContents.openDevTools({ mode: "detach" });
   } else {
-    // 웹앱이 로그인 상태를 판단해서 /login 또는 /dashboard로 리다이렉트
-    mainWindow.loadURL(`${APP_URL}/dashboard`);
+    // 스플래시 화면 먼저 표시
+    mainWindow.loadFile(getSplashPath());
+    mainWindow.once("ready-to-show", () => {
+      mainWindow?.show();
+    });
+
+    // 최소 2.5초 스플래시 보여준 후 웹앱 로드
+    setTimeout(() => {
+      mainWindow?.loadURL(`${APP_URL}/dashboard`);
+    }, 2500);
   }
 
   mainWindow.on("closed", () => {

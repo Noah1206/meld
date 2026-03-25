@@ -6,6 +6,9 @@ directories:
 files:
   - dist/**/*
   - package.json
+extraResources:
+  - from: resources/splash.html
+    to: splash.html
 mac:
   target:
     - dmg
