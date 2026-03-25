@@ -49,7 +49,7 @@ export function LandingNav({ dark = false, activePath }: LandingNavProps) {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 flex justify-center px-4 pt-4 pointer-events-none">
       <div
-        className={`pointer-events-auto relative flex items-center gap-8 rounded-full px-8 py-3 overflow-hidden transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+        className={`pointer-events-auto relative flex items-center gap-14 rounded-full px-8 py-3 overflow-hidden transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${
           mounted
             ? "opacity-100 translate-y-0 scale-100"
             : "opacity-0 -translate-y-6 scale-95"
