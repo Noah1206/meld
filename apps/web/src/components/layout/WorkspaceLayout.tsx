@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ArrowLeft, Blend } from "lucide-react";
+import { usePlatform } from "@/lib/hooks/usePlatform";
 
 interface WorkspaceLayoutProps {
   leftPanel: React.ReactNode;
@@ -20,11 +21,15 @@ export function WorkspaceLayout({
   headerActions,
   sidebarSide = "right",
 }: WorkspaceLayoutProps) {
+  const platform = usePlatform();
   return (
     <div className="flex h-screen flex-col bg-[#F7F7F5]">
       {/* Header */}
-      <header className="flex h-12 items-center justify-between border-b border-[#E0E0DC] bg-white px-4">
-        <div className="flex items-center gap-3">
+      <header
+        className={`flex h-12 items-center justify-between border-b border-[#E0E0DC] bg-white px-4 ${platform === "desktop" ? "pl-20" : ""}`}
+        style={platform === "desktop" ? { WebkitAppRegion: "drag" } as React.CSSProperties : undefined}
+      >
+        <div className="flex items-center gap-3" style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}>
           {onBack && (
             <button
               onClick={onBack}
@@ -51,7 +56,7 @@ export function WorkspaceLayout({
         </div>
 
         {headerActions && (
-          <div className="flex items-center gap-2">{headerActions}</div>
+          <div className="flex items-center gap-2" style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}>{headerActions}</div>
         )}
       </header>
 
