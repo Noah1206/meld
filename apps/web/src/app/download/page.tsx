@@ -274,6 +274,16 @@ export default function DownloadPage() {
             </div>
           </div>
 
+          {/* macOS 안내 */}
+          {detectedPlatform === "mac" && (
+            <div className="animate-fade-in-up animation-delay-450 mt-6 flex items-center gap-3 rounded-lg bg-[#FFFBF0] px-4 py-3 ring-1 ring-[#F0E6CC]" style={{ maxWidth: "fit-content" }}>
+              <ShieldAlert className="h-3.5 w-3.5 shrink-0 text-[#B8860B]" />
+              <p className="text-[12px] text-[#999]">
+                {t.macNoticeTitle} <code className="mx-1 rounded bg-[#F5F0E8] px-1.5 py-0.5 font-mono text-[11px] text-[#1A1A1A]">xattr -cr /Applications/Meld.app</code>
+              </p>
+            </div>
+          )}
+
           {/* 플랫폼 태그 */}
           <div className="animate-fade-in animation-delay-450 mt-6 flex items-center gap-2 text-[12px] text-[#CCC]">
             {(["mac", "windows", "linux"] as Platform[]).map((p) => (
@@ -407,26 +417,6 @@ export default function DownloadPage() {
           </div>
         </div>
       </section>
-
-      {/* macOS 안내 섹션 */}
-      {detectedPlatform === "mac" && (
-        <section className="relative z-10 mx-auto max-w-[1440px] px-6 lg:px-16 py-12">
-          <div className="rounded-2xl bg-[#FFFBF0] p-6 ring-1 ring-[#F0E6CC]">
-            <div className="flex items-start gap-4">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#FFF3D6] ring-1 ring-[#F0E6CC]">
-                <ShieldAlert className="h-4 w-4 text-[#B8860B]" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-[15px] font-semibold text-[#1A1A1A]">{t.macNoticeTitle}</h3>
-                <p className="mt-1.5 text-[13px] leading-relaxed text-[#999]">{t.macNoticeDesc}</p>
-                <div className="mt-4">
-                  <CopyCommand command="xattr -cr /Applications/Meld.app" copiedLabel={t.macNoticeCopied} />
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* CLI 대안 섹션 */}
       <section ref={cliSection.ref} className="relative z-10 bg-[#1A1A1A]">
