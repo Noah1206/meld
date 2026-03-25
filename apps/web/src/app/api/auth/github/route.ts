@@ -70,9 +70,13 @@ export async function GET(req: NextRequest) {
     const redirectMatch = cookieHeader.match(/redirect_to=([^;]*)/);
     const redirectTo = redirectMatch ? decodeURIComponent(redirectMatch[1]) : "/dashboard";
 
-    const res = Response.redirect(`${appUrl}${redirectTo}`);
-    res.headers.append("Set-Cookie", "redirect_to=; Path=/; HttpOnly; Max-Age=0");
-    return res;
+    return new Response(null, {
+      status: 302,
+      headers: {
+        Location: `${appUrl}${redirectTo}`,
+        "Set-Cookie": "redirect_to=; Path=/; HttpOnly; Max-Age=0",
+      },
+    });
   } catch (err) {
     console.error("GitHub OAuth 에러:", err);
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://meld-psi.vercel.app";
