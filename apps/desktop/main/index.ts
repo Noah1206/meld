@@ -1,9 +1,15 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain, session } from "electron";
 import * as path from "node:path";
 import { registerIpcHandlers, cleanup as cleanupIpc } from "./ipc-handlers.js";
 import { cleanup as cleanupDevServer } from "./dev-server.js";
 
+const APP_URL = "https://meld.day";
 let mainWindow: BrowserWindow | null = null;
+
+async function isLoggedIn(): Promise<boolean> {
+  const cookies = await session.defaultSession.cookies.get({ url: APP_URL });
+  return cookies.some((c) => c.name === "session" || c.name === "sb-access-token" || c.name.startsWith("sb-"));
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -18,17 +24,29 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
+      // 쿠키 영속성 보장
+      partition: "persist:meld",
     },
   });
 
-  // 개발: Next.js dev server, 프로덕션: 배포된 웹앱
   const isDev = !app.isPackaged;
   if (isDev) {
     mainWindow.loadURL("http://localhost:3000/dashboard");
     mainWindow.webContents.openDevTools({ mode: "detach" });
   } else {
-    mainWindow.loadURL("https://meld.day/dashboard");
+    // 로그인 상태 확인 후 적절한 페이지 로드
+    isLoggedIn().then((loggedIn) => {
+      mainWindow?.loadURL(loggedIn ? `${APP_URL}/dashboard` : `${APP_URL}/login`);
+    });
   }
+
+  // 로그인 성공 후 dashboard로 이동 감지
+  mainWindow.webContents.on("did-navigate", (_event, url) => {
+    // OAuth 콜백 완료 후 dashboard 도착 시 세션 저장됨
+    if (url.includes("/dashboard")) {
+      session.fromPartition("persist:meld").cookies.flushStore();
+    }
+  });
 
   mainWindow.on("closed", () => {
     mainWindow = null;

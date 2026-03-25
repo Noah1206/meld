@@ -580,11 +580,19 @@ export default function DashboardPage() {
   const greeting = useGreeting();
   const platform = usePlatform();
 
+  const router = useRouter();
+
   useEffect(() => {
     fetchUser();
   }, [fetchUser]);
 
-  if (loading) {
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace("/login");
+    }
+  }, [loading, user, router]);
+
+  if (loading || !user) {
     return <DashboardSkeleton />;
   }
 
