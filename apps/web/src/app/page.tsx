@@ -23,7 +23,51 @@ import {
   Bell,
   RefreshCw,
   Download,
+  Copy,
 } from "lucide-react";
+
+const APP_VERSION = "0.1.1";
+const GITHUB_RELEASE_BASE = "https://github.com/Noah1206/meld/releases/download";
+const PLATFORMS = {
+  mac: { filename: `Meld-${APP_VERSION}.dmg`, ext: ".dmg", size: "~85 MB" },
+  windows: { filename: `Meld-Setup-${APP_VERSION}.exe`, ext: ".exe", size: "~75 MB" },
+  linux: { filename: `Meld-${APP_VERSION}.AppImage`, ext: ".AppImage", size: "~90 MB" },
+} as const;
+type Platform = keyof typeof PLATFORMS;
+
+function detectPlatform(): Platform {
+  if (typeof navigator === "undefined") return "mac";
+  const ua = navigator.userAgent.toLowerCase();
+  if (ua.includes("win")) return "windows";
+  if (ua.includes("linux")) return "linux";
+  return "mac";
+}
+
+function CopyCommand({ command, copiedLabel }: { command: string; copiedLabel: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(command);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <button
+      onClick={handleCopy}
+      className="group flex w-full items-center gap-2.5 rounded-xl bg-[#252525] px-4 py-3.5 text-left font-mono text-[13px] transition-all hover:bg-[#2A2A2A] active:scale-[0.99]"
+    >
+      <Terminal className="h-3.5 w-3.5 text-[#555] transition-colors group-hover:text-[#999]" />
+      <span className="flex-1 text-[#999]">{command}</span>
+      {copied ? (
+        <span className="flex items-center gap-1 text-[11px] text-[#999]">
+          <Check className="h-3 w-3" />
+          {copiedLabel}
+        </span>
+      ) : (
+        <Copy className="h-3.5 w-3.5 text-[#555] transition-colors group-hover:text-[#999]" />
+      )}
+    </button>
+  );
+}
 
 const translations = {
   en: {
@@ -33,8 +77,10 @@ const translations = {
     heroDesc1: "We don't generate new code.",
     heroDesc2: "We automatically link design elements to code files,",
     heroDesc3: "and modify your existing code in place.",
-    heroDownload: "Download Desktop App",
+    heroDownload: "Download for",
     heroCta: "Open in Browser",
+    macNotice: "macOS: \"App is damaged\" error?",
+    copied: "Copied!",
 
     // Product mockup
     mockupChat1: "Change the CTA button in this hero section to mint color",
@@ -117,8 +163,10 @@ const translations = {
     heroDesc1: "새 코드를 만들지 않습니다.",
     heroDesc2: "디자인 요소와 코드 파일을 자동으로 연결해서,",
     heroDesc3: "이미 작성된 코드 위에서 수정합니다.",
-    heroDownload: "데스크톱 앱 다운로드",
+    heroDownload: "다운로드",
     heroCta: "브라우저에서 열기",
+    macNotice: "macOS: \"앱이 손상되었습니다\" 오류?",
+    copied: "복사됨!",
 
     // Product mockup
     mockupChat1: "이 히어로 섹션의 CTA 버튼을 민트색으로 바꿔줘",
@@ -260,6 +308,14 @@ function useTypewriter(text: string, speed = 40) {
 export default function HomePage() {
   const { lang, toggleLang } = useLangStore();
   const t = translations[lang];
+  const [detectedPlatform, setDetectedPlatform] = useState<Platform>("mac");
+
+  useEffect(() => {
+    setDetectedPlatform(detectPlatform());
+  }, []);
+
+  const platformNames: Record<Platform, string> = { mac: "macOS", windows: "Windows", linux: "Linux" };
+  const getDownloadUrl = (p: Platform) => `${GITHUB_RELEASE_BASE}/v${APP_VERSION}/${PLATFORMS[p].filename}`;
 
   const { displayed: title1, done: title1Done } = useTypewriter(t.heroTitle1, 50);
   const { displayed: title2 } = useTypewriter(title1Done ? t.heroTitle2 : "", 50);
@@ -327,26 +383,59 @@ export default function HomePage() {
             {t.heroDesc3}
           </p>
 
-          {/* CTA */}
+          {/* CTA — 다운로드 + 브라우저 */}
           <div className="animate-fade-in-up animation-delay-300 mt-10 flex items-center gap-5">
-            <Link
-              href="/download"
-              className="group inline-flex items-center gap-2.5 rounded-xl bg-[#1A1A1A] px-7 py-3.5 text-[15px] font-semibold text-white transition-all hover:bg-[#333] active:scale-[0.98]"
+            <a
+              href={getDownloadUrl(detectedPlatform)}
+              className="group inline-flex items-center gap-3 rounded-xl bg-[#1A1A1A] px-7 py-4 text-[15px] font-semibold text-white transition-all hover:bg-[#333] active:scale-[0.98]"
             >
-              <Download className="h-4 w-4 transition-transform group-hover:-translate-y-0.5" />
-              {t.heroDownload}
-            </Link>
+              <Download className="h-5 w-5 transition-transform group-hover:-translate-y-0.5" />
+              {t.heroDownload} {platformNames[detectedPlatform]}
+              <span className="text-[13px] text-[#666]">{PLATFORMS[detectedPlatform].ext}</span>
+            </a>
+            <div className="text-[12px] text-[#CCC]">
+              <span className="font-mono">v{APP_VERSION}</span>
+              <span className="mx-2">·</span>
+              <span>{PLATFORMS[detectedPlatform].size}</span>
+            </div>
+          </div>
+
+          {/* macOS 안내 */}
+          {detectedPlatform === "mac" && (
+            <div className="animate-fade-in-up animation-delay-450 mt-5 max-w-md">
+              <p className="mb-2 text-[12px] text-[#999]">{t.macNotice}</p>
+              <CopyCommand command="xattr -cr /Applications/Meld.app" copiedLabel={t.copied} />
+            </div>
+          )}
+
+          {/* 플랫폼 태그 */}
+          <div className="animate-fade-in animation-delay-450 mt-5 flex items-center gap-2 text-[12px] text-[#CCC]">
+            {(["mac", "windows", "linux"] as Platform[]).map((p) => (
+              <span
+                key={p}
+                className={`rounded-full px-2.5 py-0.5 ring-1 ${
+                  p === detectedPlatform
+                    ? "bg-[#1A1A1A] text-white ring-[#1A1A1A]"
+                    : "bg-[#FAFAFA] ring-black/[0.04]"
+                }`}
+              >
+                {platformNames[p]}
+              </span>
+            ))}
+          </div>
+
+          {/* 브라우저로 열기 */}
+          <div className="animate-fade-in-up animation-delay-600 mt-6">
             <Link
               href="/dashboard"
-              className="group inline-flex items-center gap-1.5 rounded-xl bg-[#F5F0E8] px-7 py-3.5 text-[15px] font-semibold text-[#1A1A1A] transition-all hover:bg-[#EDE7DB] active:scale-[0.98]"
+              className="group inline-flex items-center gap-1.5 text-[13px] font-medium text-[#999] transition-colors hover:text-[#1A1A1A]"
             >
               {t.heroCta}
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
             </Link>
           </div>
 
-          {/* 빈 여백 */}
-          <div className="mt-8" />
+          <div className="mt-4" />
         </div>
       </section>
 
