@@ -13,12 +13,19 @@ export async function GET(req: NextRequest) {
   if (!code) {
     const oauthState = crypto.randomUUID();
     const url = getGitHubAuthUrl(oauthState);
+    const redirectTo = searchParams.get("redirect_to") ?? "";
+    const cookies = [
+      `oauth_state=${oauthState}; Path=/; HttpOnly; SameSite=Lax; Max-Age=600`,
+    ];
+    if (redirectTo) {
+      cookies.push(`redirect_to=${encodeURIComponent(redirectTo)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=600`);
+    }
     return new Response(null, {
       status: 302,
-      headers: {
-        Location: url,
-        "Set-Cookie": `oauth_state=${oauthState}; Path=/; HttpOnly; SameSite=Lax; Max-Age=600`,
-      },
+      headers: [
+        ["Location", url],
+        ...cookies.map((c) => ["Set-Cookie", c] as [string, string]),
+      ],
     });
   }
 
@@ -57,9 +64,16 @@ export async function GET(req: NextRequest) {
       githubAccessToken: accessToken,
     });
 
-    // 5. 대시보드로 리다이렉트
+    // 5. redirect_to 쿠키 확인 → 원래 목적지 또는 대시보드로 리다이렉트
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://meld-psi.vercel.app";
-    return Response.redirect(`${appUrl}/dashboard`);
+    const cookieHeader = req.headers.get("cookie") ?? "";
+    const redirectMatch = cookieHeader.match(/redirect_to=([^;]*)/);
+    const redirectTo = redirectMatch ? decodeURIComponent(redirectMatch[1]) : "/dashboard";
+
+    const res = Response.redirect(`${appUrl}${redirectTo}`);
+    // redirect_to 쿠키 삭제
+    res.headers.append("Set-Cookie", "redirect_to=; Path=/; HttpOnly; Max-Age=0");
+    return res;
   } catch (err) {
     console.error("GitHub OAuth 에러:", err);
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://meld-psi.vercel.app";

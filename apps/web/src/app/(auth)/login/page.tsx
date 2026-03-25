@@ -34,8 +34,13 @@ const translations = {
 function LoginContent() {
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
+  const redirectTo = searchParams.get("redirect_to");
   const { lang } = useLangStore();
   const t = translations[lang];
+
+  const githubUrl = redirectTo
+    ? `/api/auth/github?redirect_to=${encodeURIComponent(redirectTo)}`
+    : "/api/auth/github";
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-white">
@@ -69,7 +74,7 @@ function LoginContent() {
 
         {/* GitHub 로그인 버튼 */}
         <a
-          href="/api/auth/github"
+          href={githubUrl}
           className="group flex w-full items-center justify-center gap-2.5 rounded-xl bg-[#1A1A1A] px-4 py-3.5 text-[14px] font-semibold text-white transition-all hover:bg-[#333] active:scale-[0.98]"
         >
           <Github className="h-5 w-5" />

@@ -24,24 +24,25 @@ export async function createCheckout(plan: string) {
     redirect("/pricing?error=config");
   }
 
-  // 로그인 유저면 email + userId 주입
-  let customerEmail: string | undefined;
-  let externalCustomerId: string | undefined;
-
+  // 로그인 필수 — 비로그인 시 로그인 페이지로 리디렉트
   const session = await getSession();
-  if (session) {
-    const supabase = createAdminClient();
-    const { data: user } = await supabase
-      .from("users")
-      .select("id, email")
-      .eq("id", session.userId)
-      .single();
-
-    if (user) {
-      externalCustomerId = user.id;
-      if (user.email) customerEmail = user.email;
-    }
+  if (!session) {
+    redirect(`/login?redirect_to=${encodeURIComponent(`/pricing?checkout=${plan}`)}`);
   }
+
+  const supabase = createAdminClient();
+  const { data: user } = await supabase
+    .from("users")
+    .select("id, email")
+    .eq("id", session.userId)
+    .single();
+
+  if (!user) {
+    redirect(`/login?redirect_to=${encodeURIComponent(`/pricing?checkout=${plan}`)}`);
+  }
+
+  const externalCustomerId = user.id;
+  const customerEmail = user.email ?? undefined;
 
   const successUrl = `${process.env.NEXT_PUBLIC_APP_URL}/checkout/success?checkout_id={CHECKOUT_ID}`;
 

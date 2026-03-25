@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
+import { Suspense, useRef, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useLangStore } from "@/lib/store/lang-store";
 import Link from "next/link";
 import { LandingNav } from "@/components/layout/LandingNav";
@@ -132,9 +133,20 @@ function useInView(threshold = 0.15) {
   return { ref, inView };
 }
 
-export default function PricingPage() {
+function PricingContent() {
   const { lang, toggleLang } = useLangStore();
   const t = translations[lang];
+  const searchParams = useSearchParams();
+  const autoCheckoutRef = useRef(false);
+
+  // 로그인 후 돌아왔을 때 자동 체크아웃 시작
+  useEffect(() => {
+    const plan = searchParams.get("checkout");
+    if (plan && !autoCheckoutRef.current) {
+      autoCheckoutRef.current = true;
+      createCheckout(plan);
+    }
+  }, [searchParams]);
 
   const cardsSection = useInView(0.1);
 
@@ -292,5 +304,13 @@ export default function PricingPage() {
         {lang === "en" ? "KO" : "EN"}
       </button>
     </div>
+  );
+}
+
+export default function PricingPage() {
+  return (
+    <Suspense>
+      <PricingContent />
+    </Suspense>
   );
 }
