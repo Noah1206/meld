@@ -598,10 +598,6 @@ export default function DashboardPage() {
 
   return (
     <div className="animate-fade-in min-h-screen bg-white">
-      {/* 데스크톱: 트래픽 라이트 영역 (빈 줄) */}
-      {platform === "desktop" && (
-        <div className="h-10 shrink-0 bg-white" style={{ WebkitAppRegion: "drag" } as React.CSSProperties} />
-      )}
       {/* 헤더 */}
       <header className="bg-white/80 backdrop-blur-xl">
         <div className="flex items-center justify-between px-6 py-4">

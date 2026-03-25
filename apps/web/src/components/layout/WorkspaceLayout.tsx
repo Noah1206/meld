@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { ArrowLeft, Blend } from "lucide-react";
-import { usePlatform } from "@/lib/hooks/usePlatform";
 
 interface WorkspaceLayoutProps {
   leftPanel: React.ReactNode;
@@ -21,17 +20,10 @@ export function WorkspaceLayout({
   headerActions,
   sidebarSide = "right",
 }: WorkspaceLayoutProps) {
-  const platform = usePlatform();
   return (
     <div className="flex h-screen flex-col bg-[#F7F7F5]">
-      {/* 데스크톱: 트래픽 라이트 영역 (빈 줄) */}
-      {platform === "desktop" && (
-        <div className="h-10 shrink-0 bg-white" style={{ WebkitAppRegion: "drag" } as React.CSSProperties} />
-      )}
       {/* Header */}
-      <header
-        className="flex h-12 items-center justify-between border-b border-[#E0E0DC] bg-white px-4"
-      >
+      <header className="flex h-12 items-center justify-between border-b border-[#E0E0DC] bg-white px-4">
         <div className="flex items-center gap-3">
           {onBack && (
             <button

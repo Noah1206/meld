@@ -100,8 +100,8 @@ export default function DesktopProjectPage() {
   // 프로젝트 미선택: 선택 UI
   if (!agent.connected) {
     return (
-      <div className="flex h-screen flex-col items-center justify-center bg-white" style={{ WebkitAppRegion: "drag" } as React.CSSProperties}>
-        <div className="w-full max-w-md space-y-6 px-6 text-center" style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}>
+      <div className="flex h-screen flex-col items-center justify-center bg-white">
+        <div className="w-full max-w-md space-y-6 px-6 text-center">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#F7F7F5]">
             <Monitor className="h-7 w-7 text-[#787774]" />
           </div>
@@ -149,7 +149,7 @@ export default function DesktopProjectPage() {
 
         {/* 새 프로젝트 모달 */}
         {showCreateModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
             <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-[16px] font-bold text-[#1A1A1A]">{t.createNew}</h2>

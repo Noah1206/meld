@@ -150,14 +150,8 @@ export default function NewProjectPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* 헤더 */}
-      <header
-        className={`bg-white/80 backdrop-blur-xl ${platform === "desktop" ? "pl-20" : ""}`}
-        style={platform === "desktop" ? { WebkitAppRegion: "drag" } as React.CSSProperties : undefined}
-      >
-        <div
-          className="mx-auto flex max-w-[1440px] items-center justify-between px-6 lg:px-16 py-4"
-          style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
-        >
+      <header className="bg-white/80 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-[1440px] items-center justify-between px-6 lg:px-16 py-4">
           <button
             onClick={() => router.back()}
             className="flex items-center gap-1.5 text-[15px] text-[#787774] transition-colors hover:text-[#1A1A1A]"
