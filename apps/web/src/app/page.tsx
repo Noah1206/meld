@@ -53,7 +53,7 @@ function CopyCommand({ command, copiedLabel }: { command: string; copiedLabel: s
   return (
     <button
       onClick={handleCopy}
-      className="group flex w-full items-center gap-2.5 rounded-xl bg-[#F5F5F4] px-4 py-3 text-left font-mono text-[13px] transition-all hover:bg-[#EEEEEC] active:scale-[0.99]"
+      className="group flex w-full items-center gap-2.5 rounded-lg border border-black/[0.08] px-4 py-2.5 text-left font-mono text-[13px] transition-all hover:border-black/[0.15] active:scale-[0.99]"
     >
       <Terminal className="h-3.5 w-3.5 text-[#CCC] transition-colors group-hover:text-[#999]" />
       <span className="flex-1 text-[#999]">{command}</span>
