@@ -152,7 +152,7 @@ const translations = {
 
     // Bottom CTA
     bottomTitle: "Get started now",
-    bottomDesc: "Download the desktop app, or open in your browser. It's free.",
+    bottomDesc: "Download the desktop app, or open in your browser. Starting at $5/mo.",
     bottomDownload: "Download Desktop App",
     bottomCta: "Open in Browser",
   },
@@ -238,7 +238,7 @@ const translations = {
 
     // Bottom CTA
     bottomTitle: "지금 시작하세요",
-    bottomDesc: "데스크톱 앱을 다운로드하거나, 브라우저에서 바로 시작하세요. 무료입니다.",
+    bottomDesc: "데스크톱 앱을 다운로드하거나, 브라우저에서 바로 시작하세요. 월 $5부터.",
     bottomDownload: "데스크톱 앱 다운로드",
     bottomCta: "브라우저에서 열기",
   },
