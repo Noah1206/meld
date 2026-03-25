@@ -18,6 +18,7 @@ import {
   Zap,
   HardDrive,
   Server,
+  ShieldAlert,
 } from "lucide-react";
 
 const APP_VERSION = "0.1.1";
@@ -76,6 +77,11 @@ const translations = {
     compareDesktop: "Desktop",
     compareWeb: "Web",
 
+    // macOS notice
+    macNoticeTitle: "macOS: \"App is damaged\" error?",
+    macNoticeDesc: "Since Meld is not code-signed yet, macOS may block the app. Run this command in Terminal after installing:",
+    macNoticeCopied: "Copied!",
+
     // CLI
     cliTitle: "Prefer the terminal?",
     cliDesc: "You can also run the agent from the terminal without the desktop app.",
@@ -112,6 +118,11 @@ const translations = {
     compareFeature4Desc: "OS 기본 폴더 선택 UI",
     compareDesktop: "데스크톱",
     compareWeb: "웹",
+
+    // macOS notice
+    macNoticeTitle: "macOS: \"앱이 손상되었습니다\" 오류?",
+    macNoticeDesc: "Meld는 아직 코드 서명이 되어있지 않아 macOS에서 차단될 수 있습니다. 설치 후 터미널에서 아래 명령어를 실행하세요:",
+    macNoticeCopied: "복사됨!",
 
     // CLI
     cliTitle: "터미널을 선호하시나요?",
@@ -396,6 +407,26 @@ export default function DownloadPage() {
           </div>
         </div>
       </section>
+
+      {/* macOS 안내 섹션 */}
+      {detectedPlatform === "mac" && (
+        <section className="relative z-10 mx-auto max-w-[1440px] px-6 lg:px-16 py-12">
+          <div className="rounded-2xl bg-[#FFFBF0] p-6 ring-1 ring-[#F0E6CC]">
+            <div className="flex items-start gap-4">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#FFF3D6] ring-1 ring-[#F0E6CC]">
+                <ShieldAlert className="h-4 w-4 text-[#B8860B]" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-[15px] font-semibold text-[#1A1A1A]">{t.macNoticeTitle}</h3>
+                <p className="mt-1.5 text-[13px] leading-relaxed text-[#999]">{t.macNoticeDesc}</p>
+                <div className="mt-4">
+                  <CopyCommand command="xattr -cr /Applications/Meld.app" copiedLabel={t.macNoticeCopied} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* CLI 대안 섹션 */}
       <section ref={cliSection.ref} className="relative z-10 bg-[#1A1A1A]">
