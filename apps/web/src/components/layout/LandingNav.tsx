@@ -119,6 +119,8 @@ export function LandingNav({ dark = false, activePath }: LandingNavProps) {
           <span className={`text-[17px] font-semibold transition-colors duration-500 ${logoText}`}>Meld</span>
         </Link>
 
+        <div className="w-8" />
+
         {/* 링크 */}
         <div className="relative z-10 flex items-center gap-6">
           {links.map((link, i) => (
