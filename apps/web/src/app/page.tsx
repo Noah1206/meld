@@ -331,14 +331,14 @@ export default function HomePage() {
           <div className="animate-fade-in-up animation-delay-300 mt-10 flex items-center gap-5">
             <Link
               href="/download"
-              className="group inline-flex items-center gap-2.5 rounded-xl bg-[#1A1A1A] px-7 py-3.5 text-[15px] font-semibold text-white transition-all hover:bg-[#333] active:scale-[0.98]"
+              className="group inline-flex items-center gap-2 rounded-lg bg-[#1A1A1A] px-5 py-2.5 text-[13px] font-semibold text-white transition-all hover:bg-[#333] active:scale-[0.98]"
             >
-              <Download className="h-4 w-4 transition-transform group-hover:-translate-y-0.5" />
+              <Download className="h-3.5 w-3.5 transition-transform group-hover:-translate-y-0.5" />
               {t.heroDownload}
             </Link>
             <Link
               href="/dashboard"
-              className="group inline-flex items-center gap-1.5 rounded-xl bg-[#F5F0E8] px-7 py-3.5 text-[15px] font-semibold text-[#1A1A1A] transition-all hover:bg-[#EDE7DB] active:scale-[0.98]"
+              className="group inline-flex items-center gap-1.5 rounded-lg bg-[#F5F0E8] px-5 py-2.5 text-[13px] font-semibold text-[#1A1A1A] transition-all hover:bg-[#EDE7DB] active:scale-[0.98]"
             >
               {t.heroCta}
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
