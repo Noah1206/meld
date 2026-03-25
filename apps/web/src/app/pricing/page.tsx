@@ -174,7 +174,7 @@ function PlanButton({
     return (
       <a
         href="/api/portal"
-        className="inline-flex items-center rounded-lg border border-[#333] px-6 py-3 text-[15px] font-medium text-[#555] transition-all hover:border-[#555] hover:text-[#999]"
+        className="inline-flex items-center rounded-lg border border-[#E5E5E5] px-6 py-3 text-[15px] font-medium text-[#999] transition-all hover:border-[#CCC] hover:text-[#666]"
       >
         {t.manage}
       </a>
@@ -186,9 +186,9 @@ function PlanButton({
   const text = currentPlan && isUpgrade ? t.upgrade : label;
 
   const styles = {
-    starter: "bg-[#1E2228] text-white hover:bg-[#2A2F36]",
-    pro: "border border-[#C5B882]/30 bg-transparent text-[#C5B882] hover:bg-[#C5B882]/10",
-    unlimited: "bg-[#1E2228] text-white hover:bg-[#2A2F36]",
+    starter: "bg-[#1A1A1A] text-white hover:bg-[#333]",
+    pro: "bg-[#C5B882] text-[#1A1A1A] hover:bg-[#B8AB75] font-semibold",
+    unlimited: "bg-[#1A1A1A] text-white hover:bg-[#333]",
   };
 
   return (
@@ -214,48 +214,48 @@ export default function PricingPage() {
   const cardsSection = useInView(0.1);
 
   return (
-    <div className="min-h-screen bg-[#0B0E11] selection:bg-white selection:text-[#0B0E11]">
+    <div className="min-h-screen bg-white selection:bg-[#1A1A1A] selection:text-white">
       {/* 그리드 배경 */}
       <div
         className="pointer-events-none fixed inset-0 z-0"
         style={{
           backgroundImage: `
-            linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)
+            linear-gradient(rgba(0,0,0,0.02) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0,0,0,0.02) 1px, transparent 1px)
           `,
           backgroundSize: "80px 80px",
         }}
       />
 
       {/* 네비게이션 */}
-      <LandingNav dark activePath="/pricing" />
+      <LandingNav activePath="/pricing" />
 
       {/* 히어로 */}
       <section className="relative z-10 pt-36 pb-6 lg:pt-44 lg:pb-10">
         <div className="mx-auto max-w-[1440px] px-6 lg:px-16">
-          <h1 className="animate-fade-in-up text-[40px] font-light leading-[1.15] tracking-[-0.03em] sm:text-[52px] lg:text-[64px]">
-            <span className="text-[#999]">{t.heroTitle1}</span>
+          <h1 className="animate-fade-in-up text-[40px] font-bold leading-[1.15] tracking-[-0.03em] sm:text-[52px] lg:text-[64px]">
+            <span className="text-[#1A1A1A]">{t.heroTitle1}</span>
             <br />
-            <span className="text-[#C5B882]">{t.heroTitle2}</span>
+            <span className="text-[#CCC]">{t.heroTitle2}</span>
           </h1>
         </div>
       </section>
 
       {/* 가격 카드 */}
       <section ref={cardsSection.ref} className="relative z-10 mx-auto max-w-[1440px] px-6 lg:px-16 py-16 lg:py-24">
-        <div className="grid gap-px overflow-hidden rounded-2xl border border-[#1E2228] sm:grid-cols-3">
+        <div className="grid gap-px overflow-hidden rounded-2xl border border-[#E5E5E5] sm:grid-cols-3">
           {/* Starter */}
-          <div className={`flex flex-col bg-[#0B0E11] p-10 lg:p-12 transition-all duration-700 ${cardsSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
+          <div className={`flex flex-col bg-white p-10 lg:p-12 transition-all duration-700 ${cardsSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
             <div className="flex-1">
-              <h3 className="text-[22px] font-medium text-white">{t.starterName}</h3>
-              <p className="mt-1.5 text-[32px] font-light text-white">{t.starterPrice}</p>
+              <h3 className="text-[22px] font-medium text-[#1A1A1A]">{t.starterName}</h3>
+              <p className="mt-1.5 text-[32px] font-light text-[#1A1A1A]">{t.starterPrice}</p>
               <p className="mt-4 text-[14px] text-[#C5B882]">{t.starterTagline}</p>
 
               <ul className="mt-10 space-y-4">
                 {t.starterFeatures.map((feature) => (
                   <li key={feature} className="flex items-start gap-3">
                     <Check className="mt-0.5 h-4.5 w-4.5 flex-shrink-0 text-[#C5B882]" />
-                    <span className="text-[16px] text-[#999]">{feature}</span>
+                    <span className="text-[16px] text-[#666]">{feature}</span>
                   </li>
                 ))}
               </ul>
@@ -267,23 +267,23 @@ export default function PricingPage() {
           </div>
 
           {/* Pro */}
-          <div className={`flex flex-col border-x border-[#1E2228] bg-[#0B0E11] p-10 lg:p-12 transition-all duration-700 delay-150 ${cardsSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
+          <div className={`flex flex-col border-x border-[#E5E5E5] bg-[#FAFAF8] p-10 lg:p-12 transition-all duration-700 delay-150 ${cardsSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
             <div className="flex-1">
               <div className="flex items-center gap-3">
-                <h3 className="text-[22px] font-medium text-white">{t.proName}</h3>
+                <h3 className="text-[22px] font-medium text-[#1A1A1A]">{t.proName}</h3>
                 <span className="rounded-full bg-[#C5B882]/15 px-2.5 py-0.5 text-[11px] font-semibold text-[#C5B882]">{t.proDiscount}</span>
               </div>
               <div className="mt-1.5 flex items-baseline gap-2.5">
-                <span className="text-[16px] text-[#555] line-through">{t.proOriginalPrice}</span>
-                <span className="text-[32px] font-light text-white">{t.proPrice}</span>
-                <span className="text-[15px] text-[#555]">{t.proPer}</span>
+                <span className="text-[16px] text-[#CCC] line-through">{t.proOriginalPrice}</span>
+                <span className="text-[32px] font-light text-[#1A1A1A]">{t.proPrice}</span>
+                <span className="text-[15px] text-[#CCC]">{t.proPer}</span>
               </div>
 
               <ul className="mt-10 space-y-4">
                 {t.proFeatures.map((feature) => (
                   <li key={feature} className="flex items-start gap-3">
                     <Check className="mt-0.5 h-4.5 w-4.5 flex-shrink-0 text-[#C5B882]" />
-                    <span className="text-[16px] text-[#999]">{feature}</span>
+                    <span className="text-[16px] text-[#666]">{feature}</span>
                   </li>
                 ))}
               </ul>
@@ -295,23 +295,23 @@ export default function PricingPage() {
           </div>
 
           {/* Unlimited */}
-          <div className={`flex flex-col bg-[#0B0E11] p-10 lg:p-12 transition-all duration-700 delay-300 ${cardsSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
+          <div className={`flex flex-col bg-white p-10 lg:p-12 transition-all duration-700 delay-300 ${cardsSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
             <div className="flex-1">
               <div className="flex items-center gap-3">
-                <h3 className="text-[22px] font-medium text-white">{t.unlimitedName}</h3>
+                <h3 className="text-[22px] font-medium text-[#1A1A1A]">{t.unlimitedName}</h3>
                 <span className="rounded-full bg-[#C5B882]/15 px-2.5 py-0.5 text-[11px] font-semibold text-[#C5B882]">{t.unlimitedDiscount}</span>
               </div>
               <div className="mt-1.5 flex items-baseline gap-2.5">
-                <span className="text-[16px] text-[#555] line-through">{t.unlimitedOriginalPrice}</span>
-                <span className="text-[32px] font-light text-white">{t.unlimitedPrice}</span>
-                <span className="text-[15px] text-[#555]">{t.unlimitedPer}</span>
+                <span className="text-[16px] text-[#CCC] line-through">{t.unlimitedOriginalPrice}</span>
+                <span className="text-[32px] font-light text-[#1A1A1A]">{t.unlimitedPrice}</span>
+                <span className="text-[15px] text-[#CCC]">{t.unlimitedPer}</span>
               </div>
 
               <ul className="mt-10 space-y-4">
                 {t.unlimitedFeatures.map((feature) => (
                   <li key={feature} className="flex items-start gap-3">
                     <Check className="mt-0.5 h-4.5 w-4.5 flex-shrink-0 text-[#C5B882]" />
-                    <span className="text-[16px] text-[#999]">{feature}</span>
+                    <span className="text-[16px] text-[#666]">{feature}</span>
                   </li>
                 ))}
               </ul>
@@ -327,15 +327,15 @@ export default function PricingPage() {
       {/* 푸터 */}
       <footer className="relative z-10">
         <div className="mx-auto max-w-[1440px] px-6 lg:px-16 pb-8">
-          <div className="h-px w-full bg-[#1E2228]" />
+          <div className="h-px w-full bg-[#E5E5E5]" />
           <div className="mt-6 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="flex h-5 w-5 items-center justify-center rounded bg-white">
-                <Blend className="h-2.5 w-2.5 text-[#0B0E11]" />
+              <div className="flex h-5 w-5 items-center justify-center rounded bg-[#1A1A1A]">
+                <Blend className="h-2.5 w-2.5 text-white" />
               </div>
-              <span className="text-[12px] text-[#333]">Meld</span>
+              <span className="text-[12px] text-[#999]">Meld</span>
             </div>
-            <p className="font-mono text-[11px] text-[#333]">{t.footerTagline}</p>
+            <p className="font-mono text-[11px] text-[#999]">{t.footerTagline}</p>
           </div>
         </div>
       </footer>
@@ -343,7 +343,7 @@ export default function PricingPage() {
       {/* 언어 토글 */}
       <button
         onClick={toggleLang}
-        className="fixed bottom-6 right-6 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-[#1E2228] text-[12px] font-semibold text-white shadow-lg ring-1 ring-white/[0.06] transition-all hover:scale-105 hover:bg-[#2A2F36] active:scale-95"
+        className="fixed bottom-6 right-6 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-[#1A1A1A] text-[12px] font-semibold text-white shadow-lg ring-1 ring-black/[0.06] transition-all hover:scale-105 hover:bg-[#333] active:scale-95"
       >
         {lang === "en" ? "KO" : "EN"}
       </button>
