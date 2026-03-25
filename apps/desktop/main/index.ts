@@ -43,10 +43,10 @@ function createWindow() {
       mainWindow?.show();
     });
 
-    // 최소 2.5초 스플래시 보여준 후 웹앱 로드
+    // 타이핑(~1s) + 멈춤(0.6s) + 빨려들어감(0.6s) = ~2.2초
     setTimeout(() => {
       mainWindow?.loadURL(`${APP_URL}/dashboard`);
-    }, 2500);
+    }, 2200);
   }
 
   mainWindow.on("closed", () => {
