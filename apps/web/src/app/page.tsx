@@ -401,8 +401,18 @@ export default function HomePage() {
             </Link>
           </div>
 
-          {/* 메타 정보 한 줄 */}
-          <div className="animate-fade-in animation-delay-450 mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[12px] text-[#CCC]">
+          {/* macOS: 필수 설치 단계 */}
+          {detectedPlatform === "mac" && (
+            <div className="animate-fade-in-up animation-delay-450 mt-5 max-w-md">
+              <p className="mb-2 text-[12px] font-medium text-[#999]">
+                {lang === "ko" ? "설치 후 터미널에서 실행하세요:" : "After installing, run in Terminal:"}
+              </p>
+              <CopyCommand command="xattr -cr /Applications/Meld.app" copiedLabel={t.copied} />
+            </div>
+          )}
+
+          {/* 메타 */}
+          <div className="animate-fade-in animation-delay-450 mt-4 flex items-center gap-3 text-[12px] text-[#CCC]">
             <span className="font-mono">v{APP_VERSION} · {PLATFORMS[detectedPlatform].size}</span>
             <span className="h-3 w-px bg-black/[0.06]" />
             <div className="flex items-center gap-1.5">
@@ -419,19 +429,6 @@ export default function HomePage() {
                 </span>
               ))}
             </div>
-            {detectedPlatform === "mac" && (
-              <>
-                <span className="h-3 w-px bg-black/[0.06]" />
-                <button
-                  onClick={() => { navigator.clipboard.writeText("xattr -cr /Applications/Meld.app"); }}
-                  className="group flex items-center gap-1.5 text-[11px] text-[#BBB] transition-colors hover:text-[#666]"
-                >
-                  <span>macOS 오류?</span>
-                  <code className="rounded bg-[#F5F5F4] px-1.5 py-0.5 font-mono text-[10px] text-[#999] transition-colors group-hover:text-[#666]">xattr -cr</code>
-                  <Copy className="h-3 w-3" />
-                </button>
-              </>
-            )}
           </div>
 
           <div className="mt-4" />
