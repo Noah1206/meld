@@ -1,12 +1,10 @@
 "use client";
 
-import { Suspense, useRef, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRef, useEffect, useState } from "react";
 import { useLangStore } from "@/lib/store/lang-store";
 import Link from "next/link";
 import { LandingNav } from "@/components/layout/LandingNav";
 import { Blend, Check, ArrowRight } from "lucide-react";
-import { createCheckout } from "./actions";
 
 const translations = {
   en: {
@@ -133,20 +131,9 @@ function useInView(threshold = 0.15) {
   return { ref, inView };
 }
 
-function PricingContent() {
+export default function PricingPage() {
   const { lang, toggleLang } = useLangStore();
   const t = translations[lang];
-  const searchParams = useSearchParams();
-  const autoCheckoutRef = useRef(false);
-
-  // 로그인 후 돌아왔을 때 자동 체크아웃 시작
-  useEffect(() => {
-    const plan = searchParams.get("checkout");
-    if (plan && !autoCheckoutRef.current) {
-      autoCheckoutRef.current = true;
-      createCheckout(plan);
-    }
-  }, [searchParams]);
 
   const cardsSection = useInView(0.1);
 
@@ -232,14 +219,12 @@ function PricingContent() {
             </div>
 
             <div className="mt-14">
-              <form action={createCheckout.bind(null, "pro")}>
-                <button
-                  type="submit"
-                  className="inline-flex items-center rounded-lg border border-[#C5B882]/30 bg-transparent px-6 py-3 text-[15px] font-medium text-[#C5B882] transition-all hover:bg-[#C5B882]/10 active:scale-[0.98]"
-                >
-                  {t.proCta}
-                </button>
-              </form>
+              <a
+                href="/api/checkout?plan=pro"
+                className="inline-flex items-center rounded-lg border border-[#C5B882]/30 bg-transparent px-6 py-3 text-[15px] font-medium text-[#C5B882] transition-all hover:bg-[#C5B882]/10 active:scale-[0.98]"
+              >
+                {t.proCta}
+              </a>
             </div>
           </div>
 
@@ -267,14 +252,12 @@ function PricingContent() {
             </div>
 
             <div className="mt-14">
-              <form action={createCheckout.bind(null, "unlimited")}>
-                <button
-                  type="submit"
-                  className="inline-flex items-center rounded-lg bg-[#1E2228] px-6 py-3 text-[15px] font-medium text-white transition-all hover:bg-[#2A2F36] active:scale-[0.98]"
-                >
-                  {t.unlimitedCta}
-                </button>
-              </form>
+              <a
+                href="/api/checkout?plan=unlimited"
+                className="inline-flex items-center rounded-lg bg-[#1E2228] px-6 py-3 text-[15px] font-medium text-white transition-all hover:bg-[#2A2F36] active:scale-[0.98]"
+              >
+                {t.unlimitedCta}
+              </a>
             </div>
           </div>
         </div>
@@ -304,13 +287,5 @@ function PricingContent() {
         {lang === "en" ? "KO" : "EN"}
       </button>
     </div>
-  );
-}
-
-export default function PricingPage() {
-  return (
-    <Suspense>
-      <PricingContent />
-    </Suspense>
   );
 }
