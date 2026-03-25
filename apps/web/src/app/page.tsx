@@ -383,13 +383,13 @@ export default function HomePage() {
             {t.heroDesc3}
           </p>
 
-          {/* OS 선택 탭 */}
-          <div className="animate-fade-in-up animation-delay-300 mt-10 inline-flex items-center gap-0 rounded-full bg-[#F5F5F4] p-1">
+          {/* Step 1: OS 선택 */}
+          <div className="animate-fade-in-up animation-delay-300 mt-10 inline-flex items-center gap-0 rounded-full bg-[#F5F5F4] p-1.5">
             {(["mac", "windows"] as Platform[]).map((p) => (
               <button
                 key={p}
                 onClick={() => setDetectedPlatform(p)}
-                className={`rounded-full px-5 py-1.5 text-[13px] font-medium transition-all ${
+                className={`rounded-full px-6 py-2.5 text-[15px] font-medium transition-all ${
                   p === detectedPlatform
                     ? "bg-white text-[#1A1A1A] shadow-sm"
                     : "text-[#999] hover:text-[#666]"
@@ -400,36 +400,36 @@ export default function HomePage() {
             ))}
           </div>
 
-          {/* 다운로드 버튼 + 브라우저 */}
-          <div className="animate-fade-in-up animation-delay-300 mt-5 flex items-center gap-4">
+          {/* Step 2: 다운로드 */}
+          <div className="animate-fade-in-up animation-delay-300 mt-6 flex flex-wrap items-center gap-5">
             <a
               href={getDownloadUrl(detectedPlatform)}
-              className="group inline-flex items-center gap-2.5 rounded-xl bg-[#1A1A1A] px-6 py-3 text-[14px] font-semibold text-white transition-all hover:bg-[#333] active:scale-[0.98]"
+              className="group inline-flex items-center gap-3 rounded-2xl bg-[#1A1A1A] px-8 py-4 text-[16px] font-semibold text-white transition-all hover:bg-[#333] active:scale-[0.98]"
             >
-              <Download className="h-4 w-4 transition-transform group-hover:-translate-y-0.5" />
+              <Download className="h-5 w-5 transition-transform group-hover:-translate-y-0.5" />
               {t.heroDownload}
             </a>
             <Link
               href="/dashboard"
-              className="group inline-flex items-center gap-1.5 text-[13px] font-medium text-[#999] transition-colors hover:text-[#1A1A1A]"
+              className="group inline-flex items-center gap-2 rounded-2xl border border-black/[0.08] px-8 py-4 text-[16px] font-semibold text-[#1A1A1A] transition-all hover:border-black/[0.15] hover:bg-[#FAFAFA] active:scale-[0.98]"
             >
               {t.heroCta}
-              <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+              <ArrowRight className="h-4.5 w-4.5 transition-transform group-hover:translate-x-0.5" />
             </Link>
-            <span className="font-mono text-[11px] text-[#CCC]">v{APP_VERSION} · {PLATFORMS[detectedPlatform].ext} · {PLATFORMS[detectedPlatform].size}</span>
           </div>
+          <span className="animate-fade-in animation-delay-450 mt-3 inline-block font-mono text-[12px] text-[#CCC]">v{APP_VERSION} · {PLATFORMS[detectedPlatform].ext} · {PLATFORMS[detectedPlatform].size}</span>
 
-          {/* macOS: 필수 설치 단계 */}
+          {/* Step 3: macOS 필수 설치 단계 */}
           {detectedPlatform === "mac" && (
-            <div className="animate-fade-in-up mt-5 max-w-sm">
-              <p className="mb-2 text-[12px] text-[#BBB]">
+            <div className="animate-fade-in-up mt-6 max-w-md">
+              <p className="mb-2.5 text-[13px] text-[#BBB]">
                 {lang === "ko" ? "설치 후 터미널에서 실행하세요" : "After installing, run in Terminal"}
               </p>
               <CopyCommand command="xattr -cr /Applications/Meld.app" copiedLabel={t.copied} />
             </div>
           )}
 
-          <div className="mt-4" />
+          <div className="mt-6" />
         </div>
       </section>
 
