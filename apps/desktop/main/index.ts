@@ -25,12 +25,24 @@ function createWindow() {
 
   const isDev = !app.isPackaged;
 
+  const APP_URL = "https://meld-psi.vercel.app";
+
   if (isDev) {
-    mainWindow.loadURL("http://localhost:5173");
+    mainWindow.loadURL("http://localhost:3000/dashboard");
     mainWindow.webContents.openDevTools({ mode: "detach" });
   } else {
-    mainWindow.loadFile(path.join(__dirname, "../renderer/index.html"));
+    mainWindow.loadURL(`${APP_URL}/dashboard`);
   }
+
+  // 랜딩페이지(/)로 이동 방지
+  mainWindow.webContents.on("did-navigate", (_event, url) => {
+    try {
+      const u = new URL(url);
+      if (u.origin === APP_URL && u.pathname === "/") {
+        mainWindow?.loadURL(`${APP_URL}/dashboard`);
+      }
+    } catch {}
+  });
 
   // 랜딩페이지(/)로 이동 방지 → dashboard로 리다이렉트
   mainWindow.webContents.on("did-navigate", (_event, url) => {
