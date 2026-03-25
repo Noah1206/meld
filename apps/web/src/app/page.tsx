@@ -53,9 +53,9 @@ function CopyCommand({ command, copiedLabel }: { command: string; copiedLabel: s
   return (
     <button
       onClick={handleCopy}
-      className="group flex w-full items-center gap-2.5 rounded-xl bg-[#252525] px-4 py-3.5 text-left font-mono text-[13px] transition-all hover:bg-[#2A2A2A] active:scale-[0.99]"
+      className="group flex w-full items-center gap-2.5 rounded-xl bg-[#F5F5F4] px-4 py-3 text-left font-mono text-[13px] transition-all hover:bg-[#EEEEEC] active:scale-[0.99]"
     >
-      <Terminal className="h-3.5 w-3.5 text-[#555] transition-colors group-hover:text-[#999]" />
+      <Terminal className="h-3.5 w-3.5 text-[#CCC] transition-colors group-hover:text-[#999]" />
       <span className="flex-1 text-[#999]">{command}</span>
       {copied ? (
         <span className="flex items-center gap-1 text-[11px] text-[#999]">
@@ -63,7 +63,7 @@ function CopyCommand({ command, copiedLabel }: { command: string; copiedLabel: s
           {copiedLabel}
         </span>
       ) : (
-        <Copy className="h-3.5 w-3.5 text-[#555] transition-colors group-hover:text-[#999]" />
+        <Copy className="h-3.5 w-3.5 text-[#CCC] transition-colors group-hover:text-[#999]" />
       )}
     </button>
   );
