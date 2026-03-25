@@ -26,10 +26,10 @@ function createWindow() {
   const isDev = !app.isPackaged;
 
   if (isDev) {
-    mainWindow.loadURL("http://localhost:3000/dashboard");
+    mainWindow.loadURL("http://localhost:5173");
     mainWindow.webContents.openDevTools({ mode: "detach" });
   } else {
-    mainWindow.loadURL(`${APP_URL}/dashboard`);
+    mainWindow.loadFile(path.join(__dirname, "../renderer/index.html"));
   }
 
   // 랜딩페이지(/)로 이동 방지 → dashboard로 리다이렉트
