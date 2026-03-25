@@ -3,7 +3,7 @@
 import Link from "next/link";
 import {
   ArrowLeft,
-  Atom,
+  Blend,
   Github,
   ArrowUpRight,
   GitBranch,
@@ -101,7 +101,7 @@ export default function GitHubPage() {
           </Link>
           <Link href="/" className="flex items-center gap-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1A1A1A]">
-              <Atom className="h-3.5 w-3.5 text-white" />
+              <Blend className="h-3.5 w-3.5 text-white" />
             </div>
           </Link>
           <div className="w-16" />

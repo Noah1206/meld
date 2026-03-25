@@ -6,7 +6,7 @@ import Link from "next/link";
 import { LandingNav } from "@/components/layout/LandingNav";
 import {
   ArrowRight,
-  Atom,
+  Blend,
   Apple,
   Monitor,
   Terminal,
@@ -424,7 +424,7 @@ export default function DownloadPage() {
           <div className="mt-6 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="flex h-5 w-5 items-center justify-center rounded bg-white">
-                <Atom className="h-2.5 w-2.5 text-[#1A1A1A]" />
+                <Blend className="h-2.5 w-2.5 text-[#1A1A1A]" />
               </div>
               <span className="text-[12px] text-[#555]">Meld</span>
             </div>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <rect width="1024" height="1024" rx="228" fill="#1A1A1A"/>
+  <g transform="translate(512, 512)" stroke="white" stroke-width="28" fill="none" stroke-linecap="round">
+    <!-- Blend / Venn diagram style: two overlapping circles -->
+    <circle cx="-100" cy="0" r="200" opacity="0.9"/>
+    <circle cx="100" cy="0" r="200" opacity="0.9"/>
+  </g>
+</svg>

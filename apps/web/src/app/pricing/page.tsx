@@ -5,7 +5,7 @@ import { useLangStore } from "@/lib/store/lang-store";
 import { useAuthStore } from "@/lib/store/auth-store";
 import Link from "next/link";
 import { LandingNav } from "@/components/layout/LandingNav";
-import { Atom, Check, ArrowRight } from "lucide-react";
+import { Blend, Check, ArrowRight } from "lucide-react";
 
 const PLAN_RANK: Record<string, number> = { free: 0, pro: 1, unlimited: 2 };
 
@@ -331,7 +331,7 @@ export default function PricingPage() {
           <div className="mt-6 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="flex h-5 w-5 items-center justify-center rounded bg-[#1A1A1A]">
-                <Atom className="h-2.5 w-2.5 text-white" />
+                <Blend className="h-2.5 w-2.5 text-white" />
               </div>
               <span className="text-[12px] text-[#999]">Meld</span>
             </div>

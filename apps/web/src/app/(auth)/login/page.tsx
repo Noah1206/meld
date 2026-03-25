@@ -3,7 +3,7 @@
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Github, Atom, ArrowRight } from "lucide-react";
+import { Github, Blend, ArrowRight } from "lucide-react";
 import { useLangStore } from "@/lib/store/lang-store";
 
 const translations = {
@@ -49,7 +49,7 @@ function LoginContent() {
         <div className="mb-10 text-center">
           <Link href="/" className="inline-flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1A1A1A]">
-              <Atom className="h-4 w-4 text-white" />
+              <Blend className="h-4 w-4 text-white" />
             </div>
             <span className="text-[16px] font-semibold text-[#1A1A1A]">Meld</span>
           </Link>

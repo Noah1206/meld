@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Atom } from "lucide-react";
+import { Blend } from "lucide-react";
 import { useLangStore } from "@/lib/store/lang-store";
 
 interface LandingNavProps {
@@ -115,7 +115,7 @@ export function LandingNav({ dark = false, activePath }: LandingNavProps) {
           }`}
         >
           <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${logoBg} backdrop-blur-sm transition-all duration-500 hover:scale-110 hover:rotate-3`}>
-            <Atom className={`h-3.5 w-3.5 ${logoIcon}`} />
+            <Blend className={`h-3.5 w-3.5 ${logoIcon}`} />
           </div>
           <span className={`text-[17px] font-semibold transition-colors duration-500 ${logoText}`}>Meld</span>
         </Link>

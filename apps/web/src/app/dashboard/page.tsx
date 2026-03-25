@@ -9,7 +9,7 @@ import {
   ArrowRight,
   Copy,
   Check,
-  Atom,
+  Blend,
   LogOut,
   Plus,
   FolderOpen,
@@ -595,7 +595,7 @@ export default function DashboardPage() {
         <div className="mx-auto flex max-w-[1440px] items-center justify-between px-6 lg:px-16 py-4">
           <Link href="/" className="flex items-center gap-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1A1A1A]">
-              <Atom className="h-3.5 w-3.5 text-white" />
+              <Blend className="h-3.5 w-3.5 text-white" />
             </div>
             <span className="text-[16px] font-semibold text-[#1A1A1A]">Meld</span>
           </Link>
