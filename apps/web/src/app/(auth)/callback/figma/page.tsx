@@ -14,7 +14,7 @@ export default function FigmaCallbackPage() {
   }, [router]);
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-white">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-white" style={{ WebkitAppRegion: "drag" } as React.CSSProperties}>
       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1A1A1A]">
         <Blend className="h-5 w-5 text-white" />
       </div>

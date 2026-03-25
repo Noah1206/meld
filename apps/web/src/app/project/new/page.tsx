@@ -7,6 +7,7 @@ import { ArrowLeft, Loader2, Search, Lock, Check, Link as LinkIcon, X, Blend } f
 import { trpc } from "@/lib/trpc/client";
 import { FigmaClient } from "@/lib/figma/client";
 import { useLangStore } from "@/lib/store/lang-store";
+import { usePlatform } from "@/lib/hooks/usePlatform";
 
 const translations = {
   en: {
@@ -70,6 +71,7 @@ const translations = {
 export default function NewProjectPage() {
   const router = useRouter();
   const { lang } = useLangStore();
+  const platform = usePlatform();
   const t = translations[lang];
   const [name, setName] = useState("");
   const [selectedRepo, setSelectedRepo] = useState<{ owner: string; name: string } | null>(null);
@@ -148,8 +150,14 @@ export default function NewProjectPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* 헤더 */}
-      <header className="bg-white/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-[1440px] items-center justify-between px-6 lg:px-16 py-4">
+      <header
+        className={`bg-white/80 backdrop-blur-xl ${platform === "desktop" ? "pl-20" : ""}`}
+        style={platform === "desktop" ? { WebkitAppRegion: "drag" } as React.CSSProperties : undefined}
+      >
+        <div
+          className="mx-auto flex max-w-[1440px] items-center justify-between px-6 lg:px-16 py-4"
+          style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
+        >
           <button
             onClick={() => router.back()}
             className="flex items-center gap-1.5 text-[15px] text-[#787774] transition-colors hover:text-[#1A1A1A]"
