@@ -24,12 +24,15 @@ export function WorkspaceLayout({
   const platform = usePlatform();
   return (
     <div className="flex h-screen flex-col bg-[#F7F7F5]">
+      {/* 데스크톱: 트래픽 라이트 영역 (빈 줄) */}
+      {platform === "desktop" && (
+        <div className="h-10 shrink-0 bg-white" style={{ WebkitAppRegion: "drag" } as React.CSSProperties} />
+      )}
       {/* Header */}
       <header
-        className={`flex h-12 items-center justify-between border-b border-[#E0E0DC] bg-white px-4 ${platform === "desktop" ? "pl-20" : ""}`}
-        style={platform === "desktop" ? { WebkitAppRegion: "drag" } as React.CSSProperties : undefined}
+        className="flex h-12 items-center justify-between border-b border-[#E0E0DC] bg-white px-4"
       >
-        <div className="flex items-center gap-3" style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}>
+        <div className="flex items-center gap-3">
           {onBack && (
             <button
               onClick={onBack}
@@ -56,7 +59,7 @@ export function WorkspaceLayout({
         </div>
 
         {headerActions && (
-          <div className="flex items-center gap-2" style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}>{headerActions}</div>
+          <div className="flex items-center gap-2">{headerActions}</div>
         )}
       </header>
 

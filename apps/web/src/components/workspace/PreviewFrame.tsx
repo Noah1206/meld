@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { RefreshCw, ExternalLink, Loader2, MousePointerClick, FileCode } from "lucide-react";
+import { RefreshCw, ExternalLink, Loader2, MousePointerClick, FileCode, AlertTriangle } from "lucide-react";
 import { useAgentStore, type InspectedElement } from "@/lib/store/agent-store";
 import { matchByNaming } from "@/lib/mapping/engine";
 import type { FileEntry } from "@figma-code-bridge/shared";
@@ -24,6 +24,8 @@ function flattenPaths(entries: FileEntry[]): string[] {
 export function PreviewFrame({ url, framework }: PreviewFrameProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+  const retryCountRef = useRef(0);
   const lastWriteTimestamp = useAgentStore((s) => s.lastWriteTimestamp);
   const inspectorEnabled = useAgentStore((s) => s.inspectorEnabled);
   const inspectedElement = useAgentStore((s) => s.inspectedElement);
@@ -71,9 +73,20 @@ export function PreviewFrame({ url, framework }: PreviewFrameProps) {
   const handleRefresh = () => {
     if (iframeRef.current) {
       setIsLoading(true);
+      setHasError(false);
       iframeRef.current.src = url;
     }
   };
+
+  // dev server 준비 안 됐을 때 자동 재시도 (최대 10회, 3초 간격)
+  useEffect(() => {
+    if (!hasError || retryCountRef.current >= 10) return;
+    const timer = setTimeout(() => {
+      retryCountRef.current += 1;
+      handleRefresh();
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [hasError]);
 
   const toggleInspector = useCallback(() => {
     const next = !inspectorEnabled;
@@ -143,9 +156,16 @@ export function PreviewFrame({ url, framework }: PreviewFrameProps) {
       <div className={`relative flex-1 ${inspectorEnabled ? "ring-2 ring-blue-400 ring-inset rounded-sm" : ""}`}>
         {isLoading && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-white">
-            <div className="flex items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin text-[#787774]" />
-              <span className="text-[12px] text-[#787774]">로딩 중...</span>
+            <div className="flex flex-col items-center gap-3">
+              <Loader2 className="h-5 w-5 animate-spin text-[#787774]" />
+              <span className="text-[13px] text-[#787774]">
+                {hasError ? "Dev server 시작 대기 중..." : "로딩 중..."}
+              </span>
+              {hasError && retryCountRef.current > 0 && (
+                <span className="text-[11px] text-[#B4B4B0]">
+                  자동 재시도 {retryCountRef.current}/10
+                </span>
+              )}
             </div>
           </div>
         )}
@@ -155,14 +175,29 @@ export function PreviewFrame({ url, framework }: PreviewFrameProps) {
           className="h-full w-full border-0"
           sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
           onLoad={() => {
+            // iframe 내부에서 에러 페이지인지 체크
+            try {
+              const doc = iframeRef.current?.contentDocument;
+              const bodyText = doc?.body?.innerText || "";
+              if (bodyText.includes("Internal Server Error") || bodyText.includes("502") || bodyText.includes("ECONNREFUSED")) {
+                setHasError(true);
+                return;
+              }
+            } catch {
+              // cross-origin이면 정상 로드된 것
+            }
             setIsLoading(false);
-            // iframe 로드 후 인스펙터 상태 동기화
+            setHasError(false);
+            retryCountRef.current = 0;
             if (inspectorEnabled) {
               iframeRef.current?.contentWindow?.postMessage(
                 { type: "meld:toggle-inspector", enabled: true },
                 "*",
               );
             }
+          }}
+          onError={() => {
+            setHasError(true);
           }}
           title="Dev Server Preview"
         />
