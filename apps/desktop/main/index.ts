@@ -3,7 +3,7 @@ import * as path from "node:path";
 import { registerIpcHandlers, cleanup as cleanupIpc } from "./ipc-handlers.js";
 import { cleanup as cleanupDevServer } from "./dev-server.js";
 
-const APP_URL = "https://meld.day";
+const APP_URL = "https://meld-psi.vercel.app";
 let mainWindow: BrowserWindow | null = null;
 
 function createWindow() {
