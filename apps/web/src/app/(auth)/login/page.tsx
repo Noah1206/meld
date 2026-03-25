@@ -43,8 +43,8 @@ function LoginContent() {
     : "/api/auth/github";
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-white">
-      <div className="animate-scale-in w-full max-w-sm px-6">
+    <div className="flex min-h-screen items-center justify-center bg-white" style={{ WebkitAppRegion: "drag" } as React.CSSProperties}>
+      <div className="animate-scale-in w-full max-w-sm px-6" style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}>
         {/* 로고 */}
         <div className="mb-10 text-center">
           <Link href="/" className="inline-flex items-center gap-2">
