@@ -194,7 +194,7 @@ function DashboardSkeleton() {
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-[1440px] px-6 lg:px-16 pt-10">
+      <main className="px-6 lg:px-16 pt-10">
         <div className="animate-shimmer mb-8 h-8 w-48 rounded" />
         <div className="grid gap-5 sm:grid-cols-2">
           <div className="animate-shimmer h-80 rounded-2xl" />
@@ -618,7 +618,7 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1440px] px-6 lg:px-16 pt-10 pb-20">
+      <main className="px-6 lg:px-16 pt-10 pb-20">
         {/* 인사 + 연결 상태 */}
         <div className="animate-fade-in-up mb-10">
           <div className="flex items-center gap-3">
