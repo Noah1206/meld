@@ -30,7 +30,6 @@ export function LandingNav({ dark = false, activePath }: LandingNavProps) {
   }, []);
 
   const links = [
-    { href: "/github", label: "GitHub" },
     { href: "/pricing", label: lang === "ko" ? "가격" : "Pricing" },
   ];
 
