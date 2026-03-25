@@ -21,14 +21,13 @@ function createWindow() {
     },
   });
 
-  // 개발: Next.js dev server, 프로덕션: 빌드된 파일
+  // 개발: Next.js dev server, 프로덕션: 배포된 웹앱
   const isDev = !app.isPackaged;
   if (isDev) {
     mainWindow.loadURL("http://localhost:3000/dashboard");
     mainWindow.webContents.openDevTools({ mode: "detach" });
   } else {
-    // 향후 Next.js export 빌드 로드
-    mainWindow.loadFile(path.join(__dirname, "../../web/out/dashboard.html"));
+    mainWindow.loadURL("https://meld.day/dashboard");
   }
 
   mainWindow.on("closed", () => {
