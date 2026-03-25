@@ -41,12 +41,12 @@ function createWindow() {
   });
 }
 
-// GitHub OAuth — 웹앱의 OAuth 플로우를 Electron 창에서 실행
+// GitHub OAuth — 웹앱의 로그인 페이지를 Electron 창에서 실행
 ipcMain.handle("auth:github", async () => {
   return new Promise((resolve) => {
     const authWin = new BrowserWindow({
-      width: 500,
-      height: 700,
+      width: 480,
+      height: 640,
       parent: mainWindow ?? undefined,
       modal: true,
       show: true,
@@ -56,33 +56,17 @@ ipcMain.handle("auth:github", async () => {
       },
     });
 
-    // 웹앱의 GitHub OAuth 시작 URL
-    authWin.loadURL(`${APP_URL}/api/auth/github?redirect_to=/api/auth/me`);
+    // 웹앱의 로그인 페이지 열기
+    authWin.loadURL(`${APP_URL}/login`);
 
-    // OAuth 완료 후 /api/auth/me로 리다이렉트되면 유저 정보 가져옴
-    authWin.webContents.on("did-navigate", async (_event, url) => {
+    // 페이지 이동 감지
+    const handleNavigation = async (_event: unknown, url: string) => {
       try {
         const u = new URL(url);
 
-        // /api/auth/me에 도착하면 유저 정보를 가져온 것
-        if (u.pathname === "/api/auth/me") {
-          // 쿠키에서 세션으로 유저 정보 가져오기
-          const cookies = await authWin.webContents.session.cookies.get({ url: APP_URL });
-          const sessionCookie = cookies.find((c) => c.name === "session");
-
-          if (sessionCookie) {
-            // /api/auth/me 응답에서 유저 정보 추출
-            const response = await authWin.webContents.executeJavaScript(
-              `fetch("${APP_URL}/api/auth/me", { credentials: "include" }).then(r => r.json())`
-            );
-            authWin.close();
-            resolve(response?.user ?? null);
-            return;
-          }
-        }
-
-        // /dashboard에 도착하면 로그인 성공 → 유저 정보 가져오기
+        // /dashboard에 도착 = 로그인 성공
         if (u.pathname === "/dashboard") {
+          // 유저 정보 가져오기
           try {
             const response = await authWin.webContents.executeJavaScript(
               `fetch("${APP_URL}/api/auth/me", { credentials: "include" }).then(r => r.json())`
@@ -96,13 +80,15 @@ ipcMain.handle("auth:github", async () => {
           return;
         }
 
-        // 로그인 실패
+        // 로그인 에러
         if (u.pathname === "/login" && u.searchParams.has("error")) {
-          authWin.close();
-          resolve(null);
+          // 에러 있어도 창은 닫지 않고 재시도 가능하게 둠
         }
       } catch {}
-    });
+    };
+
+    authWin.webContents.on("did-navigate", handleNavigation);
+    authWin.webContents.on("did-navigate-in-page", handleNavigation);
 
     authWin.on("closed", () => {
       resolve(null);
