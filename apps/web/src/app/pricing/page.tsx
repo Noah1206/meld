@@ -17,8 +17,7 @@ const translations = {
 
     // Starter
     starterName: "Meld Starter",
-    starterPrice: "$5",
-    starterPer: "/ mo",
+    starterPrice: "Free",
     starterTagline: "get started with Figma to Code",
     starterFeatures: [
       "3 projects",
@@ -73,8 +72,7 @@ const translations = {
     heroTitle2: "디자인을 코드로",
 
     starterName: "Meld Starter",
-    starterPrice: "$5",
-    starterPer: "/ mo",
+    starterPrice: "Free",
     starterTagline: "Figma to Code 시작하기",
     starterFeatures: [
       "3개 프로젝트",
@@ -184,7 +182,7 @@ function PlanButton({
   }
 
   // 업그레이드 또는 비로그인
-  const href = `/api/checkout?plan=${plan}`;
+  const href = plan === "free" ? "/dashboard" : `/api/checkout?plan=${plan}`;
   const text = currentPlan && isUpgrade ? t.upgrade : label;
 
   const styles = {
@@ -250,10 +248,7 @@ export default function PricingPage() {
           <div className={`flex flex-col bg-white p-10 lg:p-12 transition-all duration-700 ${cardsSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
             <div className="flex-1">
               <h3 className="text-[22px] font-medium text-[#1A1A1A]">{t.starterName}</h3>
-              <p className="mt-1.5 flex items-baseline gap-1">
-                <span className="text-[32px] font-light text-[#1A1A1A]">{t.starterPrice}</span>
-                <span className="text-[16px] text-[#CCC]">{t.starterPer}</span>
-              </p>
+              <p className="mt-1.5 text-[32px] font-light text-[#1A1A1A]">{t.starterPrice}</p>
               <p className="mt-4 text-[14px] text-[#C5B882]">{t.starterTagline}</p>
 
               <ul className="mt-10 space-y-4">
