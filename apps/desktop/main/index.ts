@@ -1,10 +1,55 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain, shell } from "electron";
 import * as path from "node:path";
 import { registerIpcHandlers, cleanup as cleanupIpc } from "./ipc-handlers.js";
 import { cleanup as cleanupDevServer } from "./dev-server.js";
 
 const APP_URL = "https://meld-psi.vercel.app";
 let mainWindow: BrowserWindow | null = null;
+let authResolve: ((user: unknown) => void) | null = null;
+
+// meld:// 프로토콜 등록
+if (process.defaultApp) {
+  if (process.argv.length >= 2) {
+    app.setAsDefaultProtocolClient("meld", process.execPath, [path.resolve(process.argv[1])]);
+  }
+} else {
+  app.setAsDefaultProtocolClient("meld");
+}
+
+// macOS: 프로토콜 URL 수신
+app.on("open-url", (_event, url) => {
+  handleProtocolUrl(url);
+});
+
+function handleProtocolUrl(url: string) {
+  try {
+    const u = new URL(url);
+    if (u.hostname === "auth") {
+      const error = u.searchParams.get("error");
+      if (error) {
+        authResolve?.(null);
+        authResolve = null;
+        return;
+      }
+
+      const userJson = u.searchParams.get("user");
+      if (userJson) {
+        const user = JSON.parse(decodeURIComponent(userJson));
+        authResolve?.(user);
+        authResolve = null;
+      }
+    }
+  } catch {
+    authResolve?.(null);
+    authResolve = null;
+  }
+
+  // 앱 창으로 포커스
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.focus();
+  }
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -41,104 +86,20 @@ function createWindow() {
   });
 }
 
-// GitHub OAuth — Electron에서 직접 처리 (웹앱 서버 안 거침)
-const GITHUB_CLIENT_ID = "Ov23liqIpD09joCA9KBo";
-const GITHUB_CLIENT_SECRET = "ac98a9a1aa4e571918ec7f6385e58f00fb390c25";
-
-async function exchangeCodeForToken(code: string): Promise<string | null> {
-  try {
-    const res = await fetch("https://github.com/login/oauth/access_token", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({
-        client_id: GITHUB_CLIENT_ID,
-        client_secret: GITHUB_CLIENT_SECRET,
-        code,
-      }),
-    });
-    const data = await res.json();
-    return data.access_token ?? null;
-  } catch {
-    return null;
-  }
-}
-
-async function getGitHubUser(token: string) {
-  try {
-    const res = await fetch("https://api.github.com/user", {
-      headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" },
-    });
-    return res.ok ? await res.json() : null;
-  } catch {
-    return null;
-  }
-}
-
+// GitHub OAuth — 시스템 브라우저에서 로그인, meld:// 프로토콜로 콜백
 ipcMain.handle("auth:github", async () => {
   return new Promise((resolve) => {
-    const authUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&scope=repo+user:email`;
+    authResolve = resolve;
+    // 시스템 브라우저에서 웹앱의 OAuth 시작 (desktop=true 파라미터)
+    shell.openExternal(`${APP_URL}/api/auth/github?desktop=true`);
 
-    const authWin = new BrowserWindow({
-      width: 480,
-      height: 700,
-      parent: mainWindow ?? undefined,
-      modal: true,
-      show: true,
-      webPreferences: { nodeIntegration: false, contextIsolation: true },
-    });
-
-    authWin.loadURL(authUrl);
-
-    // GitHub가 콜백으로 리다이렉트할 때 코드 가로채기
-    authWin.webContents.on("will-redirect", async (event, url) => {
-      const u = new URL(url);
-      const code = u.searchParams.get("code");
-
-      if (code) {
-        event.preventDefault();
-
-        // Node.js에서 직접 토큰 교환
-        const token = await exchangeCodeForToken(code);
-        if (!token) { authWin.close(); resolve(null); return; }
-
-        const ghUser = await getGitHubUser(token);
-        authWin.close();
-
-        if (ghUser) {
-          resolve({
-            id: String(ghUser.id),
-            githubUsername: ghUser.login,
-            email: ghUser.email,
-            avatarUrl: ghUser.avatar_url,
-          });
-        } else {
-          resolve(null);
-        }
+    // 30초 타임아웃
+    setTimeout(() => {
+      if (authResolve === resolve) {
+        authResolve = null;
+        resolve(null);
       }
-    });
-
-    // did-navigate 에서도 체크 (will-redirect가 안 잡힐 경우)
-    authWin.webContents.on("did-navigate", async (_event, url) => {
-      try {
-        const u = new URL(url);
-        const code = u.searchParams.get("code");
-        if (code && u.hostname !== "github.com") {
-          const token = await exchangeCodeForToken(code);
-          if (!token) { authWin.close(); resolve(null); return; }
-
-          const ghUser = await getGitHubUser(token);
-          authWin.close();
-          resolve(ghUser ? {
-            id: String(ghUser.id),
-            githubUsername: ghUser.login,
-            email: ghUser.email,
-            avatarUrl: ghUser.avatar_url,
-          } : null);
-        }
-      } catch {}
-    });
-
-    authWin.on("closed", () => resolve(null));
+    }, 30000);
   });
 });
 

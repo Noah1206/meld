@@ -6,6 +6,10 @@ directories:
 files:
   - dist/**/*
   - package.json
+protocols:
+  - name: Meld
+    schemes:
+      - meld
 mac:
   target:
     - dmg
