@@ -7,6 +7,11 @@ interface ElectronAgent {
     projectName: string;
     fileTree: FileEntry[];
   } | null>;
+  createProject(name: string): Promise<{
+    projectPath: string;
+    projectName: string;
+    fileTree: FileEntry[];
+  } | null>;
   readFile(path: string): Promise<string>;
   writeFile(path: string, content: string): Promise<boolean>;
   refreshTree(): Promise<FileEntry[]>;

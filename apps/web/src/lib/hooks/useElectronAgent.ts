@@ -15,6 +15,7 @@ interface ElectronAgentState {
 
 interface UseElectronAgentReturn extends ElectronAgentState {
   openProject: () => Promise<boolean>;
+  createProject: (name: string) => Promise<boolean>;
   readFile: (path: string) => Promise<string>;
   writeFile: (path: string, content: string) => Promise<boolean>;
   refreshTree: () => void;
@@ -88,6 +89,25 @@ export function useElectronAgent(): UseElectronAgentReturn {
     return true;
   }, []);
 
+  // 새 프로젝트 생성
+  const createProject = useCallback(async (name: string): Promise<boolean> => {
+    const agent = window.electronAgent;
+    if (!agent?.createProject) return false;
+
+    const result = await agent.createProject(name);
+    if (!result) return false;
+
+    setState((prev) => ({
+      ...prev,
+      connected: true,
+      fileTree: result.fileTree,
+      projectName: result.projectName,
+      projectPath: result.projectPath,
+    }));
+
+    return true;
+  }, []);
+
   const readFile = useCallback(async (filePath: string): Promise<string> => {
     const agent = window.electronAgent;
     if (!agent) throw new Error("Electron 환경이 아닙니다");
@@ -112,6 +132,7 @@ export function useElectronAgent(): UseElectronAgentReturn {
   return {
     ...state,
     openProject,
+    createProject,
     readFile,
     writeFile,
     refreshTree,

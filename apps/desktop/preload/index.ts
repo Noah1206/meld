@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld("electronAgent", {
 
   // 프로젝트 열기 (네이티브 디렉토리 다이얼로그)
   openProject: () => ipcRenderer.invoke("agent:openProject"),
+  createProject: (name: string) => ipcRenderer.invoke("agent:createProject", name),
 
   // 파일 조작
   readFile: (filePath: string) => ipcRenderer.invoke("agent:readFile", filePath),

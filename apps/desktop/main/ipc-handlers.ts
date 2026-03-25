@@ -51,6 +51,45 @@ export function registerIpcHandlers() {
     };
   });
 
+  // 새 프로젝트 폴더 생성 후 열기
+  ipcMain.handle("agent:createProject", async (_, projectName: string) => {
+    const result = await dialog.showOpenDialog({
+      properties: ["openDirectory", "createDirectory"],
+      title: "프로젝트를 생성할 위치 선택",
+    });
+
+    if (result.canceled || result.filePaths.length === 0) return null;
+
+    const parentDir = result.filePaths[0];
+    const projectDir = path.join(parentDir, projectName);
+
+    // 폴더 생성
+    await fs.promises.mkdir(projectDir, { recursive: true });
+
+    currentRootDir = projectDir;
+
+    // 기존 watcher 정리
+    if (activeWatcher) {
+      await activeWatcher.close();
+      activeWatcher = null;
+    }
+
+    const fileTree = scanProject(projectDir);
+
+    activeWatcher = createWatcher(projectDir, (event) => {
+      const windows = BrowserWindow.getAllWindows();
+      for (const win of windows) {
+        win.webContents.send("agent:fileChanged", event);
+      }
+    });
+
+    return {
+      projectPath: projectDir,
+      projectName,
+      fileTree,
+    };
+  });
+
   // 파일 읽기
   ipcMain.handle("agent:readFile", async (_, filePath: string) => {
     if (!currentRootDir) throw new Error("프로젝트가 열려있지 않습니다");
