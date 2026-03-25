@@ -598,8 +598,8 @@ export default function DashboardPage() {
 
   return (
     <div className="animate-fade-in min-h-screen bg-white">
-      {/* 헤더 */}
-      <header className="bg-white/80 backdrop-blur-xl">
+      {/* 헤더 — 데스크톱 앱에서는 트래픽 라이트 공간 확보 */}
+      <header className={`bg-white/80 backdrop-blur-xl ${platform === "desktop" ? "pl-20" : ""}`}>
         <div className="mx-auto flex max-w-[1440px] items-center justify-between px-6 lg:px-16 py-4">
           <Link href="/" className="flex items-center gap-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1A1A1A]">
