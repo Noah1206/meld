@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 
 const APP_VERSION = "0.1.0";
-const GITHUB_RELEASE_BASE = "#"; // GitHub Releases URL — 릴리즈 연동 전 placeholder
+const GITHUB_RELEASE_BASE = "https://github.com/Noah1206/meld/releases/download";
 
 const PLATFORMS = {
   mac: {
@@ -213,8 +213,7 @@ export default function DownloadPage() {
   };
 
   const getDownloadUrl = (platform: Platform) => {
-    if (GITHUB_RELEASE_BASE === "#") return "#";
-    return `${GITHUB_RELEASE_BASE}/${PLATFORMS[platform].filename}`;
+    return `${GITHUB_RELEASE_BASE}/v${APP_VERSION}/${PLATFORMS[platform].filename}`;
   };
 
   return (

@@ -1,5 +1,5 @@
-appId: com.figma-code-bridge.desktop
-productName: FigmaCodeBridge
+appId: com.meld.desktop
+productName: Meld
 directories:
   output: release
   buildResources: resources
@@ -11,10 +11,17 @@ mac:
     - dmg
     - zip
   category: public.app-category.developer-tools
+  artifactName: "Meld-${version}.${ext}"
 win:
   target:
     - nsis
+  artifactName: "Meld-Setup-${version}.${ext}"
 linux:
   target:
     - AppImage
   category: Development
+  artifactName: "Meld-${version}.${ext}"
+publish:
+  provider: github
+  owner: Noah1206
+  repo: meld

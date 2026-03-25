@@ -4,7 +4,7 @@ export default defineConfig([
   // Main process
   {
     entry: { "main/index": "main/index.ts" },
-    format: ["esm"],
+    format: ["cjs"],
     platform: "node",
     target: "node20",
     outDir: "dist",
