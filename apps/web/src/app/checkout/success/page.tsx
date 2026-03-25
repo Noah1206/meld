@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Blend, CheckCircle } from "lucide-react";
+import { Atom, CheckCircle } from "lucide-react";
 
 const t = {
   en: {
@@ -65,7 +65,7 @@ export default async function CheckoutSuccessPage({
         {/* 로고 */}
         <div className="mt-16 flex items-center gap-2 opacity-30">
           <div className="flex h-5 w-5 items-center justify-center rounded bg-white">
-            <Blend className="h-2.5 w-2.5 text-[#0B0E11]" />
+            <Atom className="h-2.5 w-2.5 text-[#0B0E11]" />
           </div>
           <span className="text-[12px] text-white">Meld</span>
         </div>

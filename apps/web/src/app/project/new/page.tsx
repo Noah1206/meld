@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Loader2, Search, Lock, Check, Link as LinkIcon, X, Blend } from "lucide-react";
+import { ArrowLeft, Loader2, Search, Lock, Check, Link as LinkIcon, X, Atom } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import { FigmaClient } from "@/lib/figma/client";
 import { useLangStore } from "@/lib/store/lang-store";
@@ -159,7 +159,7 @@ export default function NewProjectPage() {
           </button>
           <Link href="/" className="flex items-center gap-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1A1A1A]">
-              <Blend className="h-3.5 w-3.5 text-white" />
+              <Atom className="h-3.5 w-3.5 text-white" />
             </div>
           </Link>
           <button

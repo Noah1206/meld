@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Blend } from "lucide-react";
+import { ArrowLeft, Atom } from "lucide-react";
 
 interface WorkspaceLayoutProps {
   leftPanel: React.ReactNode;
@@ -38,7 +38,7 @@ export function WorkspaceLayout({
           <div className="flex items-center gap-2">
             <Link href="/" className="flex items-center gap-2">
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1A1A1A]">
-                <Blend className="h-3.5 w-3.5 text-white" />
+                <Atom className="h-3.5 w-3.5 text-white" />
               </div>
             </Link>
             <h1 className="text-[16px] font-semibold text-[#1A1A1A]">

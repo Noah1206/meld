@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Blend } from "lucide-react";
+import { ArrowLeft, Atom } from "lucide-react";
 import { useLangStore } from "@/lib/store/lang-store";
 
 const translations = {
@@ -153,7 +153,7 @@ export default function TermsPage() {
           </Link>
           <div className="flex-1" />
           <div className="flex h-6 w-6 items-center justify-center rounded bg-[#1A1A1A]">
-            <Blend className="h-3 w-3 text-white" />
+            <Atom className="h-3 w-3 text-white" />
           </div>
         </div>
       </header>
