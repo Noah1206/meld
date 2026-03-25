@@ -383,56 +383,55 @@ export default function HomePage() {
             {t.heroDesc3}
           </p>
 
-          {/* CTA — 다운로드 + 브라우저 */}
-          <div className="animate-fade-in-up animation-delay-300 mt-10 flex items-center gap-5">
+          {/* CTA */}
+          <div className="animate-fade-in-up animation-delay-300 mt-10 flex items-center gap-4">
             <a
               href={getDownloadUrl(detectedPlatform)}
-              className="group inline-flex items-center gap-3 rounded-xl bg-[#1A1A1A] px-7 py-4 text-[15px] font-semibold text-white transition-all hover:bg-[#333] active:scale-[0.98]"
+              className="group inline-flex items-center gap-2.5 rounded-xl bg-[#1A1A1A] px-6 py-3 text-[14px] font-semibold text-white transition-all hover:bg-[#333] active:scale-[0.98]"
             >
-              <Download className="h-5 w-5 transition-transform group-hover:-translate-y-0.5" />
+              <Download className="h-4 w-4 transition-transform group-hover:-translate-y-0.5" />
               {t.heroDownload} {platformNames[detectedPlatform]}
-              <span className="text-[13px] text-[#666]">{PLATFORMS[detectedPlatform].ext}</span>
             </a>
-            <div className="text-[12px] text-[#CCC]">
-              <span className="font-mono">v{APP_VERSION}</span>
-              <span className="mx-2">·</span>
-              <span>{PLATFORMS[detectedPlatform].size}</span>
-            </div>
-          </div>
-
-          {/* macOS 안내 */}
-          {detectedPlatform === "mac" && (
-            <div className="animate-fade-in-up animation-delay-450 mt-5 max-w-md">
-              <p className="mb-2 text-[12px] text-[#999]">{t.macNotice}</p>
-              <CopyCommand command="xattr -cr /Applications/Meld.app" copiedLabel={t.copied} />
-            </div>
-          )}
-
-          {/* 플랫폼 태그 */}
-          <div className="animate-fade-in animation-delay-450 mt-5 flex items-center gap-2 text-[12px] text-[#CCC]">
-            {(["mac", "windows", "linux"] as Platform[]).map((p) => (
-              <span
-                key={p}
-                className={`rounded-full px-2.5 py-0.5 ring-1 ${
-                  p === detectedPlatform
-                    ? "bg-[#1A1A1A] text-white ring-[#1A1A1A]"
-                    : "bg-[#FAFAFA] ring-black/[0.04]"
-                }`}
-              >
-                {platformNames[p]}
-              </span>
-            ))}
-          </div>
-
-          {/* 브라우저로 열기 */}
-          <div className="animate-fade-in-up animation-delay-600 mt-6">
             <Link
               href="/dashboard"
-              className="group inline-flex items-center gap-1.5 text-[13px] font-medium text-[#999] transition-colors hover:text-[#1A1A1A]"
+              className="group inline-flex items-center gap-1.5 rounded-xl bg-[#F5F0E8] px-6 py-3 text-[14px] font-semibold text-[#1A1A1A] transition-all hover:bg-[#EDE7DB] active:scale-[0.98]"
             >
               {t.heroCta}
-              <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
+          </div>
+
+          {/* 메타 정보 한 줄 */}
+          <div className="animate-fade-in animation-delay-450 mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[12px] text-[#CCC]">
+            <span className="font-mono">v{APP_VERSION} · {PLATFORMS[detectedPlatform].size}</span>
+            <span className="h-3 w-px bg-black/[0.06]" />
+            <div className="flex items-center gap-1.5">
+              {(["mac", "windows", "linux"] as Platform[]).map((p) => (
+                <span
+                  key={p}
+                  className={`rounded-full px-2 py-0.5 text-[11px] ring-1 ${
+                    p === detectedPlatform
+                      ? "bg-[#1A1A1A] text-white ring-[#1A1A1A]"
+                      : "ring-black/[0.06]"
+                  }`}
+                >
+                  {platformNames[p]}
+                </span>
+              ))}
+            </div>
+            {detectedPlatform === "mac" && (
+              <>
+                <span className="h-3 w-px bg-black/[0.06]" />
+                <button
+                  onClick={() => { navigator.clipboard.writeText("xattr -cr /Applications/Meld.app"); }}
+                  className="group flex items-center gap-1.5 text-[11px] text-[#BBB] transition-colors hover:text-[#666]"
+                >
+                  <span>macOS 오류?</span>
+                  <code className="rounded bg-[#F5F5F4] px-1.5 py-0.5 font-mono text-[10px] text-[#999] transition-colors group-hover:text-[#666]">xattr -cr</code>
+                  <Copy className="h-3 w-3" />
+                </button>
+              </>
+            )}
           </div>
 
           <div className="mt-4" />
