@@ -186,7 +186,7 @@ function DashboardSkeleton() {
   return (
     <div className="min-h-screen bg-white">
       <header className="bg-white px-6 lg:px-16 py-4">
-        <div className="mx-auto flex max-w-[1440px] items-center justify-between">
+        <div className="flex items-center justify-between">
           <div className="animate-shimmer h-5 w-28 rounded" />
           <div className="flex items-center gap-3">
             <div className="animate-shimmer h-6 w-6 rounded-full" />
@@ -603,7 +603,7 @@ export default function DashboardPage() {
         className={`bg-white/80 backdrop-blur-xl ${platform === "desktop" ? "pl-20" : ""}`}
         style={platform === "desktop" ? { WebkitAppRegion: "drag" } as React.CSSProperties : undefined}
       >
-        <div className="mx-auto flex max-w-[1440px] items-center justify-between px-6 lg:px-16 py-4">
+        <div className="flex items-center justify-between px-6 lg:px-16 py-4">
           <Link href="/" className="flex items-center gap-2" style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}>
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1A1A1A]">
               <Blend className="h-3.5 w-3.5 text-white" />

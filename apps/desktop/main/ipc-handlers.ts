@@ -4,7 +4,7 @@ import * as path from "node:path";
 import { scanProject } from "@figma-code-bridge/agent/scanner";
 import { createWatcher } from "@figma-code-bridge/agent/watcher";
 import type { FSWatcher } from "chokidar";
-import { startDevServer, stopDevServer } from "./dev-server.js";
+import { startDevServer, stopDevServer, cleanup as cleanupDevServer } from "./dev-server.js";
 
 let activeWatcher: FSWatcher | null = null;
 let currentRootDir: string | null = null;
@@ -40,6 +40,9 @@ export function registerIpcHandlers() {
         win.webContents.send("agent:fileChanged", event);
       }
     });
+
+    // dev server 자동 시작
+    startDevServer(rootDir);
 
     return {
       projectPath: rootDir,
