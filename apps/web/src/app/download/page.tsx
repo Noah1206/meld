@@ -20,7 +20,7 @@ import {
   Server,
 } from "lucide-react";
 
-const APP_VERSION = "0.1.0";
+const APP_VERSION = "0.1.1";
 const GITHUB_RELEASE_BASE = "https://github.com/Noah1206/meld/releases/download";
 
 const PLATFORMS = {
