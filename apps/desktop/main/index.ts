@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, ipcMain } from "electron";
 import * as path from "node:path";
 import { registerIpcHandlers, cleanup as cleanupIpc } from "./ipc-handlers.js";
 import { cleanup as cleanupDevServer } from "./dev-server.js";
@@ -25,34 +25,12 @@ function createWindow() {
 
   const isDev = !app.isPackaged;
 
-  const APP_URL = "https://meld-psi.vercel.app";
-
   if (isDev) {
-    mainWindow.loadURL("http://localhost:3000/dashboard");
+    mainWindow.loadURL("http://localhost:5173");
     mainWindow.webContents.openDevTools({ mode: "detach" });
   } else {
-    mainWindow.loadURL(`${APP_URL}/dashboard`);
+    mainWindow.loadFile(path.join(__dirname, "../renderer/index.html"));
   }
-
-  // 랜딩페이지(/)로 이동 방지
-  mainWindow.webContents.on("did-navigate", (_event, url) => {
-    try {
-      const u = new URL(url);
-      if (u.origin === APP_URL && u.pathname === "/") {
-        mainWindow?.loadURL(`${APP_URL}/dashboard`);
-      }
-    } catch {}
-  });
-
-  // 랜딩페이지(/)로 이동 방지 → dashboard로 리다이렉트
-  mainWindow.webContents.on("did-navigate", (_event, url) => {
-    try {
-      const u = new URL(url);
-      if (u.origin === APP_URL && u.pathname === "/") {
-        mainWindow?.loadURL(`${APP_URL}/dashboard`);
-      }
-    } catch {}
-  });
 
   mainWindow.once("ready-to-show", () => {
     mainWindow?.show();
@@ -62,6 +40,75 @@ function createWindow() {
     mainWindow = null;
   });
 }
+
+// GitHub OAuth — 웹앱의 OAuth 플로우를 Electron 창에서 실행
+ipcMain.handle("auth:github", async () => {
+  return new Promise((resolve) => {
+    const authWin = new BrowserWindow({
+      width: 500,
+      height: 700,
+      parent: mainWindow ?? undefined,
+      modal: true,
+      show: true,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+      },
+    });
+
+    // 웹앱의 GitHub OAuth 시작 URL
+    authWin.loadURL(`${APP_URL}/api/auth/github?redirect_to=/api/auth/me`);
+
+    // OAuth 완료 후 /api/auth/me로 리다이렉트되면 유저 정보 가져옴
+    authWin.webContents.on("did-navigate", async (_event, url) => {
+      try {
+        const u = new URL(url);
+
+        // /api/auth/me에 도착하면 유저 정보를 가져온 것
+        if (u.pathname === "/api/auth/me") {
+          // 쿠키에서 세션으로 유저 정보 가져오기
+          const cookies = await authWin.webContents.session.cookies.get({ url: APP_URL });
+          const sessionCookie = cookies.find((c) => c.name === "session");
+
+          if (sessionCookie) {
+            // /api/auth/me 응답에서 유저 정보 추출
+            const response = await authWin.webContents.executeJavaScript(
+              `fetch("${APP_URL}/api/auth/me", { credentials: "include" }).then(r => r.json())`
+            );
+            authWin.close();
+            resolve(response?.user ?? null);
+            return;
+          }
+        }
+
+        // /dashboard에 도착하면 로그인 성공 → 유저 정보 가져오기
+        if (u.pathname === "/dashboard") {
+          try {
+            const response = await authWin.webContents.executeJavaScript(
+              `fetch("${APP_URL}/api/auth/me", { credentials: "include" }).then(r => r.json())`
+            );
+            authWin.close();
+            resolve(response?.user ?? null);
+          } catch {
+            authWin.close();
+            resolve(null);
+          }
+          return;
+        }
+
+        // 로그인 실패
+        if (u.pathname === "/login" && u.searchParams.has("error")) {
+          authWin.close();
+          resolve(null);
+        }
+      } catch {}
+    });
+
+    authWin.on("closed", () => {
+      resolve(null);
+    });
+  });
+});
 
 // IPC 핸들러 등록
 registerIpcHandlers();

@@ -14,7 +14,8 @@ type Lang = "en" | "ko";
 export function App() {
   const agent = useElectronAgent();
   const [view, setView] = useState<View>("login");
-  const [user, setUser] = useState<{ name: string; avatar: string } | null>(null);
+  const [user, setUser] = useState<{ name: string; avatar: string; hasFigmaToken?: boolean } | null>(null);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [lang, setLang] = useState<Lang>("ko");
   const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -48,10 +49,24 @@ export function App() {
 
   const toggleLang = () => setLang((prev) => (prev === "en" ? "ko" : "en"));
 
-  const handleLogin = () => {
-    // 시뮬레이션: 실제 인증 없이 UI 플로우만
-    setUser({ name: "User", avatar: "" });
-    setView("dashboard");
+  const handleLogin = async () => {
+    const electronAgent = window.electronAgent;
+    if (!electronAgent?.loginWithGithub) return;
+
+    setIsLoggingIn(true);
+    try {
+      const authUser = await electronAgent.loginWithGithub();
+      if (authUser) {
+        setUser({
+          name: authUser.githubUsername,
+          avatar: authUser.avatarUrl ?? "",
+          hasFigmaToken: authUser.hasFigmaToken,
+        });
+        setView("dashboard");
+      }
+    } finally {
+      setIsLoggingIn(false);
+    }
   };
 
   const handleLogout = () => {

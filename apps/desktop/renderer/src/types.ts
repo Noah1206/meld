@@ -5,8 +5,18 @@ export interface FileEntry {
   children?: FileEntry[];
 }
 
+export interface AuthUser {
+  id: string;
+  githubUsername: string;
+  email: string | null;
+  avatarUrl: string | null;
+  hasFigmaToken?: boolean;
+  plan?: string;
+}
+
 export interface ElectronAgent {
   isElectron: true;
+  loginWithGithub(): Promise<AuthUser | null>;
   openProject(): Promise<{ projectPath: string; projectName: string; fileTree: FileEntry[] } | null>;
   createProject(name: string): Promise<{ projectPath: string; projectName: string; fileTree: FileEntry[] } | null>;
   readFile(path: string): Promise<string>;

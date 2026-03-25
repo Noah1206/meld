@@ -3,6 +3,9 @@ import { contextBridge, ipcRenderer } from "electron";
 contextBridge.exposeInMainWorld("electronAgent", {
   isElectron: true,
 
+  // GitHub OAuth 로그인
+  loginWithGithub: () => ipcRenderer.invoke("auth:github"),
+
   // 프로젝트 열기 (네이티브 디렉토리 다이얼로그)
   openProject: () => ipcRenderer.invoke("agent:openProject"),
   createProject: (name: string) => ipcRenderer.invoke("agent:createProject", name),
