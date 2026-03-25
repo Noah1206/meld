@@ -276,11 +276,9 @@ export default function DownloadPage() {
 
           {/* macOS 안내 */}
           {detectedPlatform === "mac" && (
-            <div className="animate-fade-in-up animation-delay-450 mt-6 flex items-center gap-3 rounded-lg bg-[#FFFBF0] px-4 py-3 ring-1 ring-[#F0E6CC]" style={{ maxWidth: "fit-content" }}>
-              <ShieldAlert className="h-3.5 w-3.5 shrink-0 text-[#B8860B]" />
-              <p className="text-[12px] text-[#999]">
-                {t.macNoticeTitle} <code className="mx-1 rounded bg-[#F5F0E8] px-1.5 py-0.5 font-mono text-[11px] text-[#1A1A1A]">xattr -cr /Applications/Meld.app</code>
-              </p>
+            <div className="animate-fade-in-up animation-delay-450 mt-6 max-w-md">
+              <p className="mb-2 text-[12px] text-[#999]">{t.macNoticeTitle}</p>
+              <CopyCommand command="xattr -cr /Applications/Meld.app" copiedLabel={t.macNoticeCopied} />
             </div>
           )}
 
