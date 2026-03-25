@@ -41,14 +41,42 @@ function createWindow() {
   });
 }
 
-// GitHub OAuth — GitHub 직접 열고 콜백 코드를 웹앱에 전달
+// GitHub OAuth — Electron에서 직접 처리 (웹앱 서버 안 거침)
 const GITHUB_CLIENT_ID = "Ov23liqIpD09joCA9KBo";
-const GITHUB_REDIRECT_URI = `${APP_URL}/api/auth/github`;
+const GITHUB_CLIENT_SECRET = "ac98a9a1aa4e571918ec7f6385e58f00fb390c25";
+
+async function exchangeCodeForToken(code: string): Promise<string | null> {
+  try {
+    const res = await fetch("https://github.com/login/oauth/access_token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({
+        client_id: GITHUB_CLIENT_ID,
+        client_secret: GITHUB_CLIENT_SECRET,
+        code,
+      }),
+    });
+    const data = await res.json();
+    return data.access_token ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function getGitHubUser(token: string) {
+  try {
+    const res = await fetch("https://api.github.com/user", {
+      headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" },
+    });
+    return res.ok ? await res.json() : null;
+  } catch {
+    return null;
+  }
+}
 
 ipcMain.handle("auth:github", async () => {
   return new Promise((resolve) => {
-    const state = Math.random().toString(36).substring(2);
-    const authUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(GITHUB_REDIRECT_URI)}&scope=repo+user:email&state=${state}`;
+    const authUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&scope=repo+user:email`;
 
     const authWin = new BrowserWindow({
       width: 480,
@@ -56,62 +84,61 @@ ipcMain.handle("auth:github", async () => {
       parent: mainWindow ?? undefined,
       modal: true,
       show: true,
-      webPreferences: {
-        nodeIntegration: false,
-        contextIsolation: true,
-      },
+      webPreferences: { nodeIntegration: false, contextIsolation: true },
     });
 
-    // GitHub OAuth 페이지 직접 열기
     authWin.loadURL(authUrl);
 
-    // 모든 네비게이션 감지 (리다이렉트 포함)
-    authWin.webContents.on("will-redirect", async (_event, url) => {
-      try {
-        const u = new URL(url);
+    // GitHub가 콜백으로 리다이렉트할 때 코드 가로채기
+    authWin.webContents.on("will-redirect", async (event, url) => {
+      const u = new URL(url);
+      const code = u.searchParams.get("code");
 
-        // 웹앱 콜백으로 돌아오면 → 처리 완료 대기 → /dashboard 감지
-        if (u.origin === new URL(APP_URL).origin && u.pathname === "/dashboard") {
-          setTimeout(async () => {
-            try {
-              const response = await authWin.webContents.executeJavaScript(
-                `fetch("${APP_URL}/api/auth/me", { credentials: "include" }).then(r => r.json())`
-              );
-              authWin.close();
-              resolve(response?.user ?? null);
-            } catch {
-              authWin.close();
-              resolve(null);
-            }
-          }, 500);
+      if (code) {
+        event.preventDefault();
+
+        // Node.js에서 직접 토큰 교환
+        const token = await exchangeCodeForToken(code);
+        if (!token) { authWin.close(); resolve(null); return; }
+
+        const ghUser = await getGitHubUser(token);
+        authWin.close();
+
+        if (ghUser) {
+          resolve({
+            id: String(ghUser.id),
+            githubUsername: ghUser.login,
+            email: ghUser.email,
+            avatarUrl: ghUser.avatar_url,
+          });
+        } else {
+          resolve(null);
         }
-      } catch {}
+      }
     });
 
+    // did-navigate 에서도 체크 (will-redirect가 안 잡힐 경우)
     authWin.webContents.on("did-navigate", async (_event, url) => {
       try {
         const u = new URL(url);
-        // /dashboard 도착 = 로그인 성공
-        if (u.origin === new URL(APP_URL).origin && u.pathname === "/dashboard") {
-          setTimeout(async () => {
-            try {
-              const response = await authWin.webContents.executeJavaScript(
-                `fetch("${APP_URL}/api/auth/me", { credentials: "include" }).then(r => r.json())`
-              );
-              authWin.close();
-              resolve(response?.user ?? null);
-            } catch {
-              authWin.close();
-              resolve(null);
-            }
-          }, 500);
+        const code = u.searchParams.get("code");
+        if (code && u.hostname !== "github.com") {
+          const token = await exchangeCodeForToken(code);
+          if (!token) { authWin.close(); resolve(null); return; }
+
+          const ghUser = await getGitHubUser(token);
+          authWin.close();
+          resolve(ghUser ? {
+            id: String(ghUser.id),
+            githubUsername: ghUser.login,
+            email: ghUser.email,
+            avatarUrl: ghUser.avatar_url,
+          } : null);
         }
       } catch {}
     });
 
-    authWin.on("closed", () => {
-      resolve(null);
-    });
+    authWin.on("closed", () => resolve(null));
   });
 });
 
