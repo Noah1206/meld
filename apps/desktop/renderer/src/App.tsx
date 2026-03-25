@@ -1,15 +1,22 @@
 import { useState, useEffect, useRef } from "react";
-import { FolderOpen, Loader2, Monitor, Plus, X } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import { WorkspaceLayout } from "./components/WorkspaceLayout";
 import { LocalPanel } from "./components/LocalPanel";
 import { ChatPanel } from "./components/ChatPanel";
+import { LoginPage } from "./components/LoginPage";
+import { DashboardPage } from "./components/DashboardPage";
 import { useElectronAgent } from "./hooks/useElectronAgent";
 import { useAgentStore } from "./store/agent-store";
 
+type View = "login" | "dashboard" | "project";
+type Lang = "en" | "ko";
+
 export function App() {
   const agent = useElectronAgent();
+  const [view, setView] = useState<View>("login");
+  const [user, setUser] = useState<{ name: string; avatar: string } | null>(null);
+  const [lang, setLang] = useState<Lang>("ko");
   const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
-  const [isOpening, setIsOpening] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
@@ -39,12 +46,23 @@ export function App() {
     setDevServerUrl(agent.devServerUrl);
   }, [agent.connected, agent.fileTree, agent.projectName, agent.devServerUrl, setConnected, setFileTree, setProjectName, setDevServerUrl]);
 
+  const toggleLang = () => setLang((prev) => (prev === "en" ? "ko" : "en"));
+
+  const handleLogin = () => {
+    // 시뮬레이션: 실제 인증 없이 UI 플로우만
+    setUser({ name: "User", avatar: "" });
+    setView("dashboard");
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    setView("login");
+  };
+
   const handleOpenProject = async () => {
-    setIsOpening(true);
-    try {
-      await agent.openProject();
-    } finally {
-      setIsOpening(false);
+    const success = await agent.openProject();
+    if (success) {
+      setView("project");
     }
   };
 
@@ -52,62 +70,56 @@ export function App() {
     if (!newProjectName.trim()) return;
     setIsCreating(true);
     try {
-      await agent.createProject(newProjectName.trim());
-      setShowCreateModal(false);
-      setNewProjectName("");
+      const success = await agent.createProject(newProjectName.trim());
+      if (success) {
+        setShowCreateModal(false);
+        setNewProjectName("");
+        setView("project");
+      }
     } finally {
       setIsCreating(false);
     }
   };
 
-  // 프로젝트 미선택: 선택 UI
-  if (!agent.connected) {
+  const handleBackToDashboard = () => {
+    setView("dashboard");
+  };
+
+  // -- 로그인 뷰 --
+  if (view === "login") {
     return (
-      <div className="flex h-screen flex-col items-center justify-center bg-white">
-        <div className="w-full max-w-md space-y-6 px-6 text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#F7F7F5]">
-            <Monitor className="h-7 w-7 text-[#787774]" />
-          </div>
-          <div>
-            <h1 className="text-[20px] font-bold text-[#1A1A1A]">프로젝트 열기</h1>
-            <p className="mt-1.5 text-[13px] text-[#787774]">기존 프로젝트를 열거나 새 프로젝트를 만드세요.</p>
-          </div>
+      <LoginPage
+        onLogin={handleLogin}
+        lang={lang}
+        onToggleLang={toggleLang}
+      />
+    );
+  }
 
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={handleOpenProject}
-              disabled={isOpening}
-              className="flex flex-col items-center gap-3 rounded-2xl border border-black/[0.08] p-6 transition-all hover:border-black/[0.15] hover:bg-[#FAFAFA] active:scale-[0.98] disabled:opacity-50"
-            >
-              {isOpening ? (
-                <Loader2 className="h-6 w-6 animate-spin text-[#787774]" />
-              ) : (
-                <FolderOpen className="h-6 w-6 text-[#787774]" />
-              )}
-              <span className="text-[14px] font-semibold text-[#1A1A1A]">
-                {isOpening ? "폴더 선택 중..." : "기존 폴더 열기"}
-              </span>
-            </button>
-
-            <button
-              onClick={() => {
-                setShowCreateModal(true);
-                setTimeout(() => nameInputRef.current?.focus(), 100);
-              }}
-              className="flex flex-col items-center gap-3 rounded-2xl border border-black/[0.08] p-6 transition-all hover:border-black/[0.15] hover:bg-[#FAFAFA] active:scale-[0.98]"
-            >
-              <Plus className="h-6 w-6 text-[#787774]" />
-              <span className="text-[14px] font-semibold text-[#1A1A1A]">새 프로젝트 만들기</span>
-            </button>
-          </div>
-        </div>
+  // -- 대시보드 뷰 --
+  if (view === "dashboard" && user) {
+    return (
+      <>
+        <DashboardPage
+          user={user}
+          onOpenProject={handleOpenProject}
+          onCreateProject={() => {
+            setShowCreateModal(true);
+            setTimeout(() => nameInputRef.current?.focus(), 100);
+          }}
+          onLogout={handleLogout}
+          lang={lang}
+          onToggleLang={toggleLang}
+        />
 
         {/* 새 프로젝트 생성 모달 */}
         {showCreateModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
             <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
               <div className="flex items-center justify-between mb-5">
-                <h2 className="text-[16px] font-bold text-[#1A1A1A]">새 프로젝트 만들기</h2>
+                <h2 className="text-[16px] font-bold text-[#1A1A1A]">
+                  {lang === "ko" ? "새 프로젝트 만들기" : "Create New Project"}
+                </h2>
                 <button
                   onClick={() => { setShowCreateModal(false); setNewProjectName(""); }}
                   className="rounded-lg p-1.5 text-[#B4B4B0] hover:bg-[#F5F5F4] hover:text-[#787774]"
@@ -116,7 +128,9 @@ export function App() {
                 </button>
               </div>
 
-              <label className="block text-[12px] font-medium text-[#787774] mb-2">프로젝트 이름</label>
+              <label className="block text-[12px] font-medium text-[#787774] mb-2">
+                {lang === "ko" ? "프로젝트 이름" : "Project Name"}
+              </label>
               <input
                 ref={nameInputRef}
                 type="text"
@@ -132,7 +146,7 @@ export function App() {
                   onClick={() => { setShowCreateModal(false); setNewProjectName(""); }}
                   className="flex-1 rounded-xl border border-black/[0.08] px-4 py-3 text-[14px] font-semibold text-[#787774] transition-all hover:bg-[#FAFAFA]"
                 >
-                  취소
+                  {lang === "ko" ? "취소" : "Cancel"}
                 </button>
                 <button
                   onClick={handleCreateProject}
@@ -140,21 +154,47 @@ export function App() {
                   className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-[#1A1A1A] px-4 py-3 text-[14px] font-semibold text-white transition-all hover:bg-[#333] active:scale-[0.98] disabled:opacity-40"
                 >
                   {isCreating && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                  {isCreating ? "생성 중..." : "위치 선택 후 생성"}
+                  {isCreating
+                    ? (lang === "ko" ? "생성 중..." : "Creating...")
+                    : (lang === "ko" ? "위치 선택 후 생성" : "Choose Location & Create")
+                  }
                 </button>
               </div>
             </div>
           </div>
         )}
-      </div>
+      </>
     );
   }
 
-  // 워크스페이스 뷰
+  // -- 프로젝트(워크스페이스) 뷰 --
+  // agent.connected가 false인데 view가 project인 경우 대시보드로 복귀
+  if (!agent.connected && view === "project") {
+    return (
+      <>
+        {user ? (
+          <DashboardPage
+            user={user}
+            onOpenProject={handleOpenProject}
+            onCreateProject={() => {
+              setShowCreateModal(true);
+              setTimeout(() => nameInputRef.current?.focus(), 100);
+            }}
+            onLogout={handleLogout}
+            lang={lang}
+            onToggleLang={toggleLang}
+          />
+        ) : (
+          <LoginPage onLogin={handleLogin} lang={lang} onToggleLang={toggleLang} />
+        )}
+      </>
+    );
+  }
+
   return (
     <WorkspaceLayout
-      projectName={agent.projectName ?? "프로젝트"}
-      onBack={() => window.location.reload()}
+      projectName={agent.projectName ?? (lang === "ko" ? "프로젝트" : "Project")}
+      onBack={handleBackToDashboard}
       headerActions={
         <div className="flex items-center gap-2">
           <div className="h-2 w-2 rounded-full bg-green-500" />
