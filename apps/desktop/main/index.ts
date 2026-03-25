@@ -86,20 +86,21 @@ function createWindow() {
   });
 }
 
-// GitHub OAuth — 시스템 브라우저에서 로그인, meld:// 프로토콜로 콜백
+// GitHub OAuth — 시스템 브라우저에서 로그인 후 meld:// 프로토콜로 유저 정보 수신
 ipcMain.handle("auth:github", async () => {
   return new Promise((resolve) => {
     authResolve = resolve;
-    // 시스템 브라우저에서 웹앱의 OAuth 시작 (desktop=true 파라미터)
-    shell.openExternal(`${APP_URL}/api/auth/github?desktop=true`);
 
-    // 30초 타임아웃
+    // 1. 시스템 브라우저에서 일반 GitHub 로그인 (redirect_to로 데스크톱 엔드포인트 지정)
+    shell.openExternal(`${APP_URL}/api/auth/github?redirect_to=/api/auth/desktop`);
+
+    // 60초 타임아웃
     setTimeout(() => {
       if (authResolve === resolve) {
         authResolve = null;
         resolve(null);
       }
-    }, 30000);
+    }, 60000);
   });
 });
 
