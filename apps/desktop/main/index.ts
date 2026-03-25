@@ -1,21 +1,10 @@
-import { app, BrowserWindow, net } from "electron";
+import { app, BrowserWindow } from "electron";
 import * as path from "node:path";
 import { registerIpcHandlers, cleanup as cleanupIpc } from "./ipc-handlers.js";
 import { cleanup as cleanupDevServer } from "./dev-server.js";
 
 const APP_URL = "https://meld-psi.vercel.app";
 let mainWindow: BrowserWindow | null = null;
-
-// 인터넷 연결 확인
-function checkOnline(): Promise<boolean> {
-  return new Promise((resolve) => {
-    const request = net.request(APP_URL);
-    request.on("response", () => resolve(true));
-    request.on("error", () => resolve(false));
-    setTimeout(() => resolve(false), 3000);
-    request.end();
-  });
-}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -40,15 +29,7 @@ function createWindow() {
     mainWindow.loadURL("http://localhost:3000/dashboard");
     mainWindow.webContents.openDevTools({ mode: "detach" });
   } else {
-    // 온라인: 웹앱 로드 (로그인, 대시보드, Figma 등 풀 기능)
-    // 오프라인: 로컬 렌더러 로드 (로컬 프로젝트 편집만)
-    checkOnline().then((online) => {
-      if (online) {
-        mainWindow?.loadURL(`${APP_URL}/dashboard`);
-      } else {
-        mainWindow?.loadFile(path.join(__dirname, "../renderer/index.html"));
-      }
-    });
+    mainWindow.loadURL(`${APP_URL}/dashboard`);
   }
 
   // 랜딩페이지(/)로 이동 방지 → dashboard로 리다이렉트
