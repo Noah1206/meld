@@ -83,9 +83,18 @@ export async function GET(req: NextRequest) {
         avatarUrl: githubUser.avatar_url,
         accessToken,
       }));
-      const res = Response.redirect(`meld://auth?user=${userInfo}`);
-      res.headers.append("Set-Cookie", "desktop_auth=; Path=/; HttpOnly; Max-Age=0");
-      return res;
+      const meldUrl = `meld://auth?user=${userInfo}`;
+      // Response.redirect는 커스텀 프로토콜 미지원 → HTML로 리다이렉트
+      return new Response(
+        `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Meld</title></head><body style="background:#fff;display:flex;align-items:center;justify-content:center;height:100vh;font-family:system-ui"><div style="text-align:center"><p style="font-size:16px;color:#1A1A1A;font-weight:600">로그인 성공!</p><p style="font-size:13px;color:#787774;margin-top:8px">Meld 앱으로 돌아가는 중...</p></div><script>window.location.href="${meldUrl}";</script></body></html>`,
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "text/html; charset=utf-8",
+            "Set-Cookie": "desktop_auth=; Path=/; HttpOnly; Max-Age=0",
+          },
+        }
+      );
     }
 
     const redirectTo = redirectMatch ? decodeURIComponent(redirectMatch[1]) : "/dashboard";
@@ -97,7 +106,10 @@ export async function GET(req: NextRequest) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://meld-psi.vercel.app";
     const cookieHeader = req.headers.get("cookie") ?? "";
     if (cookieHeader.includes("desktop_auth")) {
-      return Response.redirect("meld://auth?error=github_auth_failed");
+      return new Response(
+        `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body><script>window.location.href="meld://auth?error=github_auth_failed";</script></body></html>`,
+        { status: 200, headers: { "Content-Type": "text/html; charset=utf-8", "Set-Cookie": "desktop_auth=; Path=/; HttpOnly; Max-Age=0" } }
+      );
     }
     return Response.redirect(
       `${appUrl}/login?error=github_auth_failed`
