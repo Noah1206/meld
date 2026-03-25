@@ -597,20 +597,21 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className={`animate-fade-in min-h-screen bg-white ${platform === "desktop" ? "pl-20" : ""}`}>
-      {/* 헤더 — 데스크톱 앱에서는 드래그 가능 */}
-      <header
-        className="bg-white/80 backdrop-blur-xl"
-        style={platform === "desktop" ? { WebkitAppRegion: "drag" } as React.CSSProperties : undefined}
-      >
+    <div className="animate-fade-in min-h-screen bg-white">
+      {/* 데스크톱: 트래픽 라이트 영역 (빈 줄) */}
+      {platform === "desktop" && (
+        <div className="h-10 shrink-0 bg-white" style={{ WebkitAppRegion: "drag" } as React.CSSProperties} />
+      )}
+      {/* 헤더 */}
+      <header className="bg-white/80 backdrop-blur-xl">
         <div className="flex items-center justify-between px-6 py-4">
-          <Link href="/" className="flex items-center gap-2" style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}>
+          <Link href="/" className="flex items-center gap-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1A1A1A]">
               <Blend className="h-3.5 w-3.5 text-white" />
             </div>
             <span className="text-[16px] font-semibold text-[#1A1A1A]">Meld</span>
           </Link>
-          <div className="relative flex items-center gap-3" style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}>
+          <div className="relative flex items-center gap-3">
             {user && (
               <ProfilePopover user={user} logout={logout} />
             )}
