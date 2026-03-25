@@ -7,8 +7,9 @@
   "scripts": {
     "dev": "tsup --watch & electron .",
     "build": "tsup",
-    "build:desktop": "tsup && electron-builder --publish never",
-    "release": "tsup && electron-builder --publish always"
+    "build:renderer": "cd renderer && npm run build",
+    "build:desktop": "tsup && cd renderer && npm run build && cd .. && electron-builder --publish never",
+    "release": "tsup && cd renderer && npm run build && cd .. && electron-builder --publish always"
   },
   "dependencies": {
     "@figma-code-bridge/agent": "workspace:*",
