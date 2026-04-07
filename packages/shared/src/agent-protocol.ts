@@ -1,4 +1,4 @@
-// Agent ↔ 웹앱 WebSocket 프로토콜 타입 정의
+// Agent ↔ webapp WebSocket protocol type definitions
 
 export interface AgentMessage {
   type: string;
@@ -6,15 +6,15 @@ export interface AgentMessage {
   payload: unknown;
 }
 
-// 파일 트리 엔트리
+// File tree entry
 export interface FileEntry {
-  path: string; // 상대 경로 "src/components/Button.tsx"
+  path: string; // Relative path e.g. "src/components/Button.tsx"
   type: "file" | "dir";
   size?: number;
   children?: FileEntry[];
 }
 
-// --- 에이전트 → 웹앱 메시지 ---
+// --- Agent → webapp messages ---
 
 export interface ConnectedMessage extends AgentMessage {
   type: "connected";
@@ -64,7 +64,7 @@ export interface DevServerMessage extends AgentMessage {
   };
 }
 
-// --- 웹앱 → 에이전트 메시지 ---
+// --- Webapp → agent messages ---
 
 export interface ReadFileMessage extends AgentMessage {
   type: "readFile";
@@ -81,7 +81,7 @@ export interface WriteFileMessage extends AgentMessage {
   };
 }
 
-// 모든 에이전트 메시지 유니온
+// All agent message union
 export type AgentToWebMessage =
   | ConnectedMessage
   | FileTreeMessage

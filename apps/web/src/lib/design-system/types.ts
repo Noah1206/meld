@@ -4,21 +4,23 @@ export type ThemeMode = "light" | "dark";
 
 export interface DesignTypography {
   fontFamily: string;
-  headingFamily?: string; // 제목 전용 폰트 (없으면 fontFamily 사용)
+  headingFamily?: string; // Heading font (falls back to fontFamily if absent)
   baseFontSize: number; // px
-  scale: number; // 타이포그래피 스케일 비율 (1.2 = minor third, 1.25 = major third)
+  scale: number; // Typography scale ratio (1.2 = minor third, 1.25 = major third)
 }
 
 export interface DesignColors {
-  seedColor: string; // hex
+  seedColor: string; // hex (primary seed)
+  secondarySeed: string; // hex (secondary seed)
+  tertiarySeed: string; // hex (tertiary seed)
   primary: ColorShades;
   secondary: ColorShades;
   tertiary: ColorShades;
 }
 
 export interface DesignSpacing {
-  baseUnit: number; // px (기본 4)
-  scale: number[]; // 배수 [0, 1, 2, 3, 4, 5, 6, 8, 10, 12, 16]
+  baseUnit: number; // px (default 4)
+  scale: number[]; // multipliers [0, 1, 2, 3, 4, 5, 6, 8, 10, 12, 16]
 }
 
 export interface DesignRadius {
@@ -38,7 +40,7 @@ export interface DesignSystem {
   typography: DesignTypography;
   spacing: DesignSpacing;
   radius: DesignRadius;
-  customDesignMd: string; // 유저가 직접 작성한 DESIGN.md 내용
+  customDesignMd: string; // User-written DESIGN.md content
   createdAt: string;
   updatedAt: string;
 }

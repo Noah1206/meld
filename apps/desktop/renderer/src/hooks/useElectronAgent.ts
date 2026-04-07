@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import type { FileEntry } from "../types";
+import { useAgentStore } from "../store/agent-store";
 
 interface ElectronAgentState {
   connected: boolean;
@@ -28,16 +29,42 @@ export function useElectronAgent(): UseElectronAgentReturn {
     devServerFramework: null,
   });
 
-  // 이벤트 리스너 등록
+  // Track selectedFilePath from store (ref to avoid stale closure)
+  const selectedFilePathRef = useRef<string | null>(null);
+  useEffect(() => {
+    return useAgentStore.subscribe((s) => {
+      selectedFilePathRef.current = s.selectedFilePath;
+    });
+  }, []);
+
+  const setLastWrite = useAgentStore((s) => s.setLastWrite);
+  const setLastChangedFile = useAgentStore((s) => s.setLastChangedFile);
+
+  // Register event listeners
   useEffect(() => {
     const agent = window.electronAgent;
     if (!agent) return;
 
-    const cleanupFileChanged = agent.onFileChanged(({ path, changeType }) => {
-      // 파일 변경 시 트리 새로고침
-      agent.refreshTree().then((fileTree) => {
-        setState((prev) => ({ ...prev, fileTree }));
-      });
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+    const cleanupFileChanged = agent.onFileChanged((data: { path: string; changeType: string }) => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => {
+        // 1) Refresh file tree
+        agent.refreshTree().then((fileTree) => {
+          setState((prev) => ({ ...prev, fileTree }));
+        });
+
+        // 2) Record changed file path in store -> PreviewFrame refreshes
+        setLastChangedFile(data.path);
+        setLastWrite();
+
+        // 3) Auto-reload if the changed file is the currently selected file (for editor refresh)
+        const currentSelected = selectedFilePathRef.current;
+        if (currentSelected && data.path && currentSelected.endsWith(data.path)) {
+          // Editor component auto-detects via lastWriteTimestamp change
+          // Dispatch additional actions here if needed
+        }
+      }, 500);
     });
 
     const cleanupDevServer = agent.onDevServerReady(({ url, framework }) => {
@@ -52,15 +79,15 @@ export function useElectronAgent(): UseElectronAgentReturn {
       cleanupFileChanged();
       cleanupDevServer();
     };
-  }, []);
+  }, [setLastWrite, setLastChangedFile]);
 
-  // 프로젝트 열기 (네이티브 디렉토리 다이얼로그)
+  // Open project (native directory dialog)
   const openProject = useCallback(async (): Promise<boolean> => {
     const agent = window.electronAgent;
     if (!agent) return false;
 
     const result = await agent.openProject();
-    if (!result) return false; // 사용자가 취소
+    if (!result) return false; // User cancelled
 
     setState((prev) => ({
       ...prev,
@@ -70,13 +97,13 @@ export function useElectronAgent(): UseElectronAgentReturn {
       projectPath: result.projectPath,
     }));
 
-    // dev server 시작
-    agent.startDevServer(result.projectPath);
+    // Dev server is already started in ipc-handlers' agent:openProject
+    // Calling it again here causes a race condition that kills the first process
 
     return true;
   }, []);
 
-  // 새 프로젝트 생성
+  // Create new project
   const createProject = useCallback(async (name: string): Promise<boolean> => {
     const agent = window.electronAgent;
     if (!agent?.createProject) return false;
@@ -97,13 +124,13 @@ export function useElectronAgent(): UseElectronAgentReturn {
 
   const readFile = useCallback(async (filePath: string): Promise<string> => {
     const agent = window.electronAgent;
-    if (!agent) throw new Error("Electron 환경이 아닙니다");
+    if (!agent) throw new Error("Not in Electron environment");
     return agent.readFile(filePath);
   }, []);
 
   const writeFile = useCallback(async (filePath: string, content: string): Promise<boolean> => {
     const agent = window.electronAgent;
-    if (!agent) throw new Error("Electron 환경이 아닙니다");
+    if (!agent) throw new Error("Not in Electron environment");
     return agent.writeFile(filePath, content);
   }, []);
 

@@ -1,14 +1,14 @@
 import { NextRequest } from "next/server";
-import { getSessionFromCookie } from "@/lib/auth/session";
+import { getSession } from "@/lib/auth/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-// GET /api/auth/desktop — 로그인된 유저 정보를 meld:// 프로토콜로 전달
+// GET /api/auth/desktop — Deliver logged-in user info via meld:// protocol
 export async function GET(req: NextRequest) {
   try {
-    const session = await getSessionFromCookie();
+    const session = await getSession();
     if (!session) {
       return new Response(
-        page("로그인이 필요합니다", "먼저 GitHub로 로그인한 후 이 페이지를 다시 열어주세요.", null),
+        page("Login required", "Please log in with GitHub first, then reopen this page.", null),
         { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } }
       );
     }
@@ -22,10 +22,15 @@ export async function GET(req: NextRequest) {
 
     if (!user) {
       return new Response(
-        page("유저 정보를 찾을 수 없습니다", "다시 로그인해주세요.", null),
+        page("User not found", "Please log in again.", null),
         { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } }
       );
     }
+
+    // Read remember_me preference from cookie
+    const cookieHeader = req.headers.get("cookie") ?? "";
+    const rememberMatch = cookieHeader.match(/remember_me=([^;]*)/);
+    const rememberMe = rememberMatch ? rememberMatch[1] === "true" : false;
 
     const userInfo = encodeURIComponent(JSON.stringify({
       id: user.id,
@@ -35,15 +40,15 @@ export async function GET(req: NextRequest) {
       hasFigmaToken: !!user.figma_access_token,
     }));
 
-    const meldUrl = `meld://auth?user=${userInfo}`;
+    const meldUrl = `meld://auth?user=${userInfo}&remember_me=${rememberMe}`;
 
     return new Response(
-      page("로그인 성공!", "Meld 앱으로 돌아갑니다...", meldUrl),
+      page("Login successful!", "Returning to the Meld app...", meldUrl),
       { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } }
     );
   } catch {
     return new Response(
-      page("오류가 발생했습니다", "다시 시도해주세요.", null),
+      page("An error occurred", "Please try again.", null),
       { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } }
     );
   }
@@ -60,7 +65,7 @@ function page(title: string, desc: string, meldUrl: string | null) {
   <p style="font-size:18px;color:#1A1A1A;font-weight:600;margin:0">${title}</p>
   <p style="font-size:13px;color:#787774;margin:8px 0 0">${desc}</p>
   ${meldUrl ? `
-  <a href="${meldUrl}" style="display:inline-block;margin-top:24px;background:#1A1A1A;color:white;padding:12px 32px;border-radius:12px;font-size:14px;font-weight:600;text-decoration:none">Meld 앱 열기</a>
+  <a href="${meldUrl}" style="display:inline-block;margin-top:24px;background:#1A1A1A;color:white;padding:12px 32px;border-radius:12px;font-size:14px;font-weight:600;text-decoration:none">Open Meld App</a>
   <script>setTimeout(()=>{window.location.href="${meldUrl}"},500);</script>
   ` : ""}
 </div>

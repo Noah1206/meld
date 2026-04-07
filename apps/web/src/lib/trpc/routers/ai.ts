@@ -2,6 +2,7 @@ import { router, protectedProcedure, z } from "../server";
 import { buildCodeEditPrompt } from "@/lib/ai/prompts";
 import { createProvider } from "@/lib/ai/provider";
 import { Octokit } from "@octokit/rest";
+import { getClaudeTools, getFidelityTools, gatherContextMesh, contextMeshToPrompt } from "@/lib/mcp";
 
 export const aiRouter = router({
   editCode: protectedProcedure
@@ -18,10 +19,10 @@ export const aiRouter = router({
         githubBranch: z.string().optional(),
         provider: z.enum(["claude", "chatgpt", "gemini"]).default("claude"),
         currentCode: z.string().optional(),
-        // Phase 4: 프레임워크/의존성 컨텍스트
+        // Phase 4: Framework/dependency context
         framework: z.string().optional(),
         dependencies: z.array(z.string()).optional(),
-        // 디자인 시스템 컨텍스트 (DESIGN.md)
+        // Design system context (DESIGN.md)
         designSystemMd: z.string().optional(),
       })
     )
@@ -47,7 +48,7 @@ export const aiRouter = router({
         ? { framework, dependencies, designSystemMd }
         : undefined;
 
-      // 로컬 모드: currentCode가 직접 전달된 경우
+      // Local mode: currentCode provided directly
       if (providedCode !== undefined && filePath) {
         const { system, user } = buildCodeEditPrompt(
           figmaNodeName,
@@ -67,18 +68,18 @@ export const aiRouter = router({
             filePath,
             original: providedCode,
             modified: response,
-            explanation: "AI 응답을 파싱할 수 없어 원본 응답을 반환합니다.",
+            explanation: "Could not parse AI response; returning raw output.",
           };
         }
       }
 
-      // GitHub 연결이 없으면 AI에게 직접 코드 생성 요청
+      // No GitHub connection — ask AI to generate code directly
       if (!githubOwner || !githubRepo || !filePath) {
         const { system, user } = buildCodeEditPrompt(
           figmaNodeName,
           figmaNodeType,
           command,
-          "// 파일이 아직 연결되지 않았습니다",
+          "// File not yet connected",
           filePath ?? "components/Unknown.tsx",
           promptContext,
         );
@@ -92,12 +93,12 @@ export const aiRouter = router({
             filePath: filePath ?? "",
             original: "",
             modified: response,
-            explanation: "AI 응답을 파싱할 수 없어 원본 응답을 반환합니다.",
+            explanation: "Could not parse AI response; returning raw output.",
           };
         }
       }
 
-      // GitHub에서 파일 내용 가져오기
+      // Fetch file content from GitHub
       const octokit = new Octokit({ auth: ctx.user.githubAccessToken });
       let currentCode = "";
 
@@ -113,10 +114,10 @@ export const aiRouter = router({
           currentCode = Buffer.from(data.content, "base64").toString("utf-8");
         }
       } catch {
-        currentCode = "// 파일을 찾을 수 없습니다";
+        currentCode = "// File not found";
       }
 
-      // GitHub 모드: package.json에서 프레임워크/의존성 자동 추출
+      // GitHub mode: auto-detect framework/dependencies from package.json
       let ghContext = promptContext;
       if (!ghContext) {
         try {
@@ -138,7 +139,7 @@ export const aiRouter = router({
             else if (allDeps["@angular/core"]) detectedFramework = "Angular";
             else if (allDeps["svelte"]) detectedFramework = "Svelte";
 
-            // 주요 UI/유틸 라이브러리만 추출 (너무 많으면 토큰 낭비)
+            // Extract only key UI/utility libraries (too many wastes tokens)
             const keyDeps = depNames.filter(d =>
               !d.startsWith("@types/") && !d.startsWith("eslint")
             ).slice(0, 20);
@@ -146,11 +147,11 @@ export const aiRouter = router({
             ghContext = { framework: detectedFramework, dependencies: keyDeps, designSystemMd };
           }
         } catch {
-          // package.json을 못 읽으면 무시
+          // Ignore if package.json is unreadable
         }
       }
 
-      // LLM API 호출
+      // LLM API call — MCP Context Mesh + tool_use
       const { system, user } = buildCodeEditPrompt(
         figmaNodeName,
         figmaNodeType,
@@ -160,7 +161,29 @@ export const aiRouter = router({
         ghContext,
       );
 
-      const response = await llm.call(system, user);
+      // #3 Context Mesh: Gather context from all connected MCP servers
+      const mesh = await gatherContextMesh(ctx.user.id, {
+        ...(githubOwner && githubRepo ? { github: `${githubOwner}/${githubRepo}` } : {}),
+      });
+      const meshContext = contextMeshToPrompt(mesh);
+      const enrichedSystem = meshContext
+        ? `${system}\n\n${meshContext}`
+        : system;
+
+      // Merge MCP + Fidelity tools
+      const mcpTools = getClaudeTools(ctx.user.id);
+      for (const ft of getFidelityTools()) {
+        mcpTools.push({
+          name: ft.name,
+          description: ft.description,
+          input_schema: { type: "object", properties: ft.inputSchema.properties, required: ft.inputSchema.required },
+        });
+      }
+
+      const hasMCPTools = mcpTools.length > 0 && llm.callWithTools;
+      const response = hasMCPTools
+        ? await llm.callWithTools!(enrichedSystem, user, mcpTools, ctx.user.id)
+        : await llm.call(enrichedSystem, user);
 
       try {
         return JSON.parse(response);
@@ -169,7 +192,7 @@ export const aiRouter = router({
           filePath,
           original: "",
           modified: response,
-          explanation: "AI 응답을 파싱할 수 없어 원본 응답을 반환합니다.",
+          explanation: "Could not parse AI response; returning raw output.",
         };
       }
     }),

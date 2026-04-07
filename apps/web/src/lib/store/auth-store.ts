@@ -7,6 +7,7 @@ interface AuthUser {
   avatarUrl: string | null;
   hasFigmaToken: boolean;
   plan: "free" | "pro" | "unlimited";
+  connectedServices?: Record<string, boolean>;
 }
 
 interface AuthStore {

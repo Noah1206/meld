@@ -30,10 +30,10 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 export function scanProject(rootDir: string): FileEntry[] {
   const ig = ignore();
 
-  // 기본 무시 패턴
+  // Default ignore patterns
   ig.add(DEFAULT_IGNORE);
 
-  // .gitignore 로드
+  // Load .gitignore
   const gitignorePath = path.join(rootDir, ".gitignore");
   if (fs.existsSync(gitignorePath)) {
     const content = fs.readFileSync(gitignorePath, "utf-8");
@@ -61,12 +61,12 @@ function scanDir(
     const fullPath = path.join(dir, item.name);
     const relativePath = path.relative(rootDir, fullPath);
 
-    // .gitignore 체크
+    // Check .gitignore
     if (ig.ignores(relativePath)) continue;
 
     if (item.isDirectory()) {
       const children = scanDir(fullPath, rootDir, ig);
-      // 빈 디렉토리 제외
+      // Skip empty directories
       if (children.length > 0) {
         entries.push({
           path: relativePath,
@@ -78,19 +78,25 @@ function scanDir(
       const ext = path.extname(item.name).toLowerCase();
       if (!SUPPORTED_EXTENSIONS.has(ext)) continue;
 
-      const stat = fs.statSync(fullPath);
-      if (stat.size > MAX_FILE_SIZE) continue;
+      // Size check with try-catch (prevents EMFILE errors)
+      let size: number | undefined;
+      try {
+        size = fs.statSync(fullPath).size;
+        if (size > MAX_FILE_SIZE) continue;
+      } catch {
+        // On EMFILE or other errors, add without size
+      }
 
       entries.push({
         path: relativePath,
         type: "file",
-        size: stat.size,
+        size,
       });
     }
   }
 
   return entries.sort((a, b) => {
-    // 디렉토리 먼저
+    // Directories first
     if (a.type !== b.type) return a.type === "dir" ? -1 : 1;
     return a.path.localeCompare(b.path);
   });

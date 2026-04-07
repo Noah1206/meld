@@ -34,7 +34,7 @@
       animation: blink 0.6s step-end infinite;
     }
 
-    /* 빨려들어가는 애니메이션 */
+    /* Collapse animation */
     body.collapse .text {
       animation: collapse 0.6s cubic-bezier(0.4, 0, 1, 1) forwards;
     }
@@ -78,14 +78,14 @@
         i++;
         setTimeout(type, 120);
       } else {
-        // 타이핑 끝 → 잠시 멈춤 → 빨려들어감
+        // Typing done → brief pause → collapse
         setTimeout(() => {
           document.body.classList.add("collapse");
         }, 600);
       }
     }
 
-    // 살짝 대기 후 타이핑 시작
+    // Brief delay before starting to type
     setTimeout(type, 400);
   </script>
 </body>

@@ -1,7 +1,7 @@
 import { getSession } from "@/lib/auth/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-// GET /api/auth/me → 현재 로그인 사용자 정보
+// GET /api/auth/me → Current logged-in user info
 export async function GET() {
   const session = await getSession();
   if (!session) {
@@ -27,6 +27,11 @@ export async function GET() {
       avatarUrl: user.avatar_url,
       hasFigmaToken: !!user.figma_access_token,
       plan: user.plan,
+      // For MCP: which service tokens are available
+      connectedServices: {
+        github: true, // Always available via GitHub login
+        figma: !!user.figma_access_token,
+      },
     },
   });
 }

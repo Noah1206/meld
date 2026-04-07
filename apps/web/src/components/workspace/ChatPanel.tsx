@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { MessageSquare, Info, Code, GitBranch, Eye, Palette, FolderOpen, Loader2 } from "lucide-react";
 import { ChatMessages } from "@/components/chat/ChatMessages";
 import { ChatInput } from "@/components/chat/ChatInput";
+import { useChatStore } from "@/lib/store/chat-store";
 import { NodeProperties } from "@/components/figma-viewer/NodeProperties";
 import { DiffViewer } from "@/components/diff-viewer/DiffViewer";
 import { CommitDialog } from "@/components/git-panel/CommitDialog";
@@ -24,7 +25,7 @@ export function ChatPanel({ projectId, githubOwner, githubRepo, mode = "cloud" }
   const isLocal = mode === "local";
   const isSandbox = projectId === "sandbox";
 
-  // Files 탭용 state (sandbox 모드)
+  // Files tab state (sandbox mode)
   const fileTree = useAgentStore((s) => s.fileTree);
   const selectedFilePath = useAgentStore((s) => s.selectedFilePath);
   const setSelectedFilePath = useAgentStore((s) => s.setSelectedFilePath);
@@ -41,7 +42,7 @@ export function ChatPanel({ projectId, githubOwner, githubRepo, mode = "cloud" }
         const content = await readFileFn(path);
         setFileContent(content);
       } catch {
-        setFileContent("// 파일을 읽을 수 없습니다");
+        setFileContent("// Unable to read file");
       } finally {
         setIsLoadingFile(false);
       }
@@ -67,16 +68,17 @@ export function ChatPanel({ projectId, githubOwner, githubRepo, mode = "cloud" }
     : [
         { id: "chat", label: "Chat", icon: <MessageSquare className="h-3.5 w-3.5" /> },
         { id: "design", label: "Design", icon: <Palette className="h-3.5 w-3.5" /> },
-        { id: "properties", label: "속성", icon: <Info className="h-3.5 w-3.5" /> },
+        { id: "properties", label: "Properties", icon: <Info className="h-3.5 w-3.5" /> },
         { id: "diff", label: "Diff", icon: <Code className="h-3.5 w-3.5" /> },
         { id: "git", label: "Git", icon: <GitBranch className="h-3.5 w-3.5" /> },
       ];
 
   const [activeTab, setActiveTab] = useState<TabId>("chat");
+  const inputPosition = useChatStore((s) => s.inputPosition);
 
   return (
     <div className="flex h-full flex-col">
-      {/* 탭 바 */}
+      {/* Tab bar */}
       <div className="flex border-b border-[#E0E0DC]">
         {TABS.map((tab) => (
           <button
@@ -97,16 +99,25 @@ export function ChatPanel({ projectId, githubOwner, githubRepo, mode = "cloud" }
         ))}
       </div>
 
-      {/* 탭 컨텐츠 */}
+      {/* Tab content */}
       <div className="flex min-h-0 flex-1 flex-col bg-white">
         {activeTab === "chat" && (
           <div className="relative flex min-h-0 flex-1 flex-col">
+            {/* Input at top */}
+            {inputPosition === "top" && (
+              <div className="flex-shrink-0 border-b border-[#E0E0DC]">
+                <ChatInput projectId={projectId} mode={mode} />
+              </div>
+            )}
             <div className="min-h-0 flex-1 overflow-y-auto pb-4">
               <ChatMessages />
             </div>
-            <div className="flex-shrink-0 border-t border-[#E0E0DC]">
-              <ChatInput projectId={projectId} mode={mode} />
-            </div>
+            {/* Input at bottom */}
+            {inputPosition === "bottom" && (
+              <div className="flex-shrink-0 border-t border-[#E0E0DC]">
+                <ChatInput projectId={projectId} mode={mode} />
+              </div>
+            )}
           </div>
         )}
 
@@ -118,7 +129,7 @@ export function ChatPanel({ projectId, githubOwner, githubRepo, mode = "cloud" }
                   <div className="text-center">
                     <FolderOpen className="mx-auto h-5 w-5 text-[#D4D4D0]" />
                     <p className="mt-2 text-[12px] text-[#B4B4B0]">
-                      프로젝트 파일이 스캔되면 여기에 표시됩니다
+                      Project files will appear here after scanning
                     </p>
                   </div>
                 </div>
@@ -143,7 +154,7 @@ export function ChatPanel({ projectId, githubOwner, githubRepo, mode = "cloud" }
                   {isLoadingFile ? (
                     <div className="flex items-center gap-2">
                       <Loader2 className="h-3 w-3 animate-spin text-[#B4B4B0]" />
-                      <span className="text-[12px] text-[#B4B4B0]">로딩 중...</span>
+                      <span className="text-[12px] text-[#B4B4B0]">Loading...</span>
                     </div>
                   ) : (
                     <pre className="whitespace-pre-wrap text-[11px] leading-relaxed text-[#1A1A1A]">
@@ -188,7 +199,7 @@ export function ChatPanel({ projectId, githubOwner, githubRepo, mode = "cloud" }
         {activeTab === "preview" && isLocal && !isSandbox && (
           <div className="flex-1 overflow-y-auto p-4">
             <p className="text-center text-[12px] text-[#B4B4B0]">
-              좌측 패널에서 프리뷰를 확인하세요
+              Check the preview in the left panel
             </p>
           </div>
         )}

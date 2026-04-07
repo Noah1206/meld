@@ -1,4 +1,4 @@
-// Figma OAuth 설정
+// Figma OAuth configuration
 const FIGMA_AUTH_URL = "https://www.figma.com/oauth";
 const FIGMA_TOKEN_URL = "https://api.figma.com/v1/oauth/token";
 
@@ -7,25 +7,25 @@ function getFigmaConfig() {
   const clientSecret = process.env.FIGMA_CLIENT_SECRET;
   const redirectUri = process.env.FIGMA_REDIRECT_URI;
   if (!clientId || !clientSecret || !redirectUri) {
-    throw new Error("Figma OAuth 환경변수가 설정되지 않았습니다");
+    throw new Error("Figma OAuth environment variables are not configured");
   }
   return { clientId, clientSecret, redirectUri };
 }
 
-// Figma OAuth 인증 URL 생성
+// Generate Figma OAuth authorization URL
 export function getFigmaAuthUrl(state: string): string {
   const { clientId, redirectUri } = getFigmaConfig();
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: redirectUri,
-    scope: "file_content:read",
+    scope: "current_user:read,file_content:read",
     state,
     response_type: "code",
   });
   return `${FIGMA_AUTH_URL}?${params}`;
 }
 
-// Authorization code → Access token 교환
+// Exchange authorization code for access token
 export async function exchangeFigmaCode(code: string): Promise<{
   accessToken: string;
   refreshToken: string;
@@ -48,12 +48,12 @@ export async function exchangeFigmaCode(code: string): Promise<{
   });
 
   if (!res.ok) {
-    throw new Error("Figma 토큰 교환 실패");
+    throw new Error("Figma token exchange failed");
   }
 
   const data = await res.json();
   if (data.error) {
-    throw new Error(`Figma OAuth 에러: ${data.error}`);
+    throw new Error(`Figma OAuth error: ${data.error}`);
   }
 
   return {
@@ -63,7 +63,7 @@ export async function exchangeFigmaCode(code: string): Promise<{
   };
 }
 
-// Figma 토큰 갱신
+// Refresh Figma token
 export async function refreshFigmaToken(refreshToken: string): Promise<{
   accessToken: string;
   refreshToken: string;
@@ -85,7 +85,7 @@ export async function refreshFigmaToken(refreshToken: string): Promise<{
   });
 
   if (!res.ok) {
-    throw new Error("Figma 토큰 갱신 실패");
+    throw new Error("Figma token refresh failed");
   }
 
   const data = await res.json();

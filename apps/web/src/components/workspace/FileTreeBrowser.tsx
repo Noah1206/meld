@@ -1,8 +1,65 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { ChevronRight, File, Folder, Search } from "lucide-react";
+import { useState, useMemo, useCallback } from "react";
+import { ChevronRight, Search } from "lucide-react";
 import type { FileEntry } from "@figma-code-bridge/shared";
+
+// File type → icon color + emoji mapping (VSCode-inspired)
+const FILE_ICONS: Record<string, { icon: string; color: string }> = {
+  ".ts": { icon: "TS", color: "#3178C6" },
+  ".tsx": { icon: "TS", color: "#3178C6" },
+  ".js": { icon: "JS", color: "#F7DF1E" },
+  ".jsx": { icon: "JS", color: "#F7DF1E" },
+  ".json": { icon: "{}", color: "#6D9B37" },
+  ".css": { icon: "#", color: "#1572B6" },
+  ".scss": { icon: "S", color: "#CC6699" },
+  ".html": { icon: "<>", color: "#E44D26" },
+  ".md": { icon: "M", color: "#FF6B35" },
+  ".yml": { icon: "Y", color: "#CB171E" },
+  ".yaml": { icon: "Y", color: "#CB171E" },
+  ".svg": { icon: "◇", color: "#FFB13B" },
+  ".png": { icon: "▣", color: "#A259FF" },
+  ".jpg": { icon: "▣", color: "#A259FF" },
+  ".gif": { icon: "▣", color: "#A259FF" },
+  ".env": { icon: "⚙", color: "#ECD53F" },
+  ".gitignore": { icon: "◈", color: "#F05032" },
+  ".lock": { icon: "🔒", color: "#888" },
+};
+
+const FOLDER_ICONS: Record<string, { icon: string; color: string }> = {
+  src: { icon: "📂", color: "#42A5F5" },
+  app: { icon: "🌐", color: "#42A5F5" },
+  components: { icon: "🧩", color: "#7C4DFF" },
+  lib: { icon: "📚", color: "#26A69A" },
+  hooks: { icon: "🪝", color: "#FF7043" },
+  store: { icon: "🗄️", color: "#78909C" },
+  api: { icon: "⚡", color: "#FFB300" },
+  public: { icon: "🌍", color: "#66BB6A" },
+  node_modules: { icon: "📦", color: "#689F38" },
+  ".git": { icon: "◈", color: "#F05032" },
+  dist: { icon: "📦", color: "#FF8F00" },
+  build: { icon: "📦", color: "#FF8F00" },
+  pages: { icon: "📄", color: "#42A5F5" },
+  styles: { icon: "🎨", color: "#CE93D8" },
+  utils: { icon: "🔧", color: "#78909C" },
+  types: { icon: "📐", color: "#3178C6" },
+  test: { icon: "🧪", color: "#66BB6A" },
+  tests: { icon: "🧪", color: "#66BB6A" },
+  "__tests__": { icon: "🧪", color: "#66BB6A" },
+};
+
+function getFileIcon(name: string): { icon: string; color: string } {
+  const ext = name.includes(".") ? "." + name.split(".").pop()! : "";
+  // Special filenames
+  if (name === "package.json") return { icon: "{}", color: "#6D9B37" };
+  if (name === "tsconfig.json") return { icon: "TS", color: "#3178C6" };
+  if (name.startsWith(".env")) return { icon: "⚙", color: "#ECD53F" };
+  return FILE_ICONS[ext] || { icon: "📄", color: "#888" };
+}
+
+function getFolderIcon(name: string): { icon: string; color: string } {
+  return FOLDER_ICONS[name] || { icon: "📁", color: "#90A4AE" };
+}
 
 interface FileTreeBrowserProps {
   files: FileEntry[];
@@ -12,51 +69,63 @@ interface FileTreeBrowserProps {
 
 export function FileTreeBrowser({ files, selectedPath, onSelectFile }: FileTreeBrowserProps) {
   const [search, setSearch] = useState("");
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => {
+    // Auto-collapse node_modules, .git, dist, build
+    const autoCollapse = new Set<string>();
+    const walk = (entries: FileEntry[]) => {
+      for (const e of entries) {
+        const name = getFileName(e.path);
+        if (["node_modules", ".git", "dist", "build", ".next", ".turbo", ".cache"].includes(name)) {
+          autoCollapse.add(e.path);
+        }
+        if (e.children) walk(e.children);
+      }
+    };
+    walk(files);
+    return autoCollapse;
+  });
 
   const filteredFiles = useMemo(() => {
     if (!search.trim()) return null;
     const q = search.toLowerCase();
-    return flattenEntries(files).filter((e) =>
-      e.path.toLowerCase().includes(q),
-    );
+    return flattenEntries(files).filter((e) => e.path.toLowerCase().includes(q));
   }, [files, search]);
 
-  const toggleCollapse = (path: string) => {
+  const toggleCollapse = useCallback((path: string) => {
     setCollapsed((prev) => {
       const next = new Set(prev);
       if (next.has(path)) next.delete(path);
       else next.add(path);
       return next;
     });
-  };
+  }, []);
 
   if (files.length === 0) {
     return (
       <div className="flex h-full items-center justify-center p-4">
-        <p className="text-[12px] text-[#B4B4B0]">파일 트리를 로드 중...</p>
+        <p className="text-[12px] text-[#666]">Loading file tree...</p>
       </div>
     );
   }
 
   return (
     <div className="flex h-full flex-col">
-      {/* 검색 */}
-      <div className="p-2">
+      {/* Search */}
+      <div className="px-2 py-2">
         <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-[#B4B4B0]" />
+          <Search className="absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-[#555]" />
           <input
             type="text"
-            placeholder="파일 검색..."
+            placeholder="Search files..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border border-[#E0E0DC] bg-white py-1.5 pl-7 pr-2.5 text-[12px] text-[#1A1A1A] placeholder:text-[#B4B4B0] focus:border-[#C0C0BC] focus:outline-none transition-colors"
+            className="w-full rounded-lg bg-[#1E1E1E] py-1.5 pl-7 pr-2.5 text-[12px] text-[#E8E8E5] ring-1 ring-white/[0.06] placeholder:text-[#555] focus:ring-white/[0.12] focus:outline-none transition-colors"
           />
         </div>
       </div>
 
-      {/* 파일 리스트 */}
-      <div className="flex-1 overflow-y-auto py-2">
+      {/* File list */}
+      <div className="flex-1 overflow-y-auto px-1 py-1">
         {filteredFiles
           ? filteredFiles.map((entry) => (
               <FileItem
@@ -96,31 +165,30 @@ function FileItem({
 }) {
   const isSelected = selectedPath === entry.path;
   const isDir = entry.type === "dir";
+  const name = getFileName(entry.path);
+  const iconInfo = isDir ? getFolderIcon(name) : getFileIcon(name);
 
   return (
     <button
-      className={`relative flex w-full items-center gap-1.5 px-2 py-1.5 text-left text-[12px] transition-colors ${
+      className={`group relative flex w-full items-center gap-1.5 rounded-md px-1.5 py-[3px] text-left text-[12px] transition-colors ${
         isSelected
-          ? "text-[#1A1A1A]"
-          : "text-[#787774] hover:text-[#1A1A1A]"
+          ? "bg-[#37373D] text-[#E8E8E5]"
+          : "text-[#CCCCCC] hover:bg-[#2A2D2E]"
       }`}
-      style={{ paddingLeft: 8 + indent * 16 }}
+      style={{ paddingLeft: 6 + indent * 16 }}
       onClick={() => !isDir && onSelect(entry.path)}
     >
-      {isSelected && (
-        <span className="absolute left-0 top-1 bottom-1 w-[2px] rounded-full bg-[#1A1A1A]" />
-      )}
-      {isDir ? (
-        <Folder className="h-3.5 w-3.5 flex-shrink-0 text-[#787774]" />
-      ) : (
-        <File className="h-3.5 w-3.5 flex-shrink-0 text-[#B4B4B0]" />
-      )}
-      <span className="truncate">{getFileName(entry.path)}</span>
-      {!isDir && entry.size != null && (
-        <span className="ml-auto flex-shrink-0 text-[10px] text-[#B4B4B0]">
-          {formatSize(entry.size)}
-        </span>
-      )}
+      {/* Icon */}
+      <span
+        className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-[2px] text-[8px] font-bold leading-none"
+        style={{ color: iconInfo.color }}
+      >
+        {iconInfo.icon}
+      </span>
+      {/* Name */}
+      <span className={`truncate ${isDir ? "font-medium" : ""}`} style={isDir ? { color: iconInfo.color } : undefined}>
+        {name}
+      </span>
     </button>
   );
 }
@@ -149,14 +217,12 @@ function TreeEntry({
       <div className="flex items-center">
         {hasChildren && (
           <button
-            className="flex-shrink-0 px-1 text-[#B4B4B0] hover:text-[#787774]"
+            className="flex-shrink-0 px-0.5 text-[#858585] hover:text-[#CCCCCC] transition-colors"
             style={{ marginLeft: indent * 16 }}
             onClick={() => onToggle(entry.path)}
           >
             <ChevronRight
-              className={`h-3 w-3 transition-transform duration-150 ${
-                isCollapsed ? "" : "rotate-90"
-              }`}
+              className={`h-3 w-3 transition-transform duration-150 ${isCollapsed ? "" : "rotate-90"}`}
             />
           </button>
         )}
@@ -187,22 +253,12 @@ function TreeEntry({
 function flattenEntries(entries: FileEntry[]): FileEntry[] {
   const result: FileEntry[] = [];
   for (const entry of entries) {
-    if (entry.type === "file") {
-      result.push(entry);
-    }
-    if (entry.children) {
-      result.push(...flattenEntries(entry.children));
-    }
+    if (entry.type === "file") result.push(entry);
+    if (entry.children) result.push(...flattenEntries(entry.children));
   }
   return result;
 }
 
 function getFileName(filePath: string): string {
   return filePath.split("/").pop() ?? filePath;
-}
-
-function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes}B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
 }

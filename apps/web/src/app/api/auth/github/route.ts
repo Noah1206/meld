@@ -3,23 +3,26 @@ import { getGitHubAuthUrl, exchangeGitHubCode, getGitHubUser } from "@/lib/auth/
 import { setSessionCookie } from "@/lib/auth/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-// GET /api/auth/github → GitHub OAuth 시작 (리다이렉트)
+// GET /api/auth/github → Start GitHub OAuth (redirect)
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
   const code = searchParams.get("code");
   const state = searchParams.get("state");
 
-  // code가 없으면 GitHub 인증 페이지로 리다이렉트
+  // If no code, redirect to GitHub authorization page
   if (!code) {
     const oauthState = crypto.randomUUID();
     const url = getGitHubAuthUrl(oauthState);
     const redirectTo = searchParams.get("redirect_to") ?? "";
+    const rememberMe = searchParams.get("remember_me") ?? "false";
     const cookies = [
       `oauth_state=${oauthState}; Path=/; HttpOnly; SameSite=Lax; Max-Age=600`,
     ];
     if (redirectTo) {
       cookies.push(`redirect_to=${encodeURIComponent(redirectTo)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=600`);
     }
+    // Store remember_me preference for desktop auth
+    cookies.push(`remember_me=${rememberMe}; Path=/; HttpOnly; SameSite=Lax; Max-Age=600`);
     return new Response(null, {
       status: 302,
       headers: [
@@ -29,15 +32,15 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  // code가 있으면 콜백 처리
+  // If code is present, handle callback
   try {
-    // 1. code → access token 교환
+    // 1. Exchange code → access token
     const { accessToken } = await exchangeGitHubCode(code);
 
-    // 2. GitHub 사용자 정보 조회
+    // 2. Fetch GitHub user info
     const githubUser = await getGitHubUser(accessToken);
 
-    // 3. Supabase에 사용자 upsert
+    // 3. Upsert user in Supabase
     const supabase = createAdminClient();
     const { data: user, error } = await supabase
       .from("users")
@@ -55,20 +58,26 @@ export async function GET(req: NextRequest) {
       .single();
 
     if (error || !user) {
-      throw new Error(`사용자 저장 실패: ${error?.message}`);
+      throw new Error(`Failed to save user: ${error?.message}`);
     }
 
-    // 4. JWT 세션 쿠키 설정
+    // 4. Set JWT session cookie
     await setSessionCookie({
       userId: user.id,
       githubAccessToken: accessToken,
     });
 
-    // 5. redirect_to 쿠키 확인 → 원래 목적지 또는 대시보드로 리다이렉트
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://meld-psi.vercel.app";
+    // 5. Check redirect_to cookie → redirect to original destination or dashboard
     const cookieHeader = req.headers.get("cookie") ?? "";
     const redirectMatch = cookieHeader.match(/redirect_to=([^;]*)/);
     const redirectTo = redirectMatch ? decodeURIComponent(redirectMatch[1]) : "/dashboard";
+
+    // Desktop app: redirect_to=/api/auth/desktop → always use localhost
+    // because Desktop app runs on localhost:9090
+    const isDesktopAuth = redirectTo === "/api/auth/desktop";
+    const appUrl = isDesktopAuth
+      ? "http://localhost:9090"
+      : (process.env.NEXT_PUBLIC_APP_URL ?? "https://meld-psi.vercel.app");
 
     return new Response(null, {
       status: 302,
@@ -78,10 +87,14 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (err) {
-    console.error("GitHub OAuth 에러:", err);
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    console.error("GitHub OAuth error:", errorMsg, err);
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://meld-psi.vercel.app";
-    return Response.redirect(
-      `${appUrl}/login?error=github_auth_failed`
-    );
+    return new Response(null, {
+      status: 302,
+      headers: {
+        Location: `${appUrl}/login?error=github_auth_failed&detail=${encodeURIComponent(errorMsg)}`,
+      },
+    });
   }
 }

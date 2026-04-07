@@ -1,41 +1,24 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
-import { Loader2, Send, FileCode, ArrowLeft, MousePointerClick, ChevronDown } from "lucide-react";
+import { Loader2, Send, FileCode, ArrowLeft, MousePointerClick, Sparkles, ArrowUpDown } from "lucide-react";
 import { useFigmaStore } from "@/lib/store/figma-store";
 import { useChatStore } from "@/lib/store/chat-store";
 import { useAgentStore } from "@/lib/store/agent-store";
-import type { LLMProviderType } from "@/lib/store/chat-store";
 import { trpc } from "@/lib/trpc/client";
 import { matchByNaming } from "@/lib/mapping/engine";
 import { useDesignSystemStore } from "@/lib/store/design-system-store";
-
-const LLM_OPTIONS: {
-  value: LLMProviderType;
-  label: string;
-  sub: string;
-  color: string;
-}[] = [
-  { value: "claude", label: "Claude", sub: "Sonnet 4.6", color: "#D97757" },
-  { value: "chatgpt", label: "ChatGPT", sub: "GPT-4o", color: "#10A37F" },
-  { value: "gemini", label: "Gemini", sub: "2.5 Flash", color: "#4285F4" },
-];
 
 interface ChatInputProps {
   projectId: string;
   mode?: "cloud" | "local";
 }
 
-// FileEntry에서 파일 경로 목록 추출 (재귀)
 function flattenFilePaths(entries: { name: string; path: string; type: "file" | "directory"; children?: unknown[] }[]): string[] {
   const paths: string[] = [];
   for (const entry of entries) {
-    if (entry.type === "file") {
-      paths.push(entry.path);
-    }
-    if (entry.children) {
-      paths.push(...flattenFilePaths(entry.children as typeof entries));
-    }
+    if (entry.type === "file") paths.push(entry.path);
+    if (entry.children) paths.push(...flattenFilePaths(entry.children as typeof entries));
   }
   return paths;
 }
@@ -44,98 +27,129 @@ export function ChatInput({ projectId, mode = "cloud" }: ChatInputProps) {
   const [input, setInput] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { selectedNode } = useFigmaStore();
-  const { isProcessing, provider, addMessage, setProcessing, setError, setProvider } =
-    useChatStore();
+  const { isProcessing, provider, addMessage, setProcessing, setError, inputPosition, setInputPosition } = useChatStore();
 
   const {
-    selectedFilePath,
-    readFileFn,
-    writeFileFn,
-    setLastWrite,
-    fileTree,
-    devServerFramework,
-    dependencies,
-    setSelectedFilePath,
-    connected,
+    selectedFilePath, readFileFn, writeFileFn, setLastWrite,
+    fileTree, devServerFramework, dependencies, setSelectedFilePath,
+    inspectedElement, elementHistory,
+    inspectorEnabled, setInspectorEnabled, setInspectedElement,
   } = useAgentStore();
+
   const editCodeMutation = trpc.ai.editCode.useMutation();
   const getDesignMd = useDesignSystemStore((s) => s.getDesignMd);
-
   const isLocal = mode === "local";
 
-  // Phase 3: 매핑 추천 — Figma 노드 선택 시 자동 매칭
+  // Mapping suggestion (cloud mode)
   const [mappingSuggestion, setMappingSuggestion] = useState<{ filePath: string; confidence: number } | null>(null);
-
   const filePaths = useMemo(() => flattenFilePaths(fileTree as never[]), [fileTree]);
 
   useEffect(() => {
-    if (!selectedNode || isLocal || filePaths.length === 0) {
-      setMappingSuggestion(null);
-      return;
-    }
-    const result = matchByNaming(selectedNode.name, filePaths);
-    setMappingSuggestion(result);
+    if (!selectedNode || isLocal || filePaths.length === 0) { setMappingSuggestion(null); return; }
+    setMappingSuggestion(matchByNaming(selectedNode.name, filePaths));
   }, [selectedNode, isLocal, filePaths]);
 
-  const handleSuggestionClick = useCallback((path: string) => {
-    setSelectedFilePath(path);
-    setMappingSuggestion(null);
-  }, [setSelectedFilePath]);
+  // Element history → AI context
+  const buildElementContext = useCallback(() => {
+    if (!elementHistory?.length) return undefined;
+    return elementHistory.map((entry, i) => {
+      const el = entry.element;
+      const parts = [`[${i + 1}] <${el.tagName}>`];
+      if (el.componentName) parts.push(`component: ${el.componentName}`);
+      if (el.className) parts.push(`class: "${el.className.slice(0, 80)}"`);
+      if (entry.filePath) parts.push(`file: ${entry.filePath}`);
+      if (el.sourceLoc) parts.push(`source: ${el.sourceLoc}`);
+      if (el.computedStyle) {
+        const styles = Object.entries(el.computedStyle).slice(0, 8).map(([k, v]) => `${k}:${v}`).join("; ");
+        if (styles) parts.push(`style: ${styles}`);
+      }
+      return parts.join(" | ");
+    }).join("\n");
+  }, [elementHistory]);
 
-  const canSend = isLocal
-    ? !!input.trim() && !!selectedFilePath
-    : !!input.trim() && !!selectedNode;
+  const toggleInspector = useCallback(() => {
+    const next = !inspectorEnabled;
+    setInspectorEnabled(next);
+    if (!next) setInspectedElement(null);
+    const iframe = document.querySelector<HTMLIFrameElement>("iframe[title='Dev Server Preview']");
+    if (iframe?.contentWindow) {
+      iframe.contentWindow.postMessage({ type: "meld:toggle-inspector", enabled: next }, "*");
+    }
+  }, [inspectorEnabled, setInspectorEnabled, setInspectedElement]);
+
+  // 단축키: Cmd+Shift+I (macOS) / Ctrl+Shift+I (Windows/Linux)
+  useEffect(() => {
+    if (!isLocal) return;
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "i") {
+        e.preventDefault();
+        toggleInspector();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [isLocal, toggleInspector]);
+
+  const hasSelection = isLocal ? !!(selectedFilePath || inspectedElement) : !!selectedNode;
+  const canSend = !!input.trim() && hasSelection;
+  const isDisabled = !hasSelection || isProcessing;
 
   const handleSend = useCallback(async () => {
     if (!canSend || isProcessing) return;
-
     const command = input.trim();
     setInput("");
-
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-    }
+    if (textareaRef.current) textareaRef.current.style.height = "auto";
 
     addMessage({ role: "user", content: command });
     setProcessing(true);
 
     try {
-      if (isLocal && selectedFilePath && readFileFn && writeFileFn) {
-        // 로컬 모드: 에이전트에서 읽기 → AI → 에이전트에 쓰기
-        const currentCode = await readFileFn(selectedFilePath);
+      if (isLocal && (selectedFilePath || inspectedElement)) {
+        const targetFile = selectedFilePath ?? "";
+        const currentCode = targetFile && readFileFn ? await readFileFn(targetFile) : "";
+        const elementContext = buildElementContext();
 
-        // Phase 4: 프레임워크/의존성 컨텍스트 전달
-        const result = await editCodeMutation.mutateAsync({
-          projectId,
-          figmaNodeId: "local",
-          figmaNodeName: selectedFilePath.split("/").pop(),
-          command,
-          filePath: selectedFilePath,
-          currentCode,
-          provider,
-          framework: devServerFramework ?? undefined,
-          dependencies: dependencies.length > 0 ? dependencies : undefined,
-          designSystemMd: getDesignMd() || undefined,
-        });
+        let result: { filePath: string; original: string; modified: string; explanation: string };
 
-        // AI 결과를 로컬 파일에 쓰기
-        if (result.modified) {
-          const success = await writeFileFn(selectedFilePath, result.modified);
-          if (success) setLastWrite();
-          addMessage({
-            role: "assistant",
-            content: `${result.explanation}\n\n${success ? "✅" : "❌"} ${selectedFilePath}`,
-            codeEdit: result,
+        if (window.electronAgent?.ai) {
+          result = await window.electronAgent.ai.editCode({
+            filePath: targetFile,
+            command,
+            currentCode,
+            framework: devServerFramework ?? undefined,
+            dependencies: dependencies.length > 0 ? dependencies : undefined,
+            designSystemMd: getDesignMd() || undefined,
+            elementContext,
           });
         } else {
-          addMessage({
-            role: "assistant",
-            content: result.explanation,
-            codeEdit: result,
+          const res = await fetch("/api/ai/edit-code", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              filePath: targetFile, command, currentCode,
+              framework: devServerFramework ?? undefined,
+              dependencies: dependencies.length > 0 ? dependencies : undefined,
+              designSystemMd: getDesignMd() || undefined,
+              elementHistory: elementHistory?.map((e) => e.element) ?? [],
+            }),
           });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "AI request failed");
+          if (data.type === "chat") {
+            result = { filePath: targetFile, original: "", modified: "", explanation: data.text };
+          } else {
+            result = { filePath: data.filePath, original: data.original, modified: data.modified, explanation: data.explanation };
+          }
+        }
+
+        if (result.modified && targetFile && writeFileFn) {
+          const success = await writeFileFn(targetFile, result.modified);
+          if (success) setLastWrite();
+          addMessage({ role: "assistant", content: `${result.explanation}\n\n${success ? "✅" : "❌"} ${targetFile}`, codeEdit: result });
+        } else {
+          addMessage({ role: "assistant", content: result.explanation, codeEdit: result });
         }
       } else {
-        // 클라우드 모드: 기존 흐름
         const result = await editCodeMutation.mutateAsync({
           projectId,
           figmaNodeId: selectedNode?.id ?? "local",
@@ -145,77 +159,31 @@ export function ChatInput({ projectId, mode = "cloud" }: ChatInputProps) {
           filePath: selectedFilePath ?? undefined,
           designSystemMd: getDesignMd() || undefined,
         });
-
-        addMessage({
-          role: "assistant",
-          content: result.explanation,
-          codeEdit: result,
-        });
+        addMessage({ role: "assistant", content: result.explanation, codeEdit: result });
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "AI 처리 실패");
-      addMessage({
-        role: "assistant",
-        content: `오류: ${err instanceof Error ? err.message : "처리 실패"}`,
-      });
+      const msg = err instanceof Error ? err.message : "AI processing failed";
+      setError(msg);
+      addMessage({ role: "assistant", content: `Error: ${msg}` });
     } finally {
       setProcessing(false);
     }
-  }, [canSend, input, isProcessing, isLocal, selectedFilePath, readFileFn, writeFileFn, projectId, selectedNode, provider, addMessage, setProcessing, setError, editCodeMutation, devServerFramework, dependencies, setLastWrite, getDesignMd]);
+  }, [canSend, input, isProcessing, isLocal, selectedFilePath, inspectedElement, readFileFn, writeFileFn, projectId, selectedNode, provider, addMessage, setProcessing, setError, editCodeMutation, devServerFramework, dependencies, setLastWrite, getDesignMd, buildElementContext, elementHistory]);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
+  const togglePosition = () => {
+    setInputPosition(inputPosition === "top" ? "bottom" : "top");
   };
-
-  // textarea 자동 높이 조절
-  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInput(e.target.value);
-    const el = e.target;
-    el.style.height = "auto";
-    el.style.height = Math.min(el.scrollHeight, 120) + "px";
-  };
-
-  // Phase 6: 빈 상태 가이드
-  const showGuide = isLocal ? !selectedFilePath : !selectedNode;
-  const isDisabled = showGuide || isProcessing;
-
-  // Cursor-style model selector
-  const [modelOpen, setModelOpen] = useState(false);
-  const modelRef = useRef<HTMLDivElement>(null);
-  const selectedModel = LLM_OPTIONS.find((o) => o.value === provider) ?? LLM_OPTIONS[0];
-
-  // 외부 클릭 + Esc 닫기
-  useEffect(() => {
-    if (!modelOpen) return;
-    const handleClick = (e: MouseEvent) => {
-      if (modelRef.current && !modelRef.current.contains(e.target as Node)) {
-        setModelOpen(false);
-      }
-    };
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setModelOpen(false);
-    };
-    document.addEventListener("mousedown", handleClick);
-    document.addEventListener("keydown", handleKey);
-    return () => {
-      document.removeEventListener("mousedown", handleClick);
-      document.removeEventListener("keydown", handleKey);
-    };
-  }, [modelOpen]);
 
   return (
     <div className="space-y-2 px-3 py-3">
-      {/* Phase 3: 매핑 추천 칩 */}
+      {/* Mapping suggestion (cloud mode) */}
       {mappingSuggestion && !isLocal && (
-        <div className="flex items-center gap-2 rounded-lg border border-blue-100 bg-blue-50/50 px-3 py-2">
+        <div className="animate-fade-in flex items-center gap-2 rounded-lg border border-blue-100 bg-blue-50/50 px-3 py-2">
           <FileCode className="h-3.5 w-3.5 text-blue-500" />
-          <span className="text-[11px] text-blue-600">추천 파일:</span>
+          <span className="text-[11px] text-blue-600">Suggested file:</span>
           <button
-            onClick={() => handleSuggestionClick(mappingSuggestion.filePath)}
-            className="flex items-center gap-1 rounded-md bg-blue-100/70 px-2 py-0.5 text-[11px] font-medium text-blue-700 transition-colors hover:bg-blue-200/70"
+            onClick={() => { setSelectedFilePath(mappingSuggestion.filePath); setMappingSuggestion(null); }}
+            className="flex items-center gap-1 rounded-md bg-blue-100/70 px-2 py-0.5 text-[11px] font-medium text-blue-700 hover:bg-blue-200/70 transition-colors"
           >
             {mappingSuggestion.filePath.split("/").pop()}
             <span className="text-blue-400">({Math.round(mappingSuggestion.confidence * 100)}%)</span>
@@ -223,70 +191,64 @@ export function ChatInput({ projectId, mode = "cloud" }: ChatInputProps) {
         </div>
       )}
 
-      {/* 상단: 선택된 노드/파일 + 모델 셀렉터 */}
+      {/* Selection state + badges */}
       <div className="flex items-center gap-2">
         {isLocal ? (
-          <span className="truncate rounded-md border border-[#E0E0DC] bg-white px-2.5 py-1 text-[11px] font-medium text-[#1A1A1A]">
-            {selectedFilePath ?? "파일을 선택하세요"}
+          <span className={`max-w-[180px] truncate rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-all ${
+            selectedFilePath || inspectedElement
+              ? "border-[#E0E0DC] bg-white text-[#1A1A1A] shadow-sm"
+              : "border-dashed border-[#E0E0DC] text-[#B4B4B0]"
+          }`}>
+            {selectedFilePath
+              ? selectedFilePath.split("/").pop()
+              : inspectedElement
+                ? (inspectedElement.componentName || `<${inspectedElement.tagName}>`)
+                : "Select a file"}
           </span>
         ) : selectedNode ? (
-          <span className="animate-fade-in truncate rounded-md border border-[#E0E0DC] bg-white px-2.5 py-1 text-[11px] font-medium text-[#1A1A1A]">
+          <span className="max-w-[180px] truncate rounded-lg border border-[#E0E0DC] bg-white px-2.5 py-1 text-[11px] font-medium text-[#1A1A1A] shadow-sm">
             {selectedNode.name}
           </span>
         ) : (
-          <span className="text-[11px] text-[#B4B4B0]">노드를 선택하세요</span>
+          <span className="text-[11px] text-[#B4B4B0]">Select a node</span>
         )}
+
         <div className="flex-1" />
 
-        {/* Cursor-style 모델 셀렉터 */}
-        <div ref={modelRef} className="relative">
+        {/* Inspector toggle (local mode only) */}
+        {isLocal && (
           <button
-            onClick={() => !isProcessing && setModelOpen((v) => !v)}
-            disabled={isProcessing}
-            className="flex items-center gap-1.5 rounded-md border border-[#E0E0DC] bg-white px-2.5 py-1 text-[11px] transition-colors hover:border-[#C0C0BC] disabled:opacity-50"
+            onClick={toggleInspector}
+            className={`flex items-center gap-1 rounded-lg p-1.5 transition-colors ${
+              inspectorEnabled
+                ? "bg-blue-50 text-blue-600"
+                : "text-[#B4B4B0] hover:text-[#787774] hover:bg-[#F7F7F5]"
+            }`}
+            title={`${inspectorEnabled ? "인스펙터 끄기" : "엘리먼트 인스펙터"} (⌘⇧I)`}
           >
-            <span
-              className="h-2 w-2 rounded-full"
-              style={{ backgroundColor: selectedModel.color }}
-            />
-            <span className="font-medium text-[#1A1A1A]">{selectedModel.label}</span>
-            <ChevronDown className="h-3 w-3 text-[#B4B4B0]" />
+            <MousePointerClick className="h-3.5 w-3.5" />
           </button>
+        )}
 
-          {modelOpen && (
-            <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-lg border border-[#E0E0DC] bg-white py-1 shadow-sm">
-              {LLM_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => {
-                    setProvider(opt.value);
-                    setModelOpen(false);
-                  }}
-                  className={`flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-[#F7F7F5] ${
-                    provider === opt.value ? "bg-[#F7F7F5]" : ""
-                  }`}
-                >
-                  <span
-                    className="h-2.5 w-2.5 rounded-full"
-                    style={{ backgroundColor: opt.color }}
-                  />
-                  <div className="flex-1">
-                    <p className="text-[12px] font-medium text-[#1A1A1A]">{opt.label}</p>
-                    <p className="text-[10px] text-[#B4B4B0]">{opt.sub}</p>
-                  </div>
-                  {provider === opt.value && (
-                    <span className="text-[10px] text-[#787774]">&#10003;</span>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
+        {/* Input position toggle */}
+        <button
+          onClick={togglePosition}
+          className="flex items-center gap-1 rounded-lg p-1.5 text-[#B4B4B0] hover:text-[#787774] hover:bg-[#F7F7F5] transition-colors"
+          title={inputPosition === "top" ? "Move input to bottom" : "Move input to top"}
+        >
+          <ArrowUpDown className="h-3 w-3" />
+        </button>
+
+        {/* Meld AI badge */}
+        <div className="flex items-center gap-1.5 rounded-lg border border-[#E0E0DC] bg-white px-2.5 py-1.5 text-[11px] shadow-sm">
+          <Sparkles className="h-3 w-3 text-[#787774]" />
+          <span className="font-medium text-[#787774]">Meld AI</span>
         </div>
       </div>
 
-      {/* Phase 6: 빈 상태 가이드 메시지 */}
-      {showGuide && !isProcessing && (
-        <div className="flex items-center gap-3 rounded-lg border border-dashed border-[#E0E0DC] px-4 py-4">
+      {/* Guide message */}
+      {!hasSelection && !isProcessing && (
+        <div className="animate-fade-in flex items-center gap-3 rounded-xl border border-dashed border-[#E0E0DC] px-4 py-4">
           <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-[#F7F7F5]">
             {isLocal ? (
               <ArrowLeft className="h-4 w-4 animate-pulse text-[#787774]" />
@@ -296,44 +258,50 @@ export function ChatInput({ projectId, mode = "cloud" }: ChatInputProps) {
           </div>
           <div>
             <p className="text-[12px] font-medium text-[#1A1A1A]">
-              {isLocal ? "프리뷰에서 엘리먼트를 클릭하거나, 파일 트리에서 파일을 선택하세요" : "Figma 뷰어에서 수정할 엘리먼트를 클릭하세요"}
+              {isLocal ? "Click an element in preview or select a file" : "Click an element in Figma viewer to edit"}
             </p>
             <p className="text-[11px] text-[#B4B4B0]">
-              {isLocal ? "인스펙터로 엘리먼트를 선택하면 자동으로 파일이 매핑돼요" : "엘리먼트를 선택하면 AI가 해당 컴포넌트를 수정해요"}
+              {isLocal ? "Inspector auto-maps elements to files" : "Select an element and Meld AI will modify the component"}
             </p>
           </div>
         </div>
       )}
 
-      {/* 하단: textarea + Send */}
-      {!showGuide && (
-        <div className="flex items-end gap-2">
-          <textarea
-            ref={textareaRef}
-            rows={1}
-            placeholder={
-              isLocal
-                ? "코드 수정 명령을 입력하세요... (Enter 전송)"
-                : "명령을 입력하세요... (Enter 전송, Shift+Enter 줄바꿈)"
-            }
-            value={input}
-            onChange={handleInput}
-            onKeyDown={handleKeyDown}
-            className="flex-1 resize-none rounded-xl border border-[#E0E0DC] bg-white px-4 py-2.5 text-sm placeholder:text-[#B4B4B0] focus:border-[#1A1A1A]/20 focus:outline-none disabled:opacity-50"
-            style={{ maxHeight: 120 }}
-            disabled={isDisabled}
-          />
-          <button
-            onClick={handleSend}
-            disabled={!canSend || isProcessing}
-            className="flex-shrink-0 rounded-xl bg-[#1A1A1A] p-2.5 text-white transition-colors hover:bg-[#333] active:bg-[#000] disabled:opacity-30"
-          >
-            {isProcessing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
-          </button>
+      {/* Input area */}
+      {hasSelection && (
+        <div className="relative">
+          <div className="flex items-end gap-2 rounded-2xl border border-[#E0E0DC] bg-white p-1.5 shadow-sm transition-all focus-within:border-[#1A1A1A]/20 focus-within:shadow-md">
+            <textarea
+              ref={textareaRef}
+              rows={1}
+              placeholder="Describe your changes... (Enter to send)"
+              value={input}
+              onChange={(e) => {
+                setInput(e.target.value);
+                e.target.style.height = "auto";
+                e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
+              }}
+              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+              className="flex-1 resize-none bg-transparent px-3 py-2 text-[13px] placeholder:text-[#B4B4B0] focus:outline-none disabled:opacity-50"
+              style={{ maxHeight: 120 }}
+              disabled={isDisabled}
+            />
+            <button
+              onClick={handleSend}
+              disabled={!canSend || isProcessing}
+              className="flex-shrink-0 rounded-xl bg-[#1A1A1A] p-2.5 text-white transition-all hover:bg-[#333] active:scale-[0.95] disabled:opacity-30"
+            >
+              {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            </button>
+          </div>
+
+          {/* Processing status message */}
+          {isProcessing && (
+            <div className="animate-fade-in mt-2 flex items-center justify-center gap-2">
+              <div className="h-1 w-1 animate-pulse rounded-full bg-violet-400" />
+              <span className="text-[10px] text-[#B4B4B0]">AI is analyzing and modifying the code. Please wait.</span>
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -2,8 +2,8 @@ import type { DesignSystem } from "./types";
 import type { ColorShades } from "./palette";
 
 /**
- * DesignSystem 객체 → DESIGN.md 마크다운 자동 생성
- * AI 코딩 에이전트가 읽을 수 있는 구조화된 형식
+ * DesignSystem object -> auto-generate DESIGN.md markdown
+ * Structured format readable by AI coding agents
  */
 export function generateDesignMd(ds: DesignSystem): string {
   const { colors, typography, spacing, radius, mode } = ds;
@@ -35,9 +35,13 @@ ${colorTable(colors.secondary)}
 ${colorTable(colors.tertiary)}
 
 ### Semantic Colors
-- **Primary**: \`${colors.primary[500]}\`
-- **Secondary**: \`${colors.secondary[500]}\`
-- **Tertiary**: \`${colors.tertiary[500]}\`
+- **Primary**: \`${colors.seedColor}\`
+- **Secondary**: \`${colors.secondarySeed ?? colors.secondary[500]}\`
+- **Tertiary**: \`${colors.tertiarySeed ?? colors.tertiary[500]}\`
+
+### Gradient
+- **Brand Gradient**: \`linear-gradient(135deg, ${colors.seedColor}, ${colors.secondarySeed ?? colors.secondary[500]}, ${colors.tertiarySeed ?? colors.tertiary[500]})\`
+- **Primary Gradient**: \`linear-gradient(135deg, ${colors.primary[400]}, ${colors.primary[600]})\`
 - **Background**: \`${mode === "light" ? colors.primary[50] : colors.primary[900]}\`
 - **Surface**: \`${mode === "light" ? "#FFFFFF" : colors.primary[800]}\`
 - **Error**: \`#DC2626\`
@@ -77,13 +81,44 @@ ${colorTable(colors.tertiary)}
 | xl | ${radius.xl}px |
 | full | ${radius.full}px |
 
+## Components
+
+### Buttons
+- **Filled**: Primary action — use \`primary\` color background
+- **Gradient**: Hero/CTA — use \`linear-gradient(135deg, primary, secondary)\`
+- **Gradient Alt**: Alternative — use \`linear-gradient(to right, primary, tertiary)\`
+- **Secondary**: Less prominent — use \`secondary\` color
+- **Soft**: Subtle emphasis — use \`primary/15\` background with \`primary\` text
+- **Outlined**: Border only — 2px \`primary\` border
+- **Gradient Border**: Outlined with gradient border
+- **Ghost**: No background, subtle hover
+- **Link/Text**: Inline text actions
+- **Pill**: Rounded-full variant, supports gradient fill
+- Sizes: LG (py-3.5), MD (py-2.5), SM (py-1.5)
+
+### Badges
+- **Filled**: White text on \`primary\` background
+- **Soft**: \`primary/15\` background with \`primary\` text
+- **Outline**: \`primary\` border
+- **Status**: Success (#16A34A), Error (#DC2626), Warning (#D97706), Info (#2563EB)
+
+### Controls
+- **Toggle**: ${radius.xl}px radius, \`primary\` when on
+- **Checkbox**: ${radius.md}px radius, \`primary\` fill when checked
+- **Radio**: Circle, \`primary\` dot when selected
+
+### Inputs
+- Background: #F7F7F5
+- Focus ring: 2px \`primary\`
+- Border radius: ${radius.xl}px
+
 ## Guidelines
 
-이 디자인 시스템을 따라 코드를 작성하세요:
-- 색상은 반드시 위 팔레트에서 선택
-- 폰트 사이즈는 Type Scale 사용
-- 여백은 Spacing 스케일 사용
-- ${mode === "dark" ? "다크 모드 기준으로 배경/전경 색상 적용" : "라이트 모드 기준으로 배경/전경 색상 적용"}
+Follow this design system when writing code:
+- Use only colors from the palette above
+- Use the Type Scale for font sizes
+- Use the Spacing scale for margins and paddings
+- ${mode === "dark" ? "Apply dark mode background/foreground colors" : "Apply light mode background/foreground colors"}
 
 ${ds.customDesignMd ? `## Custom Guidelines\n\n${ds.customDesignMd}` : ""}`.trim();
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { RefreshCw, ExternalLink, Loader2, MousePointerClick, FileCode, AlertTriangle } from "lucide-react";
+import { RefreshCw, ExternalLink, Loader2, MousePointerClick, FileCode, AlertTriangle, Terminal, Monitor, Columns2, Sparkles } from "lucide-react";
 import { useAgentStore, type InspectedElement } from "@/lib/store/agent-store";
 import { matchByNaming } from "@/lib/mapping/engine";
 import type { FileEntry } from "@figma-code-bridge/shared";
@@ -9,9 +9,9 @@ import type { FileEntry } from "@figma-code-bridge/shared";
 interface PreviewFrameProps {
   url: string;
   framework?: string | null;
+  onFixWithAI?: (errorMessage: string) => void;
 }
 
-// FileEntry 트리에서 플랫 파일 경로 추출
 function flattenPaths(entries: FileEntry[]): string[] {
   const paths: string[] = [];
   for (const e of entries) {
@@ -21,22 +21,167 @@ function flattenPaths(entries: FileEntry[]): string[] {
   return paths;
 }
 
-export function PreviewFrame({ url, framework }: PreviewFrameProps) {
+type ViewMode = "preview" | "terminal" | "split";
+
+export function PreviewFrame({ url, framework, onFixWithAI }: PreviewFrameProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>("preview");
+  const [terminalLogs, setTerminalLogs] = useState<string[]>([]);
+  const [devServerCrashed, setDevServerCrashed] = useState(false);
   const retryCountRef = useRef(0);
+  const wasHealthyRef = useRef(false);
+  const consecutiveFailRef = useRef(0);
+  const autoRestartCountRef = useRef(0); // Limit auto-restarts to prevent infinite loop
+  const healthCheckIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const terminalRef = useRef<HTMLDivElement>(null);
   const lastWriteTimestamp = useAgentStore((s) => s.lastWriteTimestamp);
   const inspectorEnabled = useAgentStore((s) => s.inspectorEnabled);
   const inspectedElement = useAgentStore((s) => s.inspectedElement);
   const setInspectorEnabled = useAgentStore((s) => s.setInspectorEnabled);
   const setInspectedElement = useAgentStore((s) => s.setInspectedElement);
   const setSelectedFilePath = useAgentStore((s) => s.setSelectedFilePath);
+  const addElementHistory = useAgentStore((s) => s.addElementHistory);
+  const selectedFilePath = useAgentStore((s) => s.selectedFilePath);
+  const readFileFn = useAgentStore((s) => s.readFileFn);
+  const writeFileFn = useAgentStore((s) => s.writeFileFn);
+  const setLastWrite = useAgentStore((s) => s.setLastWrite);
+  const devServerFramework = useAgentStore((s) => s.devServerFramework);
   const fileTree = useAgentStore((s) => s.fileTree);
 
   const filePaths = useMemo(() => flattenPaths(fileTree as FileEntry[]), [fileTree]);
 
-  // 파일 쓰기 후 자동 리프레시 (HMR이 안 될 경우 대비)
+  // Listen for inspector messages from preview iframe
+  useEffect(() => {
+    function handleMessage(e: MessageEvent) {
+      if (e.data?.type === "meld:element-selected") {
+        const payload = e.data.payload as InspectedElement;
+        setInspectedElement(payload);
+        if (payload.componentName && filePaths.length > 0) {
+          const match = matchByNaming(payload.componentName, filePaths);
+          addElementHistory(payload, match?.filePath ?? undefined);
+          if (match) setSelectedFilePath(match.filePath);
+        } else {
+          addElementHistory(payload, undefined);
+        }
+      }
+    }
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [filePaths, setInspectedElement, setSelectedFilePath, addElementHistory]);
+
+  // Terminal: load buffered logs + collect real-time output
+  useEffect(() => {
+    const agent = window.electronAgent;
+    if (!agent) return;
+
+    if (agent.getTerminalBuffer) {
+      agent.getTerminalBuffer().then((buffer) => {
+        if (buffer.length > 0) setTerminalLogs(buffer);
+      });
+    }
+
+    if (!agent.onTerminalOutput) return;
+    const cleanup = agent.onTerminalOutput((data: string) => {
+      setTerminalLogs((prev) => {
+        const next = [...prev, data];
+        return next.length > 200 ? next.slice(-200) : next;
+      });
+    });
+
+    return cleanup;
+  }, []);
+
+  useEffect(() => {
+    if (terminalRef.current) {
+      terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
+    }
+  }, [terminalLogs]);
+
+  const checkHealth = useCallback(async (targetUrl: string): Promise<boolean> => {
+    const agent = window.electronAgent;
+
+    if (agent?.checkUrl) {
+      const result = await agent.checkUrl(targetUrl);
+      if (!result.ok) {
+        if (result.status >= 500) setErrorMessage("Dev server encountered an internal error. Check the terminal for details.");
+        else if (result.error?.includes("ECONNREFUSED")) setErrorMessage("Dev server is not running. It may still be starting up.");
+        else if (result.error?.includes("ECONNRESET") || result.error?.includes("socket hang up")) setErrorMessage("Dev server connection was interrupted. It may be restarting.");
+        else if (result.error?.includes("ETIMEDOUT")) setErrorMessage("Dev server is taking too long to respond. It may be under heavy load.");
+        else if (result.error) setErrorMessage("Cannot reach the dev server. Check if it started correctly.");
+        else setErrorMessage("Waiting for dev server to become ready...");
+        return false;
+      }
+      return true;
+    }
+
+    try {
+      const res = await fetch(targetUrl);
+      if (res.status >= 500) { setErrorMessage("Dev server encountered an internal error. Check the terminal for details."); return false; }
+      return true;
+    } catch {
+      setErrorMessage("Waiting for dev server to become ready...");
+      return false;
+    }
+  }, []);
+
+  useEffect(() => {
+    // If URL is not http (e.g. about:blank), just wait
+    if (!url.startsWith("http")) {
+      setIsLoading(true);
+      setHasError(false);
+      setErrorMessage(null);
+      return;
+    }
+
+    let cancelled = false;
+    setIsLoading(true);
+    setHasError(false);
+    setErrorMessage(null);
+    setDevServerCrashed(false);
+    retryCountRef.current = 0;
+    consecutiveFailRef.current = 0;
+
+    const tryLoad = async () => {
+      // Retry up to 10 times with 2s delay (20s total) for dev server startup
+      for (let attempt = 0; attempt < 10; attempt++) {
+        if (cancelled) return;
+        const ok = await checkHealth(url);
+        if (cancelled) return;
+        if (ok) {
+          wasHealthyRef.current = true;
+          if (iframeRef.current) iframeRef.current.src = url;
+          return;
+        }
+        await new Promise((r) => setTimeout(r, 2000));
+      }
+      // All retries failed — try restarting dev server
+      if (cancelled) return;
+      const agent = window.electronAgent;
+      if (agent?.restartDevServer) {
+        try { await agent.restartDevServer(); } catch {}
+        // Wait for restart, then retry
+        for (let attempt = 0; attempt < 10; attempt++) {
+          if (cancelled) return;
+          await new Promise((r) => setTimeout(r, 2000));
+          const ok = await checkHealth(url);
+          if (cancelled) return;
+          if (ok) {
+            wasHealthyRef.current = true;
+            if (iframeRef.current) iframeRef.current.src = url;
+            return;
+          }
+        }
+      }
+      if (!cancelled) setHasError(true);
+    };
+
+    tryLoad();
+    return () => { cancelled = true; };
+  }, [url, checkHealth]);
+
   useEffect(() => {
     if (lastWriteTimestamp === 0) return;
     const timer = setTimeout(() => {
@@ -49,58 +194,213 @@ export function PreviewFrame({ url, framework }: PreviewFrameProps) {
     return () => clearTimeout(timer);
   }, [lastWriteTimestamp, url]);
 
-  // postMessage 리스너: iframe에서 엘리먼트 선택 이벤트 수신
   useEffect(() => {
     function handleMessage(e: MessageEvent) {
       if (e.data?.type === "meld:element-selected") {
         const payload = e.data.payload as InspectedElement;
         setInspectedElement(payload);
-
-        // React 컴포넌트명으로 파일 매핑 시도
+        addElementHistory(payload);
         if (payload.componentName && filePaths.length > 0) {
           const match = matchByNaming(payload.componentName, filePaths);
-          if (match) {
-            setSelectedFilePath(match.filePath);
-          }
+          if (match) setSelectedFilePath(match.filePath);
+        }
+      }
+      if (e.data?.type === "meld:visual-edit") {
+        const { editType, property, value, oldText, newText, element } = e.data.payload;
+        handleVisualEdit({ editType, property, value, oldText, newText, element });
+      }
+      if (e.data?.type === "meld:ask-ai") {
+        const payload = e.data.payload as InspectedElement;
+        setInspectedElement(payload);
+        if (payload.componentName && filePaths.length > 0) {
+          const match = matchByNaming(payload.componentName, filePaths);
+          if (match) setSelectedFilePath(match.filePath);
         }
       }
     }
-
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [filePaths, setInspectedElement, setSelectedFilePath]);
+  }, [filePaths, setInspectedElement, setSelectedFilePath, addElementHistory]);
 
-  const handleRefresh = () => {
-    if (iframeRef.current) {
-      setIsLoading(true);
-      setHasError(false);
-      iframeRef.current.src = url;
+  // Capture screenshot of the preview iframe for Vision
+  const capturePreviewScreenshot = async (): Promise<string | undefined> => {
+    try {
+      if (window.electronAgent?.preview) {
+        // Electron: use webContents.capturePage via IPC (if available)
+        return undefined; // TODO: implement IPC screenshot
+      }
+      // Web: use html2canvas-like approach via canvas
+      const iframe = iframeRef.current;
+      if (!iframe) return undefined;
+      // Can't capture cross-origin iframe directly, but we can capture the whole preview area
+      const canvas = document.createElement("canvas");
+      const rect = iframe.getBoundingClientRect();
+      canvas.width = Math.min(rect.width, 800);
+      canvas.height = Math.min(rect.height, 600);
+      // For same-origin iframes, try drawImage
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return undefined;
+      ctx.fillStyle = "#2C2C2C";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Note: cross-origin will fail silently, which is fine
+      try {
+        ctx.drawImage(iframe as unknown as CanvasImageSource, 0, 0, canvas.width, canvas.height);
+        return canvas.toDataURL("image/jpeg", 0.6);
+      } catch {
+        return undefined;
+      }
+    } catch {
+      return undefined;
     }
   };
 
-  // dev server 준비 안 됐을 때 자동 재시도 (최대 10회, 3초 간격)
+  const handleVisualEdit = async (edit: {
+    editType: string; property?: string; value?: string;
+    oldText?: string; newText?: string;
+    element: { selector: string; componentName: string | null; className: string; tagName: string };
+  }) => {
+    const targetFile = selectedFilePath;
+    if (!targetFile || !readFileFn || !writeFileFn) return;
+
+    const currentCode = await readFileFn(targetFile);
+    let command = "";
+
+    // Capture screenshot for visual context
+    const screenshot = await capturePreviewScreenshot();
+
+    const elDesc = edit.element.componentName || edit.element.tagName;
+    const elClasses = edit.element.className.split(" ").slice(0, 3).join(" ");
+
+    if (edit.editType === "text" && edit.oldText && edit.newText) {
+      command = `Change the text "${edit.oldText}" to "${edit.newText}"`;
+    } else if (edit.editType === "color" && edit.property && edit.value) {
+      const propLabel = edit.property === "background-color" ? "background color" : "text color";
+      command = `Change the ${propLabel} of the ${elDesc} (${elClasses}) to ${edit.value}`;
+    } else if (edit.editType === "spacing" && edit.property && edit.value) {
+      command = `Change the ${edit.property} of the ${elDesc} (${elClasses}) to ${edit.value}`;
+    } else if (edit.editType === "position" && edit.value) {
+      const pos = JSON.parse(edit.value);
+      command = `Move the ${elDesc} (${elClasses}) to position left: ${pos.left}, top: ${pos.top}. Use position: ${pos.position} or appropriate positioning. If using Tailwind, use relative positioning classes.`;
+    } else if (edit.editType === "resize" && edit.value) {
+      const size = JSON.parse(edit.value);
+      command = `Resize the ${elDesc} (${elClasses}) to width: ${size.width}, height: ${size.height}. Use appropriate width/height classes or inline styles.`;
+    } else if (edit.editType === "borderRadius" && edit.value) {
+      command = `Change the border-radius of the ${elDesc} (${elClasses}) to ${edit.value}. Use Tailwind rounded classes if possible.`;
+    } else if (edit.editType === "align" && edit.value) {
+      command = `Align the ${elDesc} (${elClasses}) to ${edit.value}. Modify the parent container's flex/grid alignment or text-align as needed. Use Tailwind classes like items-center, justify-center, text-left, etc.`;
+    }
+
+    if (!command) return;
+
+    try {
+      let result: { filePath: string; original: string; modified: string; explanation: string };
+
+      if (window.electronAgent?.ai) {
+        result = await window.electronAgent.ai.editCode({
+          filePath: targetFile, command, currentCode,
+          framework: devServerFramework ?? undefined,
+          elementContext: screenshot ? `[Screenshot of current preview attached]` : undefined,
+        });
+      } else {
+        const res = await fetch("/api/ai/edit-code", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ filePath: targetFile, command, currentCode, screenshot }),
+        });
+        const data = await res.json();
+        if (!res.ok) return;
+        result = data.type === "chat"
+          ? { filePath: targetFile, original: "", modified: "", explanation: data.text }
+          : { filePath: data.filePath, original: data.original, modified: data.modified, explanation: data.explanation };
+      }
+
+      if (result.modified && targetFile) {
+        await writeFileFn(targetFile, result.modified);
+        setLastWrite();
+      }
+    } catch (err) {
+      console.error("[visual-edit] Failed:", err);
+    }
+  };
+
+  const handleRefresh = useCallback(async () => {
+    setIsLoading(true);
+    setHasError(false);
+    setErrorMessage(null);
+    retryCountRef.current = 0;
+    const ok = await checkHealth(url);
+    if (ok && iframeRef.current) iframeRef.current.src = url;
+    else setHasError(true);
+  }, [url, checkHealth]);
+
   useEffect(() => {
-    if (!hasError || retryCountRef.current >= 10) return;
-    const timer = setTimeout(() => {
+    if (!hasError || retryCountRef.current >= 20) return;
+    const timer = setTimeout(async () => {
       retryCountRef.current += 1;
-      handleRefresh();
+      const ok = await checkHealth(url);
+      if (ok) {
+        setHasError(false);
+        setErrorMessage(null);
+        if (iframeRef.current) iframeRef.current.src = url;
+      } else {
+        setHasError(false);
+        requestAnimationFrame(() => setHasError(true));
+      }
     }, 3000);
     return () => clearTimeout(timer);
-  }, [hasError]);
+  }, [hasError, url, checkHealth]);
+
+  // Dev server crash detection: 5 consecutive health check failures → auto-restart
+  useEffect(() => {
+    if (!url || hasError) return;
+
+    healthCheckIntervalRef.current = setInterval(async () => {
+      const ok = await checkHealth(url);
+      if (ok) {
+        consecutiveFailRef.current = 0;
+        if (devServerCrashed) setDevServerCrashed(false);
+      } else {
+        consecutiveFailRef.current += 1;
+        if (wasHealthyRef.current && consecutiveFailRef.current >= 5) {
+          // Auto-restart dev server (max 2 times to prevent infinite loop)
+          const agent = window.electronAgent;
+          if (agent?.restartDevServer && autoRestartCountRef.current < 2) {
+            autoRestartCountRef.current++;
+            consecutiveFailRef.current = 0;
+            try { await agent.restartDevServer(); } catch {}
+            return;
+          }
+          setDevServerCrashed(true);
+        }
+      }
+    }, 5000); // Check every 5 seconds
+
+    return () => {
+      if (healthCheckIntervalRef.current) {
+        clearInterval(healthCheckIntervalRef.current);
+        healthCheckIntervalRef.current = null;
+      }
+    };
+  }, [url, hasError, checkHealth, devServerCrashed]);
 
   const toggleInspector = useCallback(() => {
     const next = !inspectorEnabled;
     setInspectorEnabled(next);
     if (!next) setInspectedElement(null);
 
-    // iframe에 토글 메시지 전송
-    iframeRef.current?.contentWindow?.postMessage(
-      { type: "meld:toggle-inspector", enabled: next },
-      "*",
-    );
+    const sendToggle = () => {
+      iframeRef.current?.contentWindow?.postMessage(
+        { type: "meld:toggle-inspector", enabled: next }, "*",
+      );
+    };
+
+    if (next && window.electronAgent?.injectInspectorInFrame) {
+      window.electronAgent.injectInspectorInFrame().then(() => setTimeout(sendToggle, 50));
+    } else {
+      sendToggle();
+    }
   }, [inspectorEnabled, setInspectorEnabled, setInspectedElement]);
 
-  // 매핑된 파일 경로
   const mappedFilePath = useMemo(() => {
     if (!inspectedElement?.componentName || filePaths.length === 0) return null;
     return matchByNaming(inspectedElement.componentName, filePaths)?.filePath ?? null;
@@ -110,132 +410,209 @@ export function PreviewFrame({ url, framework }: PreviewFrameProps) {
     if (mappedFilePath) setSelectedFilePath(mappedFilePath);
   }, [mappedFilePath, setSelectedFilePath]);
 
+  const isElectron = typeof window !== "undefined" && !!window.electronAgent;
+  const showTerminal = viewMode === "terminal" || viewMode === "split";
+  const stripAnsi = (str: string) => str.replace(/\x1b\[[0-9;]*m/g, "");
+
+  const detectedIssues = useMemo(() => {
+    const allText = terminalLogs.map(stripAnsi).join("\n");
+    const issues: { icon: string; title: string; desc: string; action?: string }[] = [];
+
+    if (allText.includes("MissingSecret") || allText.includes("AUTH_SECRET") || allText.includes("NEXTAUTH_SECRET")) {
+      issues.push({ icon: "🔑", title: ".env secret required", desc: "AUTH_SECRET or NEXTAUTH_SECRET is not configured.", action: 'echo \'AUTH_SECRET="$(openssl rand -base64 32)"\' >> .env.local' });
+    }
+    if (allText.includes("ECONNREFUSED") && (allText.includes("5432") || allText.includes("postgres"))) {
+      issues.push({ icon: "🗄️", title: "PostgreSQL connection failed", desc: "Make sure PostgreSQL is running." });
+    }
+    if (allText.includes("ECONNREFUSED") && (allText.includes("27017") || allText.includes("mongo"))) {
+      issues.push({ icon: "🗄️", title: "MongoDB connection failed", desc: "Make sure MongoDB is running." });
+    }
+    if (allText.includes("ECONNREFUSED") && allText.includes("6379")) {
+      issues.push({ icon: "🗄️", title: "Redis connection failed", desc: "Make sure Redis is running." });
+    }
+    if (allText.includes("DATABASE_URL") || (allText.includes("database") && allText.includes("ECONNREFUSED"))) {
+      issues.push({ icon: "🗄️", title: "Database connection failed", desc: "Check your DATABASE_URL environment variable and DB server status." });
+    }
+    const envMatch = allText.match(/(?:process\.env\.|Missing environment variable[:\s]+)([A-Z_]+)/);
+    if (envMatch && !issues.some((i) => i.title.includes("secret"))) {
+      issues.push({ icon: "⚙️", title: `Missing env variable: ${envMatch[1]}`, desc: `Add ${envMatch[1]} to your .env.local file.` });
+    }
+    if (allText.includes("Cannot find module") || allText.includes("MODULE_NOT_FOUND")) {
+      const modMatch = allText.match(/Cannot find module '([^']+)'/);
+      issues.push({ icon: "📦", title: `Module not found${modMatch ? `: ${modMatch[1]}` : ""}`, desc: "Run npm install or install the missing package.", action: modMatch ? `npm install ${modMatch[1]}` : "npm install" });
+    }
+    if (allText.includes("prisma") && (allText.includes("migrate") || allText.includes("The table") || allText.includes("does not exist"))) {
+      issues.push({ icon: "🔄", title: "DB migration needed", desc: "Run Prisma migration.", action: "npx prisma migrate dev" });
+    }
+    if (allText.includes("EADDRINUSE")) {
+      const portMatch = allText.match(/EADDRINUSE.*?:(\d+)/);
+      issues.push({ icon: "🔌", title: `Port ${portMatch?.[1] || ""} conflict`, desc: "Stop the process using that port." });
+    }
+    return issues;
+  }, [terminalLogs]);
+
   return (
-    <div className="flex h-full flex-col bg-[#F7F7F5]">
-      {/* 미니멀 툴바 */}
-      <div className="flex items-center gap-1 px-2 py-1.5">
-        {framework && (
-          <span className="rounded-md bg-[#EEEEEC] px-1.5 py-0.5 text-[10px] font-medium text-[#787774]">
-            {framework}
-          </span>
-        )}
-        <div className="flex-1" />
-
-        {/* 인스펙터 토글 */}
-        <button
-          onClick={toggleInspector}
-          className={`rounded-lg p-1.5 transition-colors ${
-            inspectorEnabled
-              ? "bg-blue-100 text-blue-600"
-              : "text-[#B4B4B0] hover:bg-[#EEEEEC] hover:text-[#787774]"
-          }`}
-          title={inspectorEnabled ? "인스펙터 끄기" : "엘리먼트 인스펙터"}
-        >
-          <MousePointerClick className="h-3.5 w-3.5" />
-        </button>
-
-        <button
-          onClick={handleRefresh}
-          className="rounded-lg p-1.5 text-[#B4B4B0] transition-colors hover:bg-[#EEEEEC] hover:text-[#787774]"
-          title="새로고침"
-        >
-          <RefreshCw className="h-3.5 w-3.5" />
-        </button>
-        <a
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="rounded-lg p-1.5 text-[#B4B4B0] transition-colors hover:bg-[#EEEEEC] hover:text-[#787774]"
-          title="새 탭에서 열기"
-        >
-          <ExternalLink className="h-3.5 w-3.5" />
-        </a>
-      </div>
-
-      {/* iframe */}
-      <div className={`relative flex-1 ${inspectorEnabled ? "ring-2 ring-blue-400 ring-inset rounded-sm" : ""}`}>
-        {isLoading && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white">
-            <div className="flex flex-col items-center gap-3">
-              <Loader2 className="h-5 w-5 animate-spin text-[#787774]" />
-              <span className="text-[13px] text-[#787774]">
-                {hasError ? "Dev server 시작 대기 중..." : "로딩 중..."}
-              </span>
-              {hasError && retryCountRef.current > 0 && (
-                <span className="text-[11px] text-[#B4B4B0]">
-                  자동 재시도 {retryCountRef.current}/10
-                </span>
-              )}
+    <div className="flex h-full flex-col bg-[#2C2C2C]">
+      {/* Main area: iframe is always displayed */}
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        {/* Preview iframe — always full size */}
+        <div className={`absolute inset-0 ${inspectorEnabled ? "ring-2 ring-blue-400 ring-inset rounded-sm" : ""}`}>
+          {(isLoading || hasError) && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#2C2C2C]">
+              <div className="flex flex-col items-center gap-3">
+                {hasError ? (
+                  <>
+                    <AlertTriangle className="h-6 w-6 text-amber-500" />
+                    <span className="text-[13px] font-medium text-[#9A9A95]">
+                      {errorMessage || "Waiting for dev server response..."}
+                    </span>
+                    {(detectedIssues.length > 0 || errorMessage?.includes("500")) && (
+                      <div className="max-w-sm space-y-2.5">
+                        {detectedIssues.length > 0 ? (
+                          detectedIssues.map((issue, i) => (
+                            <div key={i} className="rounded-xl bg-amber-50 px-4 py-3 text-left">
+                              <p className="text-[12px] font-medium text-amber-900">{issue.icon} {issue.title}</p>
+                              <p className="mt-1 text-[11px] text-amber-700">{issue.desc}</p>
+                              {issue.action && (
+                                <code className="mt-2 block rounded-lg bg-amber-100/80 px-3 py-1.5 font-mono text-[10px] text-amber-800 select-all">{issue.action}</code>
+                              )}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="rounded-xl bg-amber-50 px-4 py-3 text-left">
+                            <p className="text-[11px] font-medium text-amber-800">There seems to be an issue with the project server</p>
+                            <ul className="mt-1.5 space-y-1 text-[11px] text-amber-700">
+                              <li>• Is your .env file configured?</li>
+                              <li>• Is the DB connection working?</li>
+                              <li>• Are node_modules up to date?</li>
+                            </ul>
+                          </div>
+                        )}
+                        {isElectron && (
+                          <div className="flex w-full gap-2">
+                            <button
+                              onClick={async () => {
+                                setErrorMessage("Restarting server...");
+                                retryCountRef.current = 0;
+                                setTerminalLogs([]);
+                                await window.electronAgent?.restartDevServer();
+                              }}
+                              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#1A1A1A] px-4 py-2.5 text-[12px] font-medium text-white transition-colors hover:bg-[#333]"
+                            >
+                              <RefreshCw className="h-3.5 w-3.5" />
+                              Restart
+                            </button>
+                            {onFixWithAI && errorMessage && !/EADDRINUSE|already in use|port/i.test(errorMessage) && (
+                              <button
+                                onClick={() => {
+                                  const lastLogs = terminalLogs.slice(-20).join("\n");
+                                  onFixWithAI(`Dev server error:\n${errorMessage}\n\nTerminal output:\n${lastLogs}`);
+                                  setHasError(false);
+                                  setErrorMessage(null);
+                                }}
+                                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-[12px] font-medium text-white transition-colors hover:bg-emerald-500"
+                              >
+                                <Sparkles className="h-3.5 w-3.5" />
+                                Fix with AI
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {retryCountRef.current > 0 && retryCountRef.current < 20 && (
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-3 w-3 animate-spin text-[#B4B4B0]" />
+                        <span className="text-[11px] text-[#B4B4B0]">Auto-retry {retryCountRef.current}/20</span>
+                      </div>
+                    )}
+                    {retryCountRef.current >= 20 && (
+                      <button onClick={handleRefresh} className="mt-1 rounded-lg bg-[#1A1A1A] px-4 py-2 text-[12px] font-medium text-white hover:bg-[#333]">
+                        Retry
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin text-[#787774]" />
+                    <span className="text-[13px] text-[#787774]">Loading...</span>
+                  </>
+                )}
+              </div>
             </div>
-          </div>
-        )}
-        <iframe
-          ref={iframeRef}
-          src={url}
-          className="h-full w-full border-0"
-          sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-          onLoad={() => {
-            // iframe 내부에서 에러 페이지인지 체크
-            try {
-              const doc = iframeRef.current?.contentDocument;
-              const bodyText = doc?.body?.innerText || "";
-              if (bodyText.includes("Internal Server Error") || bodyText.includes("502") || bodyText.includes("ECONNREFUSED")) {
-                setHasError(true);
-                return;
+          )}
+          {/* Dev server crash banner */}
+          {devServerCrashed && !hasError && (
+            <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between bg-red-900/90 px-4 py-2.5 backdrop-blur-sm">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-red-300" />
+                <span className="text-[13px] font-medium text-red-100">Dev server is not responding</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {onFixWithAI && (
+                  <button
+                    onClick={() => {
+                      const lastLogs = terminalLogs.slice(-20).join("\n");
+                      onFixWithAI(`Dev server crashed. Terminal output:\n${lastLogs}`);
+                      setDevServerCrashed(false);
+                    }}
+                    className="flex items-center gap-1.5 rounded-lg bg-emerald-700 px-3 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-emerald-600"
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Fix with AI
+                  </button>
+                )}
+                <button
+                  onClick={async () => {
+                    setDevServerCrashed(false);
+                    consecutiveFailRef.current = 0;
+                    wasHealthyRef.current = false;
+                    setTerminalLogs([]);
+                    if (window.electronAgent?.restartDevServer) {
+                      await window.electronAgent.restartDevServer();
+                    } else {
+                      handleRefresh();
+                    }
+                  }}
+                  className="flex items-center gap-1.5 rounded-lg bg-red-800 px-3 py-1.5 text-[12px] font-medium text-red-100 transition-colors hover:bg-red-700"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  Restart
+                </button>
+              </div>
+            </div>
+          )}
+          <iframe
+            ref={iframeRef}
+            className="h-full w-full border-0"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+            onLoad={() => {
+              setIsLoading(false);
+              setHasError(false);
+              setErrorMessage(null);
+              setDevServerCrashed(false);
+              retryCountRef.current = 0;
+              wasHealthyRef.current = true;
+              consecutiveFailRef.current = 0;
+              if (window.electronAgent?.injectInspectorInFrame) {
+                window.electronAgent.injectInspectorInFrame().then(() => {
+                  if (inspectorEnabled) {
+                    setTimeout(() => {
+                      iframeRef.current?.contentWindow?.postMessage({ type: "meld:toggle-inspector", enabled: true }, "*");
+                    }, 50);
+                  }
+                });
+              } else if (inspectorEnabled) {
+                iframeRef.current?.contentWindow?.postMessage({ type: "meld:toggle-inspector", enabled: true }, "*");
               }
-            } catch {
-              // cross-origin이면 정상 로드된 것
-            }
-            setIsLoading(false);
-            setHasError(false);
-            retryCountRef.current = 0;
-            if (inspectorEnabled) {
-              iframeRef.current?.contentWindow?.postMessage(
-                { type: "meld:toggle-inspector", enabled: true },
-                "*",
-              );
-            }
-          }}
-          onError={() => {
-            setHasError(true);
-          }}
-          title="Dev Server Preview"
-        />
+            }}
+            onError={() => { setHasError(true); setErrorMessage("Failed to load page"); }}
+            title="Dev Server Preview"
+          />
+        </div>
+
       </div>
 
-      {/* 엘리먼트 인포 바 */}
-      {inspectedElement && inspectorEnabled && (
-        <div className="flex items-center gap-2 border-t border-[#EEEEEC] bg-white px-3 py-2">
-          <FileCode className="h-3.5 w-3.5 flex-shrink-0 text-blue-500" />
-          <div className="flex min-w-0 flex-1 items-center gap-2">
-            {inspectedElement.componentName && (
-              <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[11px] font-medium text-blue-700">
-                {inspectedElement.componentName}
-              </span>
-            )}
-            <span className="text-[11px] text-[#787774]">
-              &lt;{inspectedElement.tagName}&gt;
-            </span>
-            {inspectedElement.className && (
-              <span className="truncate text-[10px] text-[#B4B4B0]">
-                .{inspectedElement.className.split(" ")[0]}
-              </span>
-            )}
-          </div>
-          {mappedFilePath ? (
-            <button
-              onClick={handleFileClick}
-              className="flex-shrink-0 rounded-lg bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-600 transition-colors hover:bg-blue-100"
-            >
-              {mappedFilePath.split("/").pop()}
-            </button>
-          ) : (
-            <span className="flex-shrink-0 text-[10px] text-[#B4B4B0]">
-              파일 트리에서 선택
-            </span>
-          )}
-        </div>
-      )}
     </div>
   );
 }

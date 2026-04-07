@@ -12,15 +12,15 @@ import { generatePalette } from "@/lib/design-system/palette";
 import { generateDesignMd } from "@/lib/design-system/generate-md";
 
 interface DesignSystemStore {
-  // 현재 활성 디자인 시스템
+  // Currently active design system
   current: DesignSystem | null;
-  // 저장된 디자인 시스템 목록
+  // Saved design system list
   systems: DesignSystem[];
-  // 패널 열림 여부
+  // Panel open state
   panelOpen: boolean;
 
   // Actions
-  createSystem: (name: string, seedColor?: string) => DesignSystem;
+  createSystem: (name: string, seedColor?: string, secondaryColor?: string, tertiaryColor?: string) => DesignSystem;
   updateMode: (mode: ThemeMode) => void;
   updateSeedColor: (hex: string) => void;
   updateSecondaryColor: (hex: string) => void;
@@ -33,16 +33,23 @@ interface DesignSystemStore {
   getDesignMd: () => string;
 }
 
-function createDefaultSystem(name: string, seedColor = "#2E86C1"): DesignSystem {
+function createDefaultSystem(
+  name: string,
+  seedColor = "#2E86C1",
+  secondaryColor = "#6B7280",
+  tertiaryColor = "#8B5CF6",
+): DesignSystem {
   return {
     id: crypto.randomUUID(),
     name,
     mode: "light",
     colors: {
       seedColor,
+      secondarySeed: secondaryColor,
+      tertiarySeed: tertiaryColor,
       primary: generatePalette(seedColor),
-      secondary: generatePalette("#6B7280"),
-      tertiary: generatePalette("#8B5CF6"),
+      secondary: generatePalette(secondaryColor),
+      tertiary: generatePalette(tertiaryColor),
     },
     typography: { ...DEFAULT_TYPOGRAPHY },
     spacing: { ...DEFAULT_SPACING },
@@ -60,8 +67,8 @@ export const useDesignSystemStore = create<DesignSystemStore>()(
       systems: [],
       panelOpen: false,
 
-      createSystem: (name, seedColor) => {
-        const ds = createDefaultSystem(name, seedColor);
+      createSystem: (name, seedColor, secondaryColor, tertiaryColor) => {
+        const ds = createDefaultSystem(name, seedColor, secondaryColor, tertiaryColor);
         set((s) => ({
           current: ds,
           systems: [...s.systems, ds],
@@ -104,6 +111,7 @@ export const useDesignSystemStore = create<DesignSystemStore>()(
             ...s.current,
             colors: {
               ...s.current.colors,
+              secondarySeed: hex,
               secondary: generatePalette(hex),
             },
             updatedAt: new Date().toISOString(),
@@ -121,6 +129,7 @@ export const useDesignSystemStore = create<DesignSystemStore>()(
             ...s.current,
             colors: {
               ...s.current.colors,
+              tertiarySeed: hex,
               tertiary: generatePalette(hex),
             },
             updatedAt: new Date().toISOString(),
@@ -170,7 +179,14 @@ export const useDesignSystemStore = create<DesignSystemStore>()(
 
       getDesignMd: () => {
         const { current } = get();
-        if (!current) return "";
+        // Use pinned design system if available
+        if (!current) {
+          if (typeof window !== "undefined") {
+            const pinned = localStorage.getItem("meld-active-design-md");
+            if (pinned) return pinned;
+          }
+          return "";
+        }
         return generateDesignMd(current);
       },
     }),

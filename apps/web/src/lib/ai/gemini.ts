@@ -12,7 +12,7 @@ export class GeminiProvider implements LLMProvider {
   async call(systemPrompt: string, userMessage: string): Promise<string> {
     const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
     if (!apiKey) {
-      throw new Error("GOOGLE_GEMINI_API_KEY가 설정되지 않았습니다");
+      throw new Error("GOOGLE_GEMINI_API_KEY is not configured");
     }
 
     const res = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
@@ -38,7 +38,7 @@ export class GeminiProvider implements LLMProvider {
 
     if (!res.ok) {
       const err = await res.text();
-      throw new Error(`Gemini API 에러: ${res.status} - ${err}`);
+      throw new Error(`Gemini API error: ${res.status} - ${err}`);
     }
 
     const data: GeminiResponse = await res.json();

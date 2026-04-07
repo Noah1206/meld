@@ -11,6 +11,14 @@ export interface Database {
           figma_access_token: string | null;
           figma_refresh_token: string | null;
           github_access_token: string | null;
+          vercel_access_token: string | null;
+          linear_access_token: string | null;
+          notion_access_token: string | null;
+          slack_access_token: string | null;
+          sentry_access_token: string | null;
+          sentry_refresh_token: string | null;
+          gmail_access_token: string | null;
+          gmail_refresh_token: string | null;
           plan: "free" | "pro" | "unlimited";
           subscription_status: "active" | "canceled" | "past_due" | "inactive";
           credits: number;
@@ -28,6 +36,14 @@ export interface Database {
           figma_access_token?: string | null;
           figma_refresh_token?: string | null;
           github_access_token?: string | null;
+          vercel_access_token?: string | null;
+          linear_access_token?: string | null;
+          notion_access_token?: string | null;
+          slack_access_token?: string | null;
+          sentry_access_token?: string | null;
+          sentry_refresh_token?: string | null;
+          gmail_access_token?: string | null;
+          gmail_refresh_token?: string | null;
           plan?: "free" | "pro" | "unlimited";
           subscription_status?: "active" | "canceled" | "past_due" | "inactive";
           credits?: number;
@@ -45,6 +61,14 @@ export interface Database {
           figma_access_token?: string | null;
           figma_refresh_token?: string | null;
           github_access_token?: string | null;
+          vercel_access_token?: string | null;
+          linear_access_token?: string | null;
+          notion_access_token?: string | null;
+          slack_access_token?: string | null;
+          sentry_access_token?: string | null;
+          sentry_refresh_token?: string | null;
+          gmail_access_token?: string | null;
+          gmail_refresh_token?: string | null;
           plan?: "free" | "pro" | "unlimited";
           subscription_status?: "active" | "canceled" | "past_due" | "inactive";
           credits?: number;
@@ -256,9 +280,183 @@ export interface Database {
           },
         ];
       };
+      ai_usage: {
+        Row: {
+          id: string;
+          user_id: string;
+          model: string;
+          provider: string;
+          input_tokens: number;
+          output_tokens: number;
+          cost_usd: number;
+          endpoint: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          model: string;
+          provider: string;
+          input_tokens: number;
+          output_tokens: number;
+          cost_usd: number;
+          endpoint: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          model?: string;
+          provider?: string;
+          input_tokens?: number;
+          output_tokens?: number;
+          cost_usd?: number;
+          endpoint?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "ai_usage_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      training_data: {
+        Row: {
+          id: string;
+          user_id: string;
+          instruction: string;
+          input_context: string;
+          output: string;
+          model_used: string;
+          rating: number | null;
+          element_history: string | null;
+          design_system_md: string | null;
+          framework: string | null;
+          file_path: string | null;
+          tags: string[] | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          instruction: string;
+          input_context: string;
+          output: string;
+          model_used: string;
+          rating?: number | null;
+          element_history?: string | null;
+          design_system_md?: string | null;
+          framework?: string | null;
+          file_path?: string | null;
+          tags?: string[] | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          instruction?: string;
+          input_context?: string;
+          output?: string;
+          model_used?: string;
+          rating?: number | null;
+          element_history?: string | null;
+          design_system_md?: string | null;
+          framework?: string | null;
+          file_path?: string | null;
+          tags?: string[] | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "training_data_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      user_settings: {
+        Row: {
+          user_id: string;
+          custom_instructions: string;
+          pinned_files: string[];
+          context_sources: Record<string, boolean>;
+          installed_skills: string[];
+          skill_contents: Record<string, string>;
+          skill_commands: Record<string, unknown>;
+          chain_depth: number;
+          auto_chain: boolean;
+          auto_approve: boolean;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          custom_instructions?: string;
+          pinned_files?: string[];
+          context_sources?: Record<string, boolean>;
+          installed_skills?: string[];
+          skill_contents?: Record<string, string>;
+          skill_commands?: Record<string, unknown>;
+          chain_depth?: number;
+          auto_chain?: boolean;
+          auto_approve?: boolean;
+          updated_at?: string;
+        };
+        Update: {
+          custom_instructions?: string;
+          pinned_files?: string[];
+          context_sources?: Record<string, boolean>;
+          installed_skills?: string[];
+          skill_contents?: Record<string, string>;
+          skill_commands?: Record<string, unknown>;
+          chain_depth?: number;
+          auto_chain?: boolean;
+          auto_approve?: boolean;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "user_settings_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: true;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
-    Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Views: {
+      daily_ai_usage: {
+        Row: {
+          user_id: string;
+          usage_date: string;
+          total_input_tokens: number;
+          total_output_tokens: number;
+          total_cost_usd: number;
+          request_count: number;
+        };
+        Relationships: [];
+      };
+    };
+    Functions: {
+      get_daily_usage: {
+        Args: {
+          p_user_id: string;
+          p_date: string;
+        };
+        Returns: {
+          total_input_tokens: number;
+          total_output_tokens: number;
+          total_cost_usd: number;
+          request_count: number;
+        }[];
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };

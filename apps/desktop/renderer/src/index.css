@@ -4,6 +4,7 @@
 
 body {
   margin: 0;
+  background-color: #0B0E11;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
 }

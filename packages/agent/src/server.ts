@@ -11,7 +11,7 @@ interface ServerOptions {
   rootDir: string;
 }
 
-// 일반적인 dev server 포트들
+// Common dev server ports
 const COMMON_DEV_PORTS = [3000, 5173, 5174, 8080, 4200, 4321, 8000];
 
 export function startServer({ port, rootDir }: ServerOptions) {
@@ -20,12 +20,12 @@ export function startServer({ port, rootDir }: ServerOptions) {
   let activeClient: WebSocket | null = null;
 
   console.log(`\n  ⚡ FigmaCodeBridge Agent`);
-  console.log(`  📁 프로젝트: ${rootDir}`);
+  console.log(`  📁 Project: ${rootDir}`);
   console.log(`  🔗 WebSocket: ws://localhost:${port}`);
-  console.log(`  → 웹앱에서 연결: https://meld-psi.vercel.app/project/local?agent=ws://localhost:${port}`);
-  console.log(`\n  Ctrl+C로 종료\n`);
+  console.log(`  → Connect from web app: https://meld-psi.vercel.app/project/local?agent=ws://localhost:${port}`);
+  console.log(`\n  Press Ctrl+C to stop\n`);
 
-  // 파일 변경 감지
+  // File change detection
   const watcher = createWatcher(rootDir, (event) => {
     if (activeClient?.readyState === WebSocket.OPEN) {
       activeClient.send(
@@ -34,7 +34,7 @@ export function startServer({ port, rootDir }: ServerOptions) {
     }
   });
 
-  // Dev server 감지
+  // Dev server detection
   detectDevServer(rootDir).then((info) => {
     if (info && activeClient?.readyState === WebSocket.OPEN) {
       activeClient.send(
@@ -44,23 +44,23 @@ export function startServer({ port, rootDir }: ServerOptions) {
   });
 
   wss.on("connection", (ws) => {
-    console.log("  ✅ 웹앱 연결됨");
+    console.log("  ✅ Web app connected");
     activeClient = ws;
 
-    // 연결 성공 메시지
+    // Connection success message
     ws.send(
       JSON.stringify(
         createMessage("connected", { projectPath: rootDir, projectName }),
       ),
     );
 
-    // 파일 트리 전송
+    // Send file tree
     const files = scanProject(rootDir);
     ws.send(
       JSON.stringify(createMessage("fileTree", { files })),
     );
 
-    // Dev server 재감지
+    // Re-detect dev server
     detectDevServer(rootDir).then((info) => {
       if (info && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify(createMessage("devServer", info)));
@@ -75,12 +75,12 @@ export function startServer({ port, rootDir }: ServerOptions) {
     });
 
     ws.on("close", () => {
-      console.log("  ❌ 웹앱 연결 해제");
+      console.log("  ❌ Web app disconnected");
       activeClient = null;
     });
   });
 
-  // 정리
+  // Cleanup
   const cleanup = () => {
     watcher.close();
     wss.close();
@@ -103,11 +103,11 @@ function handleMessage(ws: WebSocket, msg: ReturnType<typeof parseMessage>, root
       const filePath = payload.path as string;
       const fullPath = path.resolve(rootDir, filePath);
 
-      // 경로 탐색 방지
+      // Prevent path traversal
       if (!fullPath.startsWith(rootDir)) {
         ws.send(
           JSON.stringify(
-            createMessage("fileContent", { path: filePath, content: "", error: "접근 불가" }),
+            createMessage("fileContent", { path: filePath, content: "", error: "Access denied" }),
           ),
         );
         return;
@@ -126,7 +126,7 @@ function handleMessage(ws: WebSocket, msg: ReturnType<typeof parseMessage>, root
             createMessage("fileContent", {
               path: filePath,
               content: "",
-              error: err instanceof Error ? err.message : "읽기 실패",
+              error: err instanceof Error ? err.message : "Read failed",
             }),
           ),
         );
@@ -145,25 +145,25 @@ function handleMessage(ws: WebSocket, msg: ReturnType<typeof parseMessage>, root
       const content = payload.content as string;
       const fullPath = path.resolve(rootDir, filePath);
 
-      // 경로 탐색 방지
+      // Prevent path traversal
       if (!fullPath.startsWith(rootDir)) {
         ws.send(
           JSON.stringify(
-            createMessage("writeResult", { path: filePath, success: false, error: "접근 불가" }),
+            createMessage("writeResult", { path: filePath, success: false, error: "Access denied" }),
           ),
         );
         return;
       }
 
       try {
-        // 디렉토리가 없으면 생성
+        // Create directory if it doesn't exist
         const dir = path.dirname(fullPath);
         if (!fs.existsSync(dir)) {
           fs.mkdirSync(dir, { recursive: true });
         }
 
         fs.writeFileSync(fullPath, content, "utf-8");
-        console.log(`  📝 파일 수정: ${filePath}`);
+        console.log(`  📝 File modified: ${filePath}`);
         ws.send(
           JSON.stringify(
             createMessage("writeResult", { path: filePath, success: true }),
@@ -175,7 +175,7 @@ function handleMessage(ws: WebSocket, msg: ReturnType<typeof parseMessage>, root
             createMessage("writeResult", {
               path: filePath,
               success: false,
-              error: err instanceof Error ? err.message : "쓰기 실패",
+              error: err instanceof Error ? err.message : "Write failed",
             }),
           ),
         );
@@ -185,9 +185,9 @@ function handleMessage(ws: WebSocket, msg: ReturnType<typeof parseMessage>, root
   }
 }
 
-// Dev server 포트 감지
+// Dev server port detection
 async function detectDevServer(rootDir: string): Promise<{ url: string; framework: string } | null> {
-  // package.json에서 프레임워크 감지
+  // Detect framework from package.json
   const framework = detectFramework(rootDir);
 
   for (const port of COMMON_DEV_PORTS) {

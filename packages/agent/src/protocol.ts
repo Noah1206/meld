@@ -1,4 +1,4 @@
-// Re-export shared protocol types + 에이전트 전용 유틸
+// Re-export shared protocol types + agent-specific utilities
 
 import type { AgentMessage } from "@figma-code-bridge/shared";
 

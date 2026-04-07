@@ -41,7 +41,7 @@ export function LocalPanel({
         const content = await readFile(path);
         setFileContent(content);
       } catch {
-        setFileContent("// 파일을 읽을 수 없습니다");
+        setFileContent("// Unable to read file");
       } finally {
         setIsLoadingFile(false);
       }
@@ -49,23 +49,23 @@ export function LocalPanel({
     [readFile, onSelectFile],
   );
 
-  // 미연결 상태 (데스크톱에서는 표시되지 않지만 안전장치)
+  // Disconnected state (not shown in desktop but kept as a safeguard)
   if (!connected) {
     return (
       <div className="flex h-full items-center justify-center bg-white p-6">
         <div className="text-center">
           <FolderOpen className="mx-auto h-5 w-5 text-[#D4D4D0]" />
-          <p className="mt-2 text-[12px] text-[#B4B4B0]">프로젝트를 열어주세요</p>
+          <p className="mt-2 text-[12px] text-[#B4B4B0]">Please open a project</p>
         </div>
       </div>
     );
   }
 
   const TABS: { id: LeftTab; label: string; icon: React.ReactNode; disabled?: boolean }[] = [
-    { id: "files", label: "파일", icon: <FolderOpen className="h-3.5 w-3.5" /> },
+    { id: "files", label: "Files", icon: <FolderOpen className="h-3.5 w-3.5" /> },
     {
       id: "preview",
-      label: "프리뷰",
+      label: "Preview",
       icon: (
         <span className="relative">
           <Eye className="h-3.5 w-3.5" />
@@ -80,7 +80,7 @@ export function LocalPanel({
 
   return (
     <div className="flex h-full flex-col bg-white">
-      {/* 탭 바 */}
+      {/* Tab bar */}
       <div className="flex border-b border-[#E0E0DC]">
         {TABS.map((tab) => (
           <button
@@ -104,7 +104,7 @@ export function LocalPanel({
         ))}
       </div>
 
-      {/* 탭 컨텐츠 */}
+      {/* Tab content */}
       <div className="flex flex-1 flex-col overflow-hidden bg-white">
         {activeTab === "files" && (
           <div className="flex flex-1 flex-col overflow-hidden">
@@ -114,7 +114,7 @@ export function LocalPanel({
                   <div className="text-center">
                     <FolderOpen className="mx-auto h-5 w-5 text-[#D4D4D0]" />
                     <p className="mt-2 text-[12px] text-[#B4B4B0]">
-                      프로젝트 파일이 스캔되면 여기에 표시됩니다
+                      Project files will appear here after scanning
                     </p>
                   </div>
                 </div>
@@ -139,7 +139,7 @@ export function LocalPanel({
                   {isLoadingFile ? (
                     <div className="flex items-center gap-2">
                       <Loader2 className="h-3 w-3 animate-spin text-[#B4B4B0]" />
-                      <span className="text-[12px] text-[#B4B4B0]">로딩 중...</span>
+                      <span className="text-[12px] text-[#B4B4B0]">Loading...</span>
                     </div>
                   ) : (
                     <pre className="whitespace-pre-wrap text-[11px] leading-relaxed text-[#1A1A1A]">

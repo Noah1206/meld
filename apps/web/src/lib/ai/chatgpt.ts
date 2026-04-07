@@ -12,7 +12,7 @@ export class ChatGPTProvider implements LLMProvider {
   async call(systemPrompt: string, userMessage: string): Promise<string> {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      throw new Error("OPENAI_API_KEY가 설정되지 않았습니다");
+      throw new Error("OPENAI_API_KEY is not configured");
     }
 
     const res = await fetch(OPENAI_API_URL, {
@@ -33,7 +33,7 @@ export class ChatGPTProvider implements LLMProvider {
 
     if (!res.ok) {
       const err = await res.text();
-      throw new Error(`ChatGPT API 에러: ${res.status} - ${err}`);
+      throw new Error(`ChatGPT API error: ${res.status} - ${err}`);
     }
 
     const data: OpenAIResponse = await res.json();

@@ -2,41 +2,57 @@ import * as path from "node:path";
 import { watch, type FSWatcher } from "chokidar";
 
 export interface FileChangeEvent {
-  path: string; // 상대 경로
+  path: string; // Relative path
   changeType: "add" | "change" | "unlink";
 }
 
 export type ChangeHandler = (event: FileChangeEvent) => void;
 
-const IGNORED_PATTERNS = [
-  "**/node_modules/**",
-  "**/.git/**",
-  "**/dist/**",
-  "**/build/**",
-  "**/.next/**",
-  "**/.nuxt/**",
-  "**/.cache/**",
-  "**/.turbo/**",
-  "**/coverage/**",
-];
+// Directory names to exclude from watching entirely
+const IGNORED_DIRS = new Set([
+  "node_modules",
+  ".git",
+  "dist",
+  "build",
+  ".next",
+  ".nuxt",
+  ".output",
+  ".cache",
+  ".turbo",
+  "coverage",
+  ".DS_Store",
+]);
 
 export function createWatcher(
   rootDir: string,
   onChange: ChangeHandler,
 ): FSWatcher {
   const watcher = watch(rootDir, {
-    ignored: IGNORED_PATTERNS,
+    ignored: (filePath: string) => {
+      // Block if any path segment is in the ignore list
+      const segments = filePath.split(path.sep);
+      return segments.some((seg) => IGNORED_DIRS.has(seg));
+    },
     persistent: true,
     ignoreInitial: true,
+    depth: 10,
+    usePolling: false,
     awaitWriteFinish: {
-      stabilityThreshold: 200,
-      pollInterval: 50,
+      stabilityThreshold: 300,
+      pollInterval: 100,
     },
+  });
+
+  // Ignore EMFILE errors (graceful degradation)
+  watcher.on("error", (err: unknown) => {
+    const e = err as { code?: string; message?: string };
+    if (e.code === "EMFILE" || e.code === "ENFILE") return;
+    console.error("[watcher] error:", e.message);
   });
 
   const emit = (changeType: FileChangeEvent["changeType"], filePath: string) => {
     const relativePath = path.relative(rootDir, filePath);
-    // 숨김 파일 무시
+    // Ignore hidden files
     if (relativePath.startsWith(".")) return;
     onChange({ path: relativePath, changeType });
   };

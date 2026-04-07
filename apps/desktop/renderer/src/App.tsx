@@ -8,15 +8,13 @@ import { DashboardPage } from "./components/DashboardPage";
 import { useElectronAgent } from "./hooks/useElectronAgent";
 import { useAgentStore } from "./store/agent-store";
 
-type View = "login" | "dashboard" | "project";
-type Lang = "en" | "ko";
+type View = "loading" | "login" | "dashboard" | "project";
 
 export function App() {
   const agent = useElectronAgent();
-  const [view, setView] = useState<View>("login");
-  const [user, setUser] = useState<{ name: string; avatar: string; hasFigmaToken?: boolean } | null>(null);
+  const [view, setView] = useState<View>("loading");
+  const [user, setUser] = useState<{ id?: string; name: string; avatar: string; hasFigmaToken?: boolean } | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const [lang, setLang] = useState<Lang>("ko");
   const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
@@ -31,6 +29,28 @@ export function App() {
     setProjectName,
     setDevServerUrl,
   } = useAgentStore();
+
+  // Check for saved session on mount
+  useEffect(() => {
+    const checkSession = async () => {
+      const electronAgent = window.electronAgent;
+      if (electronAgent?.getSavedSession) {
+        const savedUser = await electronAgent.getSavedSession();
+        if (savedUser) {
+          setUser({
+            id: savedUser.id,
+            name: savedUser.githubUsername,
+            avatar: savedUser.avatarUrl ?? "",
+            hasFigmaToken: savedUser.hasFigmaToken,
+          });
+          setView("dashboard");
+          return;
+        }
+      }
+      setView("login");
+    };
+    checkSession();
+  }, []);
 
   useEffect(() => {
     setHandlers(agent.readFile, agent.writeFile);
@@ -47,9 +67,7 @@ export function App() {
     setDevServerUrl(agent.devServerUrl);
   }, [agent.connected, agent.fileTree, agent.projectName, agent.devServerUrl, setConnected, setFileTree, setProjectName, setDevServerUrl]);
 
-  const toggleLang = () => setLang((prev) => (prev === "en" ? "ko" : "en"));
-
-  const handleLogin = async () => {
+  const handleLogin = async (rememberMe: boolean) => {
     const electronAgent = window.electronAgent;
     if (!electronAgent?.loginWithGithub) return;
 
@@ -57,19 +75,35 @@ export function App() {
     try {
       const authUser = await electronAgent.loginWithGithub();
       if (authUser) {
-        setUser({
+        const userData = {
+          id: authUser.id,
           name: authUser.githubUsername,
           avatar: authUser.avatarUrl ?? "",
           hasFigmaToken: authUser.hasFigmaToken,
-        });
+        };
+        setUser(userData);
         setView("dashboard");
+
+        // Save session if "Remember me" is checked
+        if (rememberMe && electronAgent.saveSession) {
+          await electronAgent.saveSession({
+            id: authUser.id,
+            githubUsername: authUser.githubUsername,
+            avatarUrl: authUser.avatarUrl,
+            hasFigmaToken: authUser.hasFigmaToken,
+          });
+        }
       }
     } finally {
       setIsLoggingIn(false);
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    const electronAgent = window.electronAgent;
+    if (electronAgent?.clearSession) {
+      await electronAgent.clearSession();
+    }
     setUser(null);
     setView("login");
   };
@@ -100,18 +134,23 @@ export function App() {
     setView("dashboard");
   };
 
-  // -- 로그인 뷰 --
-  if (view === "login") {
+  // -- Loading view --
+  if (view === "loading") {
     return (
-      <LoginPage
-        onLogin={handleLogin}
-        lang={lang}
-        onToggleLang={toggleLang}
-      />
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <Loader2 className="h-6 w-6 animate-spin text-[#1A1A1A]" />
+      </div>
     );
   }
 
-  // -- 대시보드 뷰 --
+  // -- Login view --
+  if (view === "login") {
+    return (
+      <LoginPage onLogin={handleLogin} />
+    );
+  }
+
+  // -- Dashboard view --
   if (view === "dashboard" && user) {
     return (
       <>
@@ -123,17 +162,15 @@ export function App() {
             setTimeout(() => nameInputRef.current?.focus(), 100);
           }}
           onLogout={handleLogout}
-          lang={lang}
-          onToggleLang={toggleLang}
         />
 
-        {/* 새 프로젝트 생성 모달 */}
+        {/* New project creation modal */}
         {showCreateModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
             <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-[16px] font-bold text-[#1A1A1A]">
-                  {lang === "ko" ? "새 프로젝트 만들기" : "Create New Project"}
+                  Create New Project
                 </h2>
                 <button
                   onClick={() => { setShowCreateModal(false); setNewProjectName(""); }}
@@ -144,7 +181,7 @@ export function App() {
               </div>
 
               <label className="block text-[12px] font-medium text-[#787774] mb-2">
-                {lang === "ko" ? "프로젝트 이름" : "Project Name"}
+                Project Name
               </label>
               <input
                 ref={nameInputRef}
@@ -161,7 +198,7 @@ export function App() {
                   onClick={() => { setShowCreateModal(false); setNewProjectName(""); }}
                   className="flex-1 rounded-xl border border-black/[0.08] px-4 py-3 text-[14px] font-semibold text-[#787774] transition-all hover:bg-[#FAFAFA]"
                 >
-                  {lang === "ko" ? "취소" : "Cancel"}
+                  Cancel
                 </button>
                 <button
                   onClick={handleCreateProject}
@@ -169,10 +206,7 @@ export function App() {
                   className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-[#1A1A1A] px-4 py-3 text-[14px] font-semibold text-white transition-all hover:bg-[#333] active:scale-[0.98] disabled:opacity-40"
                 >
                   {isCreating && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                  {isCreating
-                    ? (lang === "ko" ? "생성 중..." : "Creating...")
-                    : (lang === "ko" ? "위치 선택 후 생성" : "Choose Location & Create")
-                  }
+                  {isCreating ? "Creating..." : "Choose Location & Create"}
                 </button>
               </div>
             </div>
@@ -182,8 +216,8 @@ export function App() {
     );
   }
 
-  // -- 프로젝트(워크스페이스) 뷰 --
-  // agent.connected가 false인데 view가 project인 경우 대시보드로 복귀
+  // -- Project (workspace) view --
+  // If agent.connected is false but view is project, fall back to dashboard
   if (!agent.connected && view === "project") {
     return (
       <>
@@ -196,11 +230,9 @@ export function App() {
               setTimeout(() => nameInputRef.current?.focus(), 100);
             }}
             onLogout={handleLogout}
-            lang={lang}
-            onToggleLang={toggleLang}
           />
         ) : (
-          <LoginPage onLogin={handleLogin} lang={lang} onToggleLang={toggleLang} />
+          <LoginPage onLogin={handleLogin} />
         )}
       </>
     );
@@ -208,7 +240,7 @@ export function App() {
 
   return (
     <WorkspaceLayout
-      projectName={agent.projectName ?? (lang === "ko" ? "프로젝트" : "Project")}
+      projectName={agent.projectName ?? "Project"}
       onBack={handleBackToDashboard}
       headerActions={
         <div className="flex items-center gap-2">

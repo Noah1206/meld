@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack -p 9000",
+    "dev": "next dev --turbopack -p 9090",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -24,6 +24,7 @@
     "@trpc/server": "^11.14.1",
     "@webcontainer/api": "^1.6.1",
     "clsx": "^2.1.1",
+    "framer-motion": "^12.38.0",
     "jose": "^6.2.2",
     "lucide-react": "^0.577.0",
     "next": "16.2.1",

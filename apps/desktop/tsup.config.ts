@@ -9,15 +9,15 @@ export default defineConfig([
     target: "node20",
     outDir: "dist",
     clean: true,
-    external: ["electron", "chokidar", "fsevents"],
-    noExternal: ["@figma-code-bridge/agent", "@figma-code-bridge/shared"],
+    external: ["electron", "fsevents", "node-pty"],
+    noExternal: ["@figma-code-bridge/agent", "@figma-code-bridge/shared", "chokidar"],
     splitting: false,
     sourcemap: true,
   },
   // Preload script
   {
     entry: { "preload/index": "preload/index.ts" },
-    format: ["cjs"], // preload은 CJS 필수 (Electron 제약)
+    format: ["cjs"], // preload must be CJS (Electron requirement)
     platform: "node",
     target: "node20",
     outDir: "dist",

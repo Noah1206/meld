@@ -9,6 +9,16 @@ export interface InspectedElement {
   componentName: string | null;
   selector: string;
   rect: { x: number; y: number; width: number; height: number };
+  // Enhanced info
+  sourceLoc: string | null; // "filename:line:column" (React dev mode __source)
+  computedStyle: Record<string, string> | null; // Key CSS properties
+}
+
+// Selection history entry (for AI context)
+export interface ElementHistoryEntry {
+  element: InspectedElement;
+  filePath: string | null; // Mapped file path
+  timestamp: number;
 }
 
 interface AgentState {
@@ -20,12 +30,16 @@ interface AgentState {
   dependencies: string[];
   selectedFilePath: string | null;
   lastWriteTimestamp: number;
+  lastChangedFilePath: string | null;
 
-  // 인스펙터 상태
+  // Inspector state
   inspectorEnabled: boolean;
   inspectedElement: InspectedElement | null;
 
-  // 에이전트 readFile/writeFile 핸들러 (useAgentConnection에서 주입)
+  // Element selection history (helps AI understand user's area of interest)
+  elementHistory: ElementHistoryEntry[];
+
+  // Agent readFile/writeFile handlers (injected from useAgentConnection)
   readFileFn: ((path: string) => Promise<string>) | null;
   writeFileFn: ((path: string, content: string) => Promise<boolean>) | null;
 
@@ -40,10 +54,14 @@ interface AgentState {
   setInspectorEnabled: (enabled: boolean) => void;
   setInspectedElement: (el: InspectedElement | null) => void;
   setLastWrite: () => void;
+  setLastChangedFile: (path: string | null) => void;
   setHandlers: (
     readFile: (path: string) => Promise<string>,
     writeFile: (path: string, content: string) => Promise<boolean>,
   ) => void;
+  addElementToHistory: (element: InspectedElement, filePath: string | null) => void;
+  removeElementFromHistory: (index: number) => void;
+  clearElementHistory: () => void;
 }
 
 export const useAgentStore = create<AgentState>((set) => ({
@@ -56,7 +74,9 @@ export const useAgentStore = create<AgentState>((set) => ({
   selectedFilePath: null,
   inspectorEnabled: false,
   inspectedElement: null,
+  elementHistory: [],
   lastWriteTimestamp: 0,
+  lastChangedFilePath: null,
   readFileFn: null,
   writeFileFn: null,
 
@@ -70,5 +90,21 @@ export const useAgentStore = create<AgentState>((set) => ({
   setInspectorEnabled: (inspectorEnabled) => set({ inspectorEnabled }),
   setInspectedElement: (inspectedElement) => set({ inspectedElement }),
   setLastWrite: () => set({ lastWriteTimestamp: Date.now() }),
+  setLastChangedFile: (lastChangedFilePath) => set({ lastChangedFilePath }),
   setHandlers: (readFileFn, writeFileFn) => set({ readFileFn, writeFileFn }),
+  addElementToHistory: (element, filePath) =>
+    set((state) => {
+      // Dedup: remove existing entry with same selector and keep latest
+      const filtered = state.elementHistory.filter(
+        (e) => e.element.selector !== element.selector,
+      );
+      // Keep max 10 entries
+      const next = [...filtered, { element, filePath, timestamp: Date.now() }];
+      return { elementHistory: next.slice(-10) };
+    }),
+  removeElementFromHistory: (index) =>
+    set((state) => ({
+      elementHistory: state.elementHistory.filter((_, i) => i !== index),
+    })),
+  clearElementHistory: () => set({ elementHistory: [] }),
 }));

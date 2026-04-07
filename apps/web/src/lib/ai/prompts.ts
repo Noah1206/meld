@@ -9,48 +9,47 @@ export function buildCodeEditPrompt(
     dependencies?: string[];
     projectStructure?: string;
     siblingFiles?: string[];
-    designSystemMd?: string; // DESIGN.md 전체 내용
+    designSystemMd?: string;
   }
 ): { system: string; user: string } {
   let systemExtra = "";
 
   if (context?.framework && context.framework !== "unknown") {
-    systemExtra += `\n이 프로젝트는 ${context.framework}를 사용합니다.`;
+    systemExtra += `\nThis project uses ${context.framework}.`;
     systemExtra += getFrameworkGuidelines(context.framework, context.dependencies);
   }
   if (context?.dependencies?.length) {
-    systemExtra += `\n사용 가능한 라이브러리: ${context.dependencies.join(", ")}`;
+    systemExtra += `\nAvailable libraries: ${context.dependencies.join(", ")}`;
   }
   if (context?.projectStructure) {
-    systemExtra += `\n프로젝트 구조:\n${context.projectStructure}`;
+    systemExtra += `\nProject structure:\n${context.projectStructure}`;
   }
   if (context?.siblingFiles?.length) {
-    systemExtra += `\n같은 폴더의 파일: ${context.siblingFiles.join(", ")}`;
+    systemExtra += `\nFiles in same directory: ${context.siblingFiles.join(", ")}`;
   }
   if (context?.designSystemMd) {
-    systemExtra += `\n\n--- DESIGN SYSTEM ---\n아래 디자인 시스템을 반드시 따르세요. 색상, 폰트, 스페이싱 등 모든 스타일 값은 이 시스템에서 가져오세요.\n\n${context.designSystemMd}\n--- END DESIGN SYSTEM ---`;
+    systemExtra += `\n\n--- DESIGN SYSTEM ---\nYou must follow this design system strictly. All style values (colors, fonts, spacing) must come from this system.\n\n${context.designSystemMd}\n--- END DESIGN SYSTEM ---`;
   }
 
-  const system = `당신은 Figma 디자인을 코드로 변환하는 전문가입니다.
-사용자의 명령에 따라 코드를 수정하세요.
+  const system = `You are Meld AI, an expert at modifying existing code based on user instructions and design specifications.
 ${systemExtra}
-반드시 아래 JSON 형식으로만 응답하세요 (다른 텍스트 없이):
+You must respond ONLY with the following JSON format (no other text):
 {
   "filePath": "${filePath}",
-  "original": "수정 전 코드 (변경된 부분만)",
-  "modified": "수정 후 코드 (변경된 부분만)",
-  "explanation": "변경 사항 설명 (한국어)"
+  "original": "code before (changed part only)",
+  "modified": "code after (changed part only)",
+  "explanation": "brief explanation of changes"
 }`;
 
-  const user = `Figma 노드: "${figmaNodeName}" (${figmaNodeType})
-파일: ${filePath}
+  const user = `Figma node: "${figmaNodeName}" (${figmaNodeType})
+File: ${filePath}
 
-현재 코드:
+Current code:
 \`\`\`
 ${currentCode}
 \`\`\`
 
-사용자 명령: ${userCommand}`;
+User command: ${userCommand}`;
 
   return { system, user };
 }
@@ -65,49 +64,48 @@ function getFrameworkGuidelines(
   switch (framework) {
     case "Next.js":
       guide += `
-[Next.js 가이드라인]
-- App Router 사용 시 서버 컴포넌트가 기본. 클라이언트 이벤트/훅 필요 시 파일 상단에 "use client" 추가.
-- 이미지는 next/image, 링크는 next/link 사용.
-- 서버 액션은 "use server" 함수로 작성.`;
+[Next.js Guidelines]
+- Server Components by default with App Router. Add "use client" only when using client hooks/events.
+- Use next/image for images, next/link for navigation.
+- Use "use server" for server actions.`;
       break;
     case "React":
       guide += `
-[React 가이드라인]
-- 함수형 컴포넌트 + hooks 패턴 사용.
-- 상태 관리: useState/useReducer, 부수효과: useEffect.
-- 컴포넌트는 단일 책임 원칙을 따르세요.`;
+[React Guidelines]
+- Use functional components with hooks.
+- State: useState/useReducer. Effects: useEffect.
+- Follow single responsibility principle.`;
       break;
     case "Vue":
       guide += `
-[Vue 가이드라인]
-- Composition API + <script setup> 문법 우선.
-- ref()/reactive()로 반응형 상태 관리.
-- defineProps/defineEmits로 타입 안전한 props/events.`;
+[Vue Guidelines]
+- Use Composition API with <script setup>.
+- State: ref()/reactive(). Type-safe props: defineProps/defineEmits.`;
       break;
     case "Angular":
       guide += `
-[Angular 가이드라인]
-- 컴포넌트 데코레이터 + standalone 컴포넌트 우선.
-- 서비스는 Injectable + providedIn: 'root'.
-- Reactive Forms 우선, Template-driven은 지양.`;
+[Angular Guidelines]
+- Prefer standalone components with decorators.
+- Services: Injectable + providedIn: 'root'.
+- Prefer Reactive Forms over Template-driven.`;
       break;
     case "Svelte":
       guide += `
-[Svelte 가이드라인]
-- $: 반응형 선언문 사용.
-- 컴포넌트 props는 export let으로 선언.
-- 스토어는 writable/readable 사용.`;
+[Svelte Guidelines]
+- Use $: for reactive declarations.
+- Component props: export let.
+- Stores: writable/readable.`;
       break;
   }
 
-  if (hasDep?.("tailwindcss")) {
-    guide += `\n- Tailwind CSS 사용 중: 유틸리티 클래스 우선, 인라인 style 지양.`;
+  if (hasDep("tailwindcss")) {
+    guide += `\n- Tailwind CSS: Use utility classes, avoid inline styles.`;
   }
-  if (hasDep?.("@shadcn") || hasDep?.("shadcn")) {
-    guide += `\n- shadcn/ui 사용 중: 기존 UI 컴포넌트를 재활용하세요 (Button, Card, Dialog 등).`;
+  if (hasDep("@shadcn") || hasDep("shadcn")) {
+    guide += `\n- shadcn/ui: Reuse existing UI components (Button, Card, Dialog, etc.).`;
   }
-  if (hasDep?.("@radix-ui")) {
-    guide += `\n- Radix UI 사용 중: 접근성 기반 프리미티브를 활용하세요.`;
+  if (hasDep("@radix-ui")) {
+    guide += `\n- Radix UI: Use accessibility-first primitives.`;
   }
 
   return guide;

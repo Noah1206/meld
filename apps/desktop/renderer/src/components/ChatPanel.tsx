@@ -44,8 +44,8 @@ export function ChatPanel() {
             <div className="flex flex-1 items-center justify-center">
               <div className="text-center">
                 <MessageSquare className="mx-auto h-8 w-8 text-[#E0E0DC]" />
-                <p className="mt-3 text-[14px] font-medium text-[#1A1A1A]">AI 채팅</p>
-                <p className="mt-1 text-[12px] text-[#B4B4B0]">파일을 선택하고 명령을 입력하세요</p>
+                <p className="mt-3 text-[14px] font-medium text-[#1A1A1A]">AI Chat</p>
+                <p className="mt-1 text-[12px] text-[#B4B4B0]">Select a file and enter a command</p>
               </div>
             </div>
 
@@ -56,7 +56,7 @@ export function ChatPanel() {
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="파일을 선택하세요"
+                  placeholder="Select a file"
                   className="flex-1 bg-transparent text-[13px] text-[#1A1A1A] placeholder:text-[#B4B4B0] outline-none"
                 />
                 <button className="rounded-lg p-1.5 text-[#B4B4B0] transition-colors hover:bg-[#F5F5F4] hover:text-[#787774]">
@@ -69,13 +69,13 @@ export function ChatPanel() {
 
         {activeTab === "diff" && (
           <div className="flex flex-1 items-center justify-center">
-            <p className="text-[12px] text-[#B4B4B0]">코드 변경 사항이 여기에 표시됩니다</p>
+            <p className="text-[12px] text-[#B4B4B0]">Code changes will be shown here</p>
           </div>
         )}
 
         {activeTab === "preview" && (
           <div className="flex flex-1 items-center justify-center">
-            <p className="text-[12px] text-[#B4B4B0]">프리뷰가 여기에 표시됩니다</p>
+            <p className="text-[12px] text-[#B4B4B0]">Preview will be shown here</p>
           </div>
         )}
       </div>

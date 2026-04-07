@@ -32,20 +32,20 @@ export function FileTreeBrowser({ files, selectedPath, onSelectFile }: FileTreeB
   if (files.length === 0) {
     return (
       <div className="flex h-full items-center justify-center p-4">
-        <p className="text-[12px] text-[#B4B4B0]">파일 트리를 로드 중...</p>
+        <p className="text-[12px] text-[#B4B4B0]">Loading file tree...</p>
       </div>
     );
   }
 
   return (
     <div className="flex h-full flex-col">
-      {/* 검색 */}
+      {/* Search */}
       <div className="p-2">
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-[#B4B4B0]" />
           <input
             type="text"
-            placeholder="파일 검색..."
+            placeholder="Search files..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full rounded-lg border border-[#E0E0DC] bg-white py-1.5 pl-7 pr-2.5 text-[12px] text-[#1A1A1A] placeholder:text-[#B4B4B0] focus:border-[#C0C0BC] focus:outline-none transition-colors"
@@ -53,7 +53,7 @@ export function FileTreeBrowser({ files, selectedPath, onSelectFile }: FileTreeB
         </div>
       </div>
 
-      {/* 파일 리스트 */}
+      {/* File list */}
       <div className="flex-1 overflow-y-auto py-2">
         {filteredFiles
           ? filteredFiles.map((entry) => (

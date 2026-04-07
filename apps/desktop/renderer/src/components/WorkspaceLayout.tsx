@@ -26,7 +26,7 @@ export function WorkspaceLayout({
               className="flex items-center gap-1 text-[15px] text-[#787774] transition-colors hover:text-[#1A1A1A]"
             >
               <ArrowLeft className="h-4 w-4" />
-              <span>뒤로</span>
+              <span>Back</span>
             </button>
           )}
           {onBack && <div className="h-4 w-px bg-[#E0E0DC]" />}

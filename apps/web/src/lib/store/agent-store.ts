@@ -11,6 +11,8 @@ export interface InspectedElement {
   componentName: string | null;
   selector: string;
   rect: { x: number; y: number; width: number; height: number };
+  sourceLoc?: string;
+  computedStyle?: Record<string, string>;
 }
 
 interface AgentState {
@@ -22,12 +24,15 @@ interface AgentState {
   dependencies: string[];
   selectedFilePath: string | null;
   lastWriteTimestamp: number;
+  lastChangedFilePath: string | null;
 
-  // 인스펙터 상태
+  // Inspector state
   inspectorEnabled: boolean;
   inspectedElement: InspectedElement | null;
+  // Selected element history (for AI context)
+  elementHistory: Array<{ element: InspectedElement; filePath?: string; timestamp: number }>;
 
-  // 에이전트 readFile/writeFile 핸들러 (useAgentConnection에서 주입)
+  // Agent readFile/writeFile handlers (injected from useAgentConnection)
   readFileFn: ((path: string) => Promise<string>) | null;
   writeFileFn: ((path: string, content: string) => Promise<boolean>) | null;
 
@@ -41,7 +46,10 @@ interface AgentState {
   setSelectedFilePath: (path: string | null) => void;
   setInspectorEnabled: (enabled: boolean) => void;
   setInspectedElement: (el: InspectedElement | null) => void;
+  addElementHistory: (el: InspectedElement, filePath?: string) => void;
+  clearElementHistory: () => void;
   setLastWrite: () => void;
+  setLastChangedFile: (path: string | null) => void;
   setHandlers: (
     readFile: (path: string) => Promise<string>,
     writeFile: (path: string, content: string) => Promise<boolean>,
@@ -58,7 +66,9 @@ export const useAgentStore = create<AgentState>((set) => ({
   selectedFilePath: null,
   inspectorEnabled: false,
   inspectedElement: null,
+  elementHistory: [],
   lastWriteTimestamp: 0,
+  lastChangedFilePath: null,
   readFileFn: null,
   writeFileFn: null,
 
@@ -71,6 +81,11 @@ export const useAgentStore = create<AgentState>((set) => ({
   setSelectedFilePath: (selectedFilePath) => set({ selectedFilePath }),
   setInspectorEnabled: (inspectorEnabled) => set({ inspectorEnabled }),
   setInspectedElement: (inspectedElement) => set({ inspectedElement }),
+  addElementHistory: (el, filePath) => set((state) => ({
+    elementHistory: [...state.elementHistory, { element: el, filePath, timestamp: Date.now() }].slice(-20), // Keep max 20 entries
+  })),
+  clearElementHistory: () => set({ elementHistory: [] }),
   setLastWrite: () => set({ lastWriteTimestamp: Date.now() }),
+  setLastChangedFile: (lastChangedFilePath) => set({ lastChangedFilePath }),
   setHandlers: (readFileFn, writeFileFn) => set({ readFileFn, writeFileFn }),
 }));

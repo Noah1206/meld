@@ -1,6 +1,6 @@
 /**
- * Seed Color → 10단계 팔레트 자동 생성 (50, 100, 200 ... 900)
- * HSL 기반으로 밝기/채도를 조절하여 Material-style 팔레트 생성
+ * Seed Color → auto-generate 10-step palette (50, 100, 200 ... 900)
+ * Adjusts lightness/saturation via HSL to produce Material-style palettes
  */
 
 export interface ColorShades {
@@ -9,7 +9,7 @@ export interface ColorShades {
   200: string;
   300: string;
   400: string;
-  500: string; // seed color 기준
+  500: string; // seed color baseline
   600: string;
   700: string;
   800: string;
@@ -53,7 +53,7 @@ function hslToHex(h: number, s: number, l: number): string {
   return `#${toHex(f(0))}${toHex(f(8))}${toHex(f(4))}`;
 }
 
-// Lightness 매핑 테이블 (50 → 900)
+// Lightness mapping table (50 → 900)
 const LIGHTNESS_MAP: Record<keyof ColorShades, number> = {
   50: 95,
   100: 90,
@@ -67,7 +67,7 @@ const LIGHTNESS_MAP: Record<keyof ColorShades, number> = {
   900: 10,
 };
 
-// Saturation 조정 (극단 밝기에서 채도를 약간 줄여 자연스럽게)
+// Saturation adjustment (slightly reduce saturation at extreme lightness for natural look)
 const SATURATION_ADJUST: Record<keyof ColorShades, number> = {
   50: -20,
   100: -15,
@@ -82,7 +82,7 @@ const SATURATION_ADJUST: Record<keyof ColorShades, number> = {
 };
 
 /**
- * Seed hex color → 10단계 컬러 팔레트 생성
+ * Seed hex color → generate 10-step color palette
  */
 export function generatePalette(seedHex: string): ColorShades {
   const [h, s] = hexToHsl(seedHex);
@@ -98,7 +98,7 @@ export function generatePalette(seedHex: string): ColorShades {
 }
 
 /**
- * Hex color가 밝은지 어두운지 판별 (텍스트 색상 결정용)
+ * Determine whether a hex color is light or dark (for text color selection)
  */
 export function isLightColor(hex: string): boolean {
   const [, , l] = hexToHsl(hex);
@@ -106,7 +106,7 @@ export function isLightColor(hex: string): boolean {
 }
 
 /**
- * 기본 프리셋 테마들
+ * Default preset themes
  */
 export const COLOR_PRESETS = {
   fidelity: { primary: "#EC1313", secondary: "#1A73E8", tertiary: "#7B1FA2" },
