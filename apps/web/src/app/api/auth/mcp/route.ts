@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 // --- Service OAuth configuration registry ---
 
-type ServiceId = "vercel" | "linear" | "notion" | "slack" | "sentry" | "gmail";
+type ServiceId = "vercel" | "linear" | "notion" | "slack" | "sentry" | "gmail" | "canva";
 
 interface OAuthServiceConfig {
   authUrl: string;
@@ -80,6 +80,17 @@ const SERVICE_CONFIGS: Record<ServiceId, OAuthServiceConfig> = {
     dbColumn: "gmail_access_token",
     dbRefreshColumn: "gmail_refresh_token",
     displayName: "Gmail",
+  },
+  canva: {
+    authUrl: "https://www.canva.com/api/oauth/authorize",
+    tokenUrl: "https://api.canva.com/rest/v1/oauth/token",
+    clientIdEnv: "CANVA_CLIENT_ID",
+    clientSecretEnv: "CANVA_CLIENT_SECRET",
+    scopes: "design:content:read design:meta:read asset:read brand:read folder:read",
+    tokenAuthMethod: "body",
+    dbColumn: "canva_access_token",
+    dbRefreshColumn: "canva_refresh_token",
+    displayName: "Canva",
   },
 };
 

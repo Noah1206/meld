@@ -74,6 +74,8 @@ export interface AgentLoopInput {
     terminalLogs?: string;
     /** Connected MCP services summary */
     connectedServices?: string;
+    /** Project category for AI persona specialization */
+    category?: string;
   };
 }
 

@@ -1,9 +1,11 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useState, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Github, Blend, ArrowRight, Check, Loader2 } from "lucide-react";
+import { motion } from "framer-motion";
+import { Github, ArrowRight, Check, Loader2 } from "lucide-react";
+import Image from "next/image";
 import { useLangStore } from "@/lib/store/lang-store";
 
 const translations = {
@@ -17,7 +19,6 @@ const translations = {
     termsPrefix: "By continuing, you agree to the ",
     termsLink: "Terms of Service",
     termsLine2: "Only your public GitHub info will be used.",
-    backHome: "Back to home",
   },
   ko: {
     title: "다시 오신 걸 환영해요",
@@ -29,13 +30,12 @@ const translations = {
     termsPrefix: "계속 진행하면 ",
     termsLink: "서비스 이용약관",
     termsLine2: "에 동의하게 됩니다. GitHub 공개 정보만 사용됩니다.",
-    backHome: "홈으로 돌아가기",
   },
 } as const;
 
 // Electron Agent type
 interface ElectronAgent {
-  loginWithGithub?: () => Promise<{
+  loginWithGithub?: (options?: { rememberMe?: boolean }) => Promise<{
     id: string;
     githubUsername: string;
     avatarUrl?: string;
@@ -60,9 +60,16 @@ function LoginContent() {
   const [isElectron, setIsElectron] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const isUnmountedRef = useRef(false);
 
   useEffect(() => {
+    console.log("[Login] Page mounted, pathname:", window.location.pathname);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsElectron(!!(window as unknown as { electronAgent?: ElectronAgent }).electronAgent);
+    return () => {
+      console.log("[Login] Page unmounting");
+      isUnmountedRef.current = true;
+    };
   }, []);
 
   // Build GitHub OAuth URL with remember_me parameter
@@ -74,37 +81,60 @@ function LoginContent() {
   };
 
   // Electron: GitHub login via IPC
+  // Note: After loginWithGithub() completes, Electron main process will navigate
+  // to /tutorial via meld:// protocol. We should NOT navigate from here to avoid
+  // race conditions. The login flow is:
+  // 1. Click button -> opens external browser
+  // 2. OAuth completes -> meld://auth received by Electron
+  // 3. Electron navigates to /tutorial
+  // 4. This Promise resolves (but we're already on /tutorial)
   const handleElectronLogin = async () => {
     const ea = (window as unknown as { electronAgent?: ElectronAgent }).electronAgent;
     if (!ea?.loginWithGithub) return;
 
     setIsLoggingIn(true);
     try {
-      const user = await ea.loginWithGithub();
-      if (user) {
-        // Save session if "Remember me" is checked
-        if (rememberMe && ea.saveSession) {
-          await ea.saveSession(user);
-        }
-        // Navigate to workspace
-        router.replace("/project/workspace");
+      // This will open external browser and wait for meld:// callback
+      // Electron main will handle navigation, so we don't navigate here
+      // Pass rememberMe option to save session to disk if checked
+      await ea.loginWithGithub({ rememberMe });
+      // Do NOT navigate - Electron main already navigated to /tutorial
+      // The session is saved by Electron main based on remember_me parameter
+    } catch {
+      // Only reset loading state if login actually failed
+      if (!isUnmountedRef.current) {
+        setIsLoggingIn(false);
       }
-    } finally {
-      setIsLoggingIn(false);
     }
+    // Note: We don't set isLoggingIn to false on success because the page
+    // will be replaced by Electron's navigation to /tutorial
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-white">
-      <div className="animate-scale-in w-full max-w-sm px-6">
+    <motion.div
+      className="flex min-h-screen items-center justify-center bg-white"
+      initial={{ x: 300, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      transition={{
+        type: "spring",
+        stiffness: 300,
+        damping: 30,
+        duration: 0.5,
+      }}
+    >
+      <div className="w-full max-w-sm px-6">
         {/* 로고 */}
         <div className="mb-10 text-center">
-          <Link href="/" className="inline-flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1A1A1A]">
-              <Blend className="h-4 w-4 text-white" />
-            </div>
+          <div className="inline-flex items-center gap-2">
+            <Image
+              src="/meld-logo.svg"
+              alt="Meld"
+              width={32}
+              height={32}
+              className="rounded-lg"
+            />
             <span className="text-[16px] font-semibold text-[#1A1A1A]">Meld</span>
-          </Link>
+          </div>
         </div>
 
         {/* 타이틀 */}
@@ -179,17 +209,8 @@ function LoginContent() {
           {t.termsLine2}
         </p>
 
-        {/* 홈으로 */}
-        <div className="mt-10 text-center">
-          <Link
-            href="/"
-            className="text-[13px] text-[#B4B4B0] transition-colors hover:text-[#787774]"
-          >
-            {t.backHome}
-          </Link>
-        </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 

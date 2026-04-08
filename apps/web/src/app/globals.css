@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+/* Electron title bar drag regions */
+.titlebar-drag {
+  -webkit-app-region: drag;
+}
+.titlebar-no-drag {
+  -webkit-app-region: no-drag;
+}
+
 /* Hide scrollbar but keep scrolling */
 .scrollbar-hidden {
   scrollbar-width: none; /* Firefox */
@@ -25,22 +33,38 @@
   --color-dark-700: #191D22;
   --color-dark-600: #24282E;
 
-  /* === Dark Theme === */
-  --color-bg: #0B0E11;
-  --color-surface: #131619;
-  --color-surface-hover: #191D22;
-  --color-text-primary: #F5F5F4;
-  --color-text-secondary: #A1A1A0;
-  --color-text-tertiary: #6B6B69;
-  --color-border: #24282E;
-  --color-border-hover: #2F3338;
+  /* === Dark Theme (default) === */
+  --color-bg: #181818;
+  --color-surface: #1E1E1E;
+  --color-surface-hover: #252525;
+  --color-text-primary: #E8E8E5;
+  --color-text-secondary: #9A9A95;
+  --color-text-tertiary: #666666;
+  --color-border: #3A3A3A;
+  --color-border-hover: #444444;
 
   /* === Status === */
   --color-success: #059669;
   --color-error: #DC2626;
+  --color-warning: #F59E0B;
+  --color-info: #3B82F6;
 
   /* === Semantic === */
   --color-primary: var(--color-mint-500);
+  --color-accent: #E8E8E5;
+}
+
+/* === Light Theme === */
+[data-theme="light"], .theme-light {
+  --color-bg: #FFFFFF;
+  --color-surface: #FAFAF9;
+  --color-surface-hover: #F7F7F5;
+  --color-text-primary: #1A1A1A;
+  --color-text-secondary: #787774;
+  --color-text-tertiary: #B4B4B0;
+  --color-border: #F0F0EE;
+  --color-border-hover: #E0E0DC;
+  --color-accent: #1A1A1A;
 }
 
 @theme inline {

@@ -1,6 +1,7 @@
 "use client";
 
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 
 // ─── MCP Server UI State ────────────────────────────
 // Dynamic server list. No hardcoding — updates whenever servers are added/removed.
@@ -54,7 +55,9 @@ interface MCPStoreState {
   connectedCount: () => number;
 }
 
-export const useMCPStore = create<MCPStoreState>((set, get) => ({
+export const useMCPStore = create<MCPStoreState>()(
+  persist(
+    (set, get) => ({
   servers: [],
   activeToolCall: null,
   availableChains: [],
@@ -119,4 +122,17 @@ export const useMCPStore = create<MCPStoreState>((set, get) => ({
 
   connectedCount: () =>
     get().servers.filter((s) => s.connected).length,
-}));
+}),
+    {
+      name: "meld-mcp-servers",
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        servers: state.servers.map((s) => ({
+          ...s,
+          connecting: false,
+          error: null,
+        })),
+      }),
+    },
+  ),
+);

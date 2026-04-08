@@ -3,7 +3,24 @@
 // Figma/GitHub are just "built-in adapters" — no special treatment.
 
 import type { MCPServerAdapter, MCPServerInstance, MCPServerPreset, MCPAuth, MCPTool, MCPToolResult, ClaudeToolDef, MCPContextMesh, MCPContextFragment } from "./types";
-import { FigmaMCPAdapter, GitHubMCPAdapter, CustomHTTPAdapter, BaseMCPAdapter } from "./adapters";
+import {
+  FigmaMCPAdapter,
+  GitHubMCPAdapter,
+  CustomHTTPAdapter,
+  BaseMCPAdapter,
+  VercelMCPAdapter,
+  SupabaseMCPAdapter,
+  SentryMCPAdapter,
+  LinearMCPAdapter,
+  NotionMCPAdapter,
+  SlackMCPAdapter,
+  GmailMCPAdapter,
+  CanvaMCPAdapter,
+  FilesystemMCPAdapter,
+  WindowsMCPAdapter,
+  PDFViewerMCPAdapter,
+  AgentBridgeMCPAdapter,
+} from "./adapters";
 
 // ─── Built-in presets (not hardcoded — just provided by default) ─────
 const BUILTIN_PRESETS: MCPServerPreset[] = [
@@ -94,6 +111,66 @@ const BUILTIN_PRESETS: MCPServerPreset[] = [
     authType: "bearer",
     docsUrl: "https://api.slack.com",
   },
+  {
+    adapterId: "gmail",
+    name: "Gmail",
+    description: "Read, draft, and send emails",
+    icon: "mail",
+    category: "communication",
+    authHint: "Google OAuth",
+    authType: "oauth",
+    docsUrl: "https://developers.google.com/gmail/api",
+  },
+  // ── Design ──
+  {
+    adapterId: "canva",
+    name: "Canva",
+    description: "Create, edit, and export designs",
+    icon: "palette",
+    category: "design",
+    authHint: "Canva OAuth",
+    authType: "oauth",
+    docsUrl: "https://www.canva.com/developers/",
+  },
+  // ── System ──
+  {
+    adapterId: "filesystem",
+    name: "Filesystem",
+    description: "Read and write files on local filesystem",
+    icon: "folder",
+    category: "system",
+    authHint: "No authentication required",
+    authType: "none",
+  },
+  {
+    adapterId: "windows-mcp",
+    name: "Windows MCP",
+    description: "Windows OS integration and system control",
+    icon: "monitor",
+    category: "system",
+    authHint: "No authentication required",
+    authType: "none",
+  },
+  {
+    adapterId: "pdf-viewer",
+    name: "PDF Viewer",
+    description: "Read, search, and extract text from PDFs",
+    icon: "file-text",
+    category: "docs",
+    authHint: "No authentication required",
+    authType: "none",
+  },
+  // ── Integration ──
+  {
+    adapterId: "agent-bridge",
+    name: "Agent Bridge",
+    description: "External AI agent integration (Cursor, Copilot)",
+    icon: "plug",
+    category: "integration",
+    authHint: "API Key for agent authentication",
+    authType: "api_key",
+    docsUrl: "https://meld.run/docs/agent-bridge",
+  },
 ];
 
 // ─── Adapter factory ─────────────────────────────────
@@ -106,11 +183,28 @@ const MCP_ENDPOINTS: Record<string, string> = {
 
 function createBuiltinAdapter(adapterId: string): MCPServerAdapter | null {
   switch (adapterId) {
+    // Core
     case "figma": return new FigmaMCPAdapter();
     case "github": return new GitHubMCPAdapter();
+    // Cloud & DevOps
+    case "vercel": return new VercelMCPAdapter();
+    case "supabase": return new SupabaseMCPAdapter();
+    case "sentry": return new SentryMCPAdapter();
+    // Project Management
+    case "linear": return new LinearMCPAdapter();
+    case "notion": return new NotionMCPAdapter();
+    // Communication
+    case "slack": return new SlackMCPAdapter();
+    case "gmail": return new GmailMCPAdapter();
+    // Design
+    case "canva": return new CanvaMCPAdapter();
+    // Local / System
+    case "filesystem": return new FilesystemMCPAdapter();
+    case "windows-mcp": return new WindowsMCPAdapter();
+    case "pdf-viewer": return new PDFViewerMCPAdapter();
+    case "agent-bridge": return new AgentBridgeMCPAdapter();
     default: {
-      // For other presets, create a token-storage adapter
-      // This stores the API key and exposes it as context to the AI
+      // For unknown presets, create a token-storage adapter
       const preset = BUILTIN_PRESETS.find(p => p.adapterId === adapterId);
       if (preset) {
         return new TokenStorageAdapter(preset);

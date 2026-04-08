@@ -7,23 +7,26 @@ Desktop app (Electron) + Web app (Next.js). No Figma plugin — uses Figma REST 
 ## Architecture
 - **Desktop app**: Electron + Next.js (loads `localhost:9090` in BrowserWindow)
 - **Web app**: Next.js 16 (App Router) + TypeScript + Tailwind
-- **AI**: Claude API (Sonnet 4) via agent loop with tool use
-- **State**: Zustand stores (agent, auth, project, mcp, chat)
+- **AI**: Claude Sonnet 4 (main reasoning engine) via agent loop with tool use
+- **State**: Zustand stores (agent, auth, project, mcp, super-context, chat)
 
 ## Core Features
 1. **AI Agent Loop** — Autonomous coding agent with 5 tools (read_file, write_file, list_files, search_files, run_command)
 2. **Live Preview** — iframe preview with dev server auto-detection + hot reload
 3. **Visual Editor** — Click elements in preview to inspect, drag to move/resize, color picker, text edit
-4. **Skills & Plugins** — Install Claude Code skills from GitHub
-5. **MCP Servers** — 14 connectable MCP servers (GitHub, Figma, Vercel, Supabase, etc.)
-6. **Syntax-highlighted Editor** — Token-based code editor with VSCode-style colors
-7. **Properties Panel** — CSS property editor (layout, spacing, colors, border-radius)
+4. **Smart Context Chains** — Auto-load related files (CSS, tests, API routes) when editing
+5. **Behavioral Learning** — Learn user preferences from accept/reject patterns
+6. **Super-Context** — 11 toggleable context sources injected into AI prompts
+7. **Skills & Plugins** — Install Claude Code skills from GitHub
+8. **MCP Servers** — 14 connectable MCP servers (GitHub, Figma, Vercel, Supabase, etc.)
+9. **Syntax-highlighted Editor** — Token-based code editor with VSCode-style colors
+10. **Properties Panel** — CSS property editor (layout, spacing, colors, border-radius)
 
 ## Tech Stack
 - Next.js 16 (App Router) + TypeScript + Tailwind CSS
 - Electron 33 (desktop) + tsup (build) + node-pty (terminal)
 - Zustand (state) + tRPC v11 + React Query
-- Supabase (Postgres + Auth), Claude API (Sonnet 4), GitHub API
+- Supabase (Postgres + Auth), Claude Sonnet 4 (main), GitHub API
 - Deploy: Vercel (web) + electron-builder (desktop)
 
 ## Commands
@@ -41,6 +44,7 @@ apps/
     src/lib/store/              — Zustand stores
       agent-store.ts            — File tree, dev server, inspector state
       agent-session-store.ts    — AI session events, pending edits
+      super-context-store.ts    — Context sources, chains, behavioral learning
       project-store.ts          — Workspace, integrations (Figma, Local, GitHub)
       mcp-store.ts              — MCP server connections
       auth-store.ts             — User auth state
@@ -76,6 +80,13 @@ packages/
 ## MCP Servers (Settings > MCP Servers)
 14 servers: GitHub, Figma, Vercel, Supabase, Sentry, Linear, Notion, Slack, Gmail, Filesystem, Windows MCP, PDF Viewer, Canva, Agent Bridge
 
+## Super-Context (Settings > Super-Context)
+11 toggleable sources: File Tree, Active File, Smart Chains, Code Patterns, Framework, Dependencies, Skills, Preferences, Design System, Figma, Terminal
+- Depth presets: Minimal (3) / Standard (7) / Maximum (all)
+- Chain depth: 1-3 levels
+- Pinned files: Always included in context
+- Custom instructions: Project-specific AI rules
+
 ## UI/UX
 - Dark theme (primary), light theme support
 - VSCode-style: icon sidebar (60px) + collapsible panel + tab bar + main content
@@ -83,6 +94,16 @@ packages/
 - Right panel: Terminal (server logs) + Properties (CSS editor)
 - Floating chat bar: Appears when sidebar collapsed
 - Skills marketplace: 53 real GitHub skills with star counts via API
+
+## AI Models (16 models, 7 providers)
+**Main Engine**: Claude Sonnet 4 (all operations)
+- **Anthropic**: Opus 4, Sonnet 4, Haiku 3.5
+- **OpenAI**: GPT-4o, GPT-4o mini, GPT-4.1, o3-mini
+- **Google**: Gemini 2.5 Pro, Gemini 2.5 Flash
+- **DeepSeek**: V3, R1
+- **Mistral**: Large, Codestral
+- **Groq**: Llama 4 Scout
+- **xAI**: Grok 3, Grok 3 mini
 
 ## Code Style
 - Korean comments allowed

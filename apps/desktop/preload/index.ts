@@ -4,13 +4,16 @@ contextBridge.exposeInMainWorld("electronAgent", {
   isElectron: true,
 
   // GitHub OAuth login
-  loginWithGithub: () => ipcRenderer.invoke("auth:github"),
+  loginWithGithub: (options?: { rememberMe?: boolean }) => ipcRenderer.invoke("auth:github", options),
 
   // Session persistence
   getSavedSession: () => ipcRenderer.invoke("auth:getSavedSession"),
   saveSession: (user: { id: string; githubUsername: string; avatarUrl?: string; hasFigmaToken?: boolean }) =>
     ipcRenderer.invoke("auth:saveSession", user),
   clearSession: () => ipcRenderer.invoke("auth:clearSession"),
+
+  // Navigation (bypasses client-side routing)
+  navigateTo: (path: string) => ipcRenderer.invoke("navigate:loadURL", path),
 
   // MCP OAuth — Return via meld:// protocol after OAuth in system browser
   openExternalAuth: (url: string) => ipcRenderer.invoke("auth:openExternal", url),
@@ -19,6 +22,7 @@ contextBridge.exposeInMainWorld("electronAgent", {
   openProject: () => ipcRenderer.invoke("agent:openProject"),
   reopenProject: (path: string) => ipcRenderer.invoke("agent:reopenProject", path),
   createProject: (name: string) => ipcRenderer.invoke("agent:createProject", name),
+  createProjectAuto: (suggestedName?: string) => ipcRenderer.invoke("agent:createProjectAuto", suggestedName),
 
   // File operations
   readFile: (filePath: string) => ipcRenderer.invoke("agent:readFile", filePath),
@@ -85,6 +89,19 @@ contextBridge.exposeInMainWorld("electronAgent", {
       ipcRenderer.invoke("ai:generateDesignSystem", { prompt, modelId }),
     extractFromUrl: (url: string, modelId?: string) =>
       ipcRenderer.invoke("ai:extractFromUrl", { url, modelId }),
+    generateTitle: (prompt: string, modelId?: string) =>
+      ipcRenderer.invoke("ai:generateTitle", { prompt, modelId }),
+    classifyIntent: (prompt: string, modelId?: string) =>
+      ipcRenderer.invoke("ai:classifyIntent", { prompt, modelId }) as Promise<"create" | "chat">,
+    chat: (prompt: string, modelId?: string, category?: string, projectContext?: { fileTree?: string[]; framework?: string; dependencies?: string[]; selectedFile?: string; currentCode?: string }) =>
+      ipcRenderer.invoke("ai:chat", { prompt, modelId, category, projectContext }) as Promise<string>,
+    chatStream: (prompt: string, modelId?: string, streamId?: string, category?: string) =>
+      ipcRenderer.invoke("ai:chatStream", { prompt, modelId, streamId: streamId ?? crypto.randomUUID(), category }) as Promise<{ success: boolean; fullText?: string; error?: string }>,
+    onStreamChunk: (cb: (data: { streamId: string; chunk: string; done: boolean; fullText?: string; error?: string }) => void) => {
+      const handler = (_: Electron.IpcRendererEvent, data: { streamId: string; chunk: string; done: boolean; fullText?: string; error?: string }) => cb(data);
+      ipcRenderer.on("ai:streamChunk", handler);
+      return () => ipcRenderer.removeListener("ai:streamChunk", handler);
+    },
   },
 
   // Inject inspector script (legacy — auto-injected in WebContentsView)

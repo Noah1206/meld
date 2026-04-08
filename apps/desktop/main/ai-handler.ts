@@ -1,6 +1,23 @@
-import { ipcMain, safeStorage } from "electron";
+import { ipcMain, safeStorage, BrowserWindow } from "electron";
 import * as fs from "node:fs";
 import * as path from "node:path";
+
+// ─── Category persona prompts ──────────────────────────────
+const CATEGORY_PERSONAS: Record<string, string> = {
+  website:
+    "You are a senior web developer and UX/UI expert specializing in websites. You know how to build landing pages, blogs, portfolios with modern design (reference: Stripe, Linear, Vercel, Notion). You advise on responsive design, SEO, performance, accessibility, and user experience.",
+  app:
+    "You are a fullstack app developer and product designer specializing in web applications. You know how to build dashboards, auth flows, CRUD features, real-time UIs (reference: Notion, Figma, GitHub, Slack, Discord). You advise on state management, routing, component architecture, and UX patterns.",
+  service:
+    "You are a backend architect and API specialist. You know how to design REST/GraphQL APIs, database schemas, auth systems, background jobs (reference: Stripe API, GitHub API, Supabase). You advise on scalability, security, error handling, and deployment.",
+  tool:
+    "You are a CLI/automation specialist. You know how to build developer tools, CLI apps, scripts, CI/CD pipelines (reference: Vite, ESLint, Prettier, Turborepo). You advise on argument parsing, config management, terminal UX, and distribution.",
+};
+
+function getPersonaPrompt(category?: string): string {
+  if (!category || !CATEGORY_PERSONAS[category]) return "";
+  return `\n\nSPECIALIZATION:\n${CATEGORY_PERSONAS[category]}`;
+}
 
 // ─── API Key management (safeStorage, per provider) ──────────
 const KEY_DIR = path.join(
@@ -16,11 +33,24 @@ export function getApiKey(provider: string): string | null {
   try {
     const file = path.join(KEY_DIR, provider);
     if (!fs.existsSync(file)) return null;
-    const encrypted = fs.readFileSync(file);
+    const data = fs.readFileSync(file);
+
+    // Try decrypting first (if encrypted)
     if (safeStorage.isEncryptionAvailable()) {
-      return safeStorage.decryptString(encrypted);
+      try {
+        return safeStorage.decryptString(data);
+      } catch {
+        // Not encrypted, read as plain text
+      }
     }
-    return encrypted.toString("utf-8");
+
+    // Read as plain text (fallback)
+    const text = data.toString("utf-8").trim();
+    // Check if it looks like an API key (starts with sk-)
+    if (text.startsWith("sk-")) {
+      return text;
+    }
+    return null;
   } catch {
     return null;
   }
@@ -63,11 +93,19 @@ interface ModelDef {
   format: "anthropic" | "openai" | "google";
 }
 
+// Model routing strategy:
+// - Chat (simple): Haiku 3.5 (cheapest, fast)
+// - Agent loop (coding): Sonnet 4 (best coding performance)
+// - Complex reasoning: Opus 4 (maximum capability)
+const DEFAULT_CHAT_MODEL = "claude-sonnet";
+const DEFAULT_AGENT_MODEL = "claude-sonnet";
+const DEFAULT_COMPLEX_MODEL = "claude-opus";
+
 const MODELS: ModelDef[] = [
-  // Anthropic
-  { id: "claude-opus", label: "Claude", sub: "Opus 4", color: "#D97757", provider: "anthropic", apiUrl: "https://api.anthropic.com/v1/messages", modelId: "claude-opus-4-20250514", format: "anthropic" },
+  // Anthropic — tiered by cost/capability
+  { id: "claude-haiku", label: "Claude", sub: "Haiku 3.5", color: "#D97757", provider: "anthropic", apiUrl: "https://api.anthropic.com/v1/messages", modelId: "claude-3-5-haiku-latest", format: "anthropic" },
   { id: "claude-sonnet", label: "Claude", sub: "Sonnet 4", color: "#D97757", provider: "anthropic", apiUrl: "https://api.anthropic.com/v1/messages", modelId: "claude-sonnet-4-20250514", format: "anthropic" },
-  { id: "claude-haiku", label: "Claude", sub: "Haiku 3.5", color: "#D97757", provider: "anthropic", apiUrl: "https://api.anthropic.com/v1/messages", modelId: "claude-3-5-haiku-20241022", format: "anthropic" },
+  { id: "claude-opus", label: "Claude", sub: "Opus 4", color: "#D97757", provider: "anthropic", apiUrl: "https://api.anthropic.com/v1/messages", modelId: "claude-opus-4-20250514", format: "anthropic" },
   // OpenAI
   { id: "gpt-4o", label: "GPT", sub: "4o", color: "#10A37F", provider: "openai", apiUrl: "https://api.openai.com/v1/chat/completions", modelId: "gpt-4o", format: "openai" },
   { id: "gpt-4o-mini", label: "GPT", sub: "4o mini", color: "#10A37F", provider: "openai", apiUrl: "https://api.openai.com/v1/chat/completions", modelId: "gpt-4o-mini", format: "openai" },
@@ -152,6 +190,131 @@ async function callModel(model: ModelDef, systemPrompt: string, userMessage: str
   return data.choices?.[0]?.message?.content ?? "";
 }
 
+// ─── Streaming API call ──────────────────────────────────
+async function callModelStream(
+  model: ModelDef,
+  systemPrompt: string,
+  userMessage: string,
+  onChunk: (text: string) => void
+): Promise<string> {
+  const apiKey = getApiKey(model.provider);
+  if (!apiKey) throw new Error(`${model.provider} API key not configured. Please set it in Settings.`);
+
+  let fullText = "";
+
+  if (model.format === "anthropic") {
+    const res = await fetch(model.apiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: model.modelId,
+        max_tokens: 4096,
+        stream: true,
+        system: systemPrompt,
+        messages: [{ role: "user", content: userMessage }],
+      }),
+    });
+    if (!res.ok) throw new Error(`${model.label} API error (${res.status}): ${await res.text()}`);
+
+    const reader = res.body?.getReader();
+    if (!reader) throw new Error("No response body");
+
+    const decoder = new TextDecoder();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split("\n");
+
+      for (const line of lines) {
+        if (line.startsWith("data: ")) {
+          const data = line.slice(6);
+          if (data === "[DONE]") continue;
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.type === "content_block_delta" && parsed.delta?.text) {
+              fullText += parsed.delta.text;
+              onChunk(parsed.delta.text);
+            }
+          } catch { /* ignore parse errors */ }
+        }
+      }
+    }
+    return fullText;
+  }
+
+  if (model.format === "google") {
+    // Google doesn't support streaming the same way, fall back to non-streaming
+    const url = `${model.apiUrl}?key=${apiKey}`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        contents: [{ role: "user", parts: [{ text: userMessage }] }],
+        generationConfig: { maxOutputTokens: 4096 },
+      }),
+    });
+    if (!res.ok) throw new Error(`${model.label} API error (${res.status}): ${await res.text()}`);
+    const data = await res.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+    onChunk(text);
+    return text;
+  }
+
+  // OpenAI-compatible streaming
+  const res = await fetch(model.apiUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: model.modelId,
+      max_tokens: 4096,
+      stream: true,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userMessage },
+      ],
+    }),
+  });
+  if (!res.ok) throw new Error(`${model.label} API error (${res.status}): ${await res.text()}`);
+
+  const reader = res.body?.getReader();
+  if (!reader) throw new Error("No response body");
+
+  const decoder = new TextDecoder();
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    const chunk = decoder.decode(value, { stream: true });
+    const lines = chunk.split("\n");
+
+    for (const line of lines) {
+      if (line.startsWith("data: ")) {
+        const data = line.slice(6);
+        if (data === "[DONE]") continue;
+        try {
+          const parsed = JSON.parse(data);
+          const content = parsed.choices?.[0]?.delta?.content;
+          if (content) {
+            fullText += content;
+            onChunk(content);
+          }
+        } catch { /* ignore parse errors */ }
+      }
+    }
+  }
+  return fullText;
+}
+
 // ─── Prompt builder ────────────────────────────────────
 function getFrameworkGuidelines(framework: string, deps?: string[]): string {
   const hasDep = (name: string) => deps?.some((d) => d === name || d.startsWith(name + "/"));
@@ -225,7 +388,7 @@ export function registerAiHandlers() {
     const { filePath, command, currentCode, modelId, framework, dependencies, designSystemMd, elementContext } = input;
 
     // Find model (default: claude-sonnet)
-    const model = MODELS.find((m) => m.id === modelId) ?? MODELS.find((m) => m.id === "claude-sonnet") ?? MODELS[0];
+    const model = MODELS.find((m) => m.id === modelId) ?? MODELS.find((m) => m.id === DEFAULT_CHAT_MODEL) ?? MODELS[0];
 
     let systemExtra = "";
     if (framework && framework !== "unknown") {
@@ -270,7 +433,7 @@ IMPORTANT RULES:
 
   // Generate design system (natural language → JSON)
   ipcMain.handle("ai:generateDesignSystem", async (_, input: { prompt: string; modelId?: string }) => {
-    const model = MODELS.find((m) => m.id === input.modelId) ?? MODELS.find((m) => m.id === "claude-sonnet") ?? MODELS[0];
+    const model = MODELS.find((m) => m.id === input.modelId) ?? MODELS.find((m) => m.id === DEFAULT_CHAT_MODEL) ?? MODELS[0];
 
     const system = `You are a world-class design system expert.
 When the user describes the desired feel/style, generate a perfectly matched design system.
@@ -308,7 +471,7 @@ Respond ONLY with this JSON format (no other text):
 
   // Extract design system from website URL
   ipcMain.handle("ai:extractFromUrl", async (_, input: { url: string; modelId?: string }) => {
-    const model = MODELS.find((m) => m.id === input.modelId) ?? MODELS.find((m) => m.id === "claude-sonnet") ?? MODELS[0];
+    const model = MODELS.find((m) => m.id === input.modelId) ?? MODELS.find((m) => m.id === DEFAULT_CHAT_MODEL) ?? MODELS[0];
 
     // 1. HTML scraping
     let siteData = `URL: ${input.url}\n`;
@@ -379,5 +542,190 @@ Respond ONLY with JSON:
     const jsonMatch = response.match(/\{[\s\S]*\}/);
     if (jsonMatch) return JSON.parse(jsonMatch[0]);
     throw new Error("Could not find JSON in AI response");
+  });
+
+  // Generate short title from user prompt (like Claude's conversation titles)
+  ipcMain.handle("ai:generateTitle", async (_, input: { prompt: string; modelId?: string }) => {
+    const model = MODELS.find((m) => m.id === input.modelId) ?? MODELS[0]; // Default: Sonnet 4
+
+    const system = `You are a title generator. Generate a SHORT, CONCISE title (2-5 words) that summarizes the user's request.
+
+Rules:
+- Maximum 5 words
+- Use the same language as the user's input (Korean → Korean title, English → English title)
+- Capture the main intent/topic
+- No quotes, no punctuation at the end
+- Examples:
+  - "안녕하세요" → "인사"
+  - "포트폴리오 웹사이트 만들어줘" → "포트폴리오 웹사이트"
+  - "K-map으로 논리식을 간단히 하는 법 알려줘" → "K-map 논리식 간소화"
+  - "Build a todo app with React" → "React Todo App"
+  - "Help me debug this function" → "Function Debugging"
+
+Respond ONLY with the title, nothing else.`;
+
+    const response = await callModel(model, system, input.prompt);
+    return response.trim().replace(/^["']|["']$/g, "").slice(0, 50);
+  });
+
+  // Classify user intent: project creation vs simple chat (LOCAL RULES - no AI call, ~0ms)
+  ipcMain.handle("ai:classifyIntent", async (_, input: { prompt: string; modelId?: string }) => {
+    const text = input.prompt.toLowerCase().trim();
+    console.log("[AI] classifyIntent (local) called with:", text);
+
+    // CREATE keywords (Korean + English)
+    const createKeywords = [
+      // Korean
+      "만들어", "만들어줘", "만들어주세요", "생성", "구현", "구현해", "개발", "빌드",
+      "웹사이트", "웹페이지", "앱", "어플", "애플리케이션", "프로젝트",
+      "페이지", "컴포넌트", "버튼", "폼", "모달", "사이드바", "헤더", "푸터",
+      "API", "서버", "백엔드", "프론트엔드", "데이터베이스",
+      "로그인", "회원가입", "대시보드", "관리자", "차트", "테이블",
+      // English
+      "create", "build", "make", "develop", "implement", "generate", "design",
+      "website", "webpage", "app", "application", "project",
+      "page", "component", "button", "form", "modal", "sidebar", "header", "footer",
+      "api", "server", "backend", "frontend", "database",
+      "login", "signup", "dashboard", "admin", "chart", "table",
+      "landing", "portfolio", "blog", "ecommerce", "shop", "store",
+    ];
+
+    // CHAT keywords (greetings, questions)
+    const chatKeywords = [
+      // Korean greetings
+      "안녕", "하이", "헬로", "반가워", "뭐해", "뭐하니", "어때",
+      // Korean questions (without create intent)
+      "뭐야", "뭔가요", "알려줘", "설명해", "어떻게", "왜",
+      // English greetings
+      "hi", "hello", "hey", "what's up", "how are you", "good morning", "good afternoon",
+      // English questions
+      "what is", "what's", "how do", "why", "explain", "tell me about",
+    ];
+
+    // Check for CREATE intent first (higher priority)
+    const hasCreateKeyword = createKeywords.some(k => text.includes(k));
+    const hasChatKeyword = chatKeywords.some(k => text.includes(k));
+
+    // If has create keyword and not just a question about it
+    if (hasCreateKeyword && !text.match(/^(what|뭐|어떻게).*(is|야|인가요|이야)/)) {
+      console.log("[AI] classifyIntent result: create (local keyword match)");
+      return "create";
+    }
+
+    // Short messages are usually chat
+    if (text.length < 10 || hasChatKeyword) {
+      console.log("[AI] classifyIntent result: chat (short or greeting)");
+      return "chat";
+    }
+
+    // Default to chat for safety
+    console.log("[AI] classifyIntent result: chat (default)");
+    return "chat";
+  });
+
+  // Simple chat (no project required)
+  // Prevent duplicate requests - cache in-flight requests by prompt+model
+  const chatInFlight = new Map<string, Promise<string>>();
+
+  ipcMain.handle("ai:chat", async (_, input: { prompt: string; modelId?: string; category?: string; projectContext?: { fileTree?: string[]; framework?: string; dependencies?: string[]; selectedFile?: string; currentCode?: string } }) => {
+    console.log("[AI] ai:chat called with:", input.prompt.substring(0, 50), "category:", input.category);
+
+    // Create a key for deduplication (prompt + model)
+    const dedupeKey = `${input.prompt}:${input.modelId || "default"}`;
+
+    // If there's already an in-flight request for this exact prompt, return its promise
+    if (chatInFlight.has(dedupeKey)) {
+      console.log("[AI] ai:chat DEDUPE - returning existing in-flight request");
+      return chatInFlight.get(dedupeKey)!;
+    }
+
+    const model = MODELS.find((m) => m.id === input.modelId) ?? MODELS[0];
+    console.log("[AI] ai:chat using model:", model.id, model.provider);
+
+    const apiKey = getApiKey(model.provider);
+    if (!apiKey) {
+      console.log("[AI] ai:chat ERROR: No API key for", model.provider);
+      throw new Error(`${model.provider} API key not configured. Please set it in Settings.`);
+    }
+    console.log("[AI] ai:chat API key found for", model.provider);
+
+    const personaSection = getPersonaPrompt(input.category);
+    const ctx = input.projectContext;
+    let projectSection = "";
+    if (ctx?.fileTree?.length) {
+      projectSection += `\n\nPROJECT FILES:\n${ctx.fileTree.slice(0, 100).join("\n")}`;
+    }
+    if (ctx?.framework) {
+      projectSection += `\nFRAMEWORK: ${ctx.framework}`;
+    }
+    if (ctx?.dependencies?.length) {
+      projectSection += `\nDEPENDENCIES: ${ctx.dependencies.join(", ")}`;
+    }
+    if (ctx?.selectedFile) {
+      projectSection += `\n\nCURRENTLY SELECTED FILE: ${ctx.selectedFile}`;
+      if (ctx.currentCode) {
+        projectSection += `\n\`\`\`\n${ctx.currentCode.slice(0, 3000)}\n\`\`\``;
+      }
+    }
+
+    const system = `You are Meld AI, a coding assistant integrated into an IDE. You have access to the user's project context below. When the user asks to analyze files, continue work, or asks about their code, use this context to give specific, actionable answers.${personaSection}${projectSection}
+
+LANGUAGE RULE (CRITICAL):
+- Detect the language of the user's message and respond ONLY in that same language.
+- If user writes in Korean, respond entirely in Korean. If user writes in English, respond entirely in English.
+- NEVER mix languages. Pick ONE language based on the user's input and stick to it.
+
+Be helpful, concise, and actionable. Reference specific files and code when relevant.`;
+
+    // Create the promise and store it in the cache
+    const chatPromise = (async () => {
+      try {
+        console.log("[AI] ai:chat calling model...");
+        const response = await callModel(model, system, input.prompt);
+        console.log("[AI] ai:chat response received, length:", response?.length);
+        return response;
+      } catch (err) {
+        console.error("[AI] ai:chat error:", err);
+        throw err;
+      } finally {
+        // Remove from cache after completion (success or failure)
+        chatInFlight.delete(dedupeKey);
+      }
+    })();
+
+    // Store the promise in the cache
+    chatInFlight.set(dedupeKey, chatPromise);
+
+    return chatPromise;
+  });
+
+  // Streaming chat (sends chunks via IPC event)
+  ipcMain.handle("ai:chatStream", async (event, input: { prompt: string; modelId?: string; streamId: string; category?: string }) => {
+    const model = MODELS.find((m) => m.id === input.modelId) ?? MODELS[0]; // Default: Sonnet 4
+    const win = BrowserWindow.fromWebContents(event.sender);
+
+    const personaSection = getPersonaPrompt(input.category);
+    const system = `You are Meld AI, a friendly coding assistant.${personaSection}
+
+LANGUAGE RULE (CRITICAL):
+- Detect the language of the user's message and respond ONLY in that same language.
+- If user writes in Korean, respond entirely in Korean. If user writes in English, respond entirely in English.
+- NEVER mix languages. Pick ONE language based on the user's input and stick to it.
+
+Be helpful, concise, and friendly. If the user wants to create a project, suggest they describe what they want to build.`;
+
+    try {
+      const fullText = await callModelStream(model, system, input.prompt, (chunk) => {
+        // Send each chunk to renderer
+        win?.webContents.send("ai:streamChunk", { streamId: input.streamId, chunk, done: false });
+      });
+      // Send completion signal
+      win?.webContents.send("ai:streamChunk", { streamId: input.streamId, chunk: "", done: true, fullText });
+      return { success: true, fullText };
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      win?.webContents.send("ai:streamChunk", { streamId: input.streamId, chunk: "", done: true, error: errMsg });
+      return { success: false, error: errMsg };
+    }
   });
 }

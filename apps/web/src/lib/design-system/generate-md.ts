@@ -112,13 +112,63 @@ ${colorTable(colors.tertiary)}
 - Focus ring: 2px \`primary\`
 - Border radius: ${radius.xl}px
 
-## Guidelines
+## Elevation & Shadows
 
-Follow this design system when writing code:
-- Use only colors from the palette above
-- Use the Type Scale for font sizes
-- Use the Spacing scale for margins and paddings
-- ${mode === "dark" ? "Apply dark mode background/foreground colors" : "Apply light mode background/foreground colors"}
+| Level | Value | Usage |
+|-------|-------|-------|
+| none | none | Flat elements |
+| sm | 0 1px 2px rgba(0,0,0,0.05) | Subtle lift (cards, buttons) |
+| md | 0 4px 6px -1px rgba(0,0,0,0.1) | Floating elements (dropdowns) |
+| lg | 0 10px 15px -3px rgba(0,0,0,0.1) | Elevated surfaces (modals) |
+| xl | 0 20px 25px -5px rgba(0,0,0,0.1) | High emphasis (dialogs) |
+| glow | 0 0 20px ${colors.primary[400]}33 | Brand glow effect |
+
+## Layout Principles
+
+- **Base grid**: ${spacing.baseUnit}px — ALL spacing must be multiples of this
+- **Section padding**: ${spacing.baseUnit * 8}px top/bottom, ${spacing.baseUnit * 4}px left/right
+- **Card padding**: ${spacing.baseUnit * 3}px
+- **Component gap**: ${spacing.baseUnit * 2}px (elements within a group)
+- **Section gap**: ${spacing.baseUnit * 8}px (between major sections)
+- **Max content width**: 1200px (centered)
+- **Whitespace ratio**: Content should occupy ~60-70% of available space
+
+## Visual Atmosphere
+
+- **Design philosophy**: Clean, modern, professional with subtle depth
+- **Density**: Comfortable — generous whitespace, not cramped
+- **Motion**: Subtle and purposeful — 200ms ease transitions, no bouncy/playful
+- **Surface treatment**: ${mode === "dark" ? "Layered dark surfaces (#0A0A0A → #111 → #1A1A1A → #222)" : "White/gray layered surfaces (#FFF → #F8F8F8 → #F0F0F0)"}
+- **Accent usage**: Primary color for CTAs and key actions only — avoid overuse
+- **Glass effects**: Use \`backdrop-filter: blur(10px)\` with \`rgba(${mode === "dark" ? "255,255,255,0.05" : "0,0,0,0.02"})\` for elevated overlays
+
+## Responsive Behavior
+
+| Breakpoint | Width | Layout |
+|------------|-------|--------|
+| Mobile | < 640px | Single column, bottom nav, stacked cards |
+| Tablet | 640-1024px | Two columns, collapsible sidebar |
+| Desktop | > 1024px | Full layout, sidebar + main + optional panel |
+- Touch targets: minimum 44x44px on mobile
+- Font scaling: base size stays same, headings reduce by 1 step on mobile
+
+## Do's and Don'ts
+
+### DO
+- Use semantic color tokens (primary, secondary) — never raw hex in components
+- Follow the spacing scale — every margin/padding must be a scale value
+- Use the type scale — every text size must match a defined level
+- Add hover/focus/active states to all interactive elements
+- Use consistent border-radius from the radius tokens
+- Pair gradients with the defined brand gradient only
+
+### DON'T
+- Don't hardcode colors — use CSS variables or design tokens
+- Don't use arbitrary spacing (like 13px, 7px) — stick to the scale
+- Don't mix font families — only use the defined families
+- Don't use more than 3 font weights per page
+- Don't create new shadows — use only the defined elevation levels
+- Don't ignore dark/light mode — every surface must work in both
 
 ${ds.customDesignMd ? `## Custom Guidelines\n\n${ds.customDesignMd}` : ""}`.trim();
 }

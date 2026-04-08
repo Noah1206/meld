@@ -1,6 +1,7 @@
-import { ipcMain, dialog, BrowserWindow } from "electron";
+import { ipcMain, dialog, BrowserWindow, app } from "electron";
 import * as fs from "node:fs";
 import * as path from "node:path";
+import * as os from "node:os";
 import { scanProject } from "@figma-code-bridge/agent/scanner";
 import { AgentLoop, rollbackSession, getBackupSessionIds, loadRecentSessions } from "./agent-loop.js";
 import { getApiKey } from "./ai-handler.js";
@@ -148,6 +149,56 @@ export function registerIpcHandlers() {
         win.webContents.send("agent:fileChanged", event);
       }
     });
+
+    return {
+      projectPath: projectDir,
+      projectName,
+      fileTree,
+    };
+  });
+
+  // Create new project automatically (no dialog) in ~/Documents/Meld Projects/
+  ipcMain.handle("agent:createProjectAuto", async (_, suggestedName?: string) => {
+    // Default projects directory
+    const documentsDir = path.join(os.homedir(), "Documents");
+    const meldProjectsDir = path.join(documentsDir, "Meld Projects");
+
+    // Ensure Meld Projects folder exists
+    await fs.promises.mkdir(meldProjectsDir, { recursive: true });
+
+    // Generate unique project name with timestamp
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+    const baseName = suggestedName || "New Project";
+    const safeName = baseName.replace(/[^a-zA-Z0-9가-힣\s-]/g, "").trim() || "Project";
+    const projectName = `${safeName}-${timestamp}`;
+    const projectDir = path.join(meldProjectsDir, projectName);
+
+    // Create folder
+    await fs.promises.mkdir(projectDir, { recursive: true });
+
+    currentRootDir = projectDir;
+
+    await cleanupPreviousProject();
+
+    const fileTree = scanProject(projectDir);
+
+    activeWatcher = createWatcher(projectDir, (event) => {
+      const windows = BrowserWindow.getAllWindows();
+      for (const win of windows) {
+        win.webContents.send("agent:fileChanged", event);
+      }
+    });
+
+    // Auto-inject inspector script
+    try {
+      const publicDir = path.join(projectDir, "public");
+      await fs.promises.mkdir(publicDir, { recursive: true });
+      await fs.promises.writeFile(
+        path.join(publicDir, "__meld-inspector.js"),
+        INSPECTOR_SCRIPT,
+        "utf-8",
+      );
+    } catch {}
 
     return {
       projectPath: projectDir,
@@ -360,21 +411,34 @@ export function registerIpcHandlers() {
     try {
       // Primary: Fetch from server using Electron session cookie
       const wins = BrowserWindow.getAllWindows();
+      console.log("[Agent] Windows count:", wins.length);
       if (wins.length > 0) {
         const cookies = await wins[0].webContents.session.cookies.get({ name: "fcb_session" });
+        console.log("[Agent] fcb_session cookies found:", cookies.length);
         if (cookies.length > 0) {
+          console.log("[Agent] Fetching API key from server...");
           const res = await fetch("http://localhost:9090/api/ai/api-key", {
             headers: { Cookie: `fcb_session=${cookies[0].value}` },
           });
+          console.log("[Agent] API response status:", res.status);
           if (res.ok) {
             const data = await res.json();
             apiKey = data.key ?? "";
+            console.log("[Agent] Got API key:", apiKey ? "yes" : "no");
+          } else {
+            const errData = await res.json().catch(() => ({}));
+            console.log("[Agent] API error:", errData);
           }
         }
       }
-    } catch { /* Server connection failed */ }
+    } catch (err) {
+      console.log("[Agent] Server connection failed:", err);
+    }
     // Fallback: locally stored key
-    if (!apiKey) apiKey = getApiKey("anthropic") ?? "";
+    if (!apiKey) {
+      apiKey = getApiKey("anthropic") ?? "";
+      console.log("[Agent] Fallback local key (anthropic):", apiKey ? "yes" : "no");
+    }
     if (!apiKey) throw new Error("AI API key not available. Please check your subscription.");
 
     // Add file tree context

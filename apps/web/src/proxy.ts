@@ -4,8 +4,9 @@ import { verifySessionToken } from "@/lib/auth/session";
 
 // 인증이 필요한 경로
 const PROTECTED_PATHS = ["/dashboard", "/project"];
-// 인증 없이 접근 가능한 경로 (로컬 에이전트 모드)
-const PUBLIC_PATHS = ["/project/local"];
+// 인증 없이 접근 가능한 경로 (로컬 에이전트 모드 + Electron 워크스페이스)
+// Electron 앱에서는 IPC를 통해 인증하므로 쿠키 기반 인증을 건너뜀
+const PUBLIC_PATHS = ["/project/local", "/project/workspace", "/project/desktop"];
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

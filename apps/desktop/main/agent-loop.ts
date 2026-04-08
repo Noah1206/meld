@@ -5,6 +5,115 @@ import type { AgentEvent, AgentLoopInput, AgentTool } from "@figma-code-bridge/s
 import { AGENT_TOOLS } from "@figma-code-bridge/shared";
 import { analyzeCodePatterns } from "./code-patterns";
 
+// ─── Category-specific autonomous agent instructions ──
+const CATEGORY_PERSONAS: Record<string, string> = {
+  website: `You are a senior web developer and UX/UI expert building a WEBSITE.
+
+PAGES TO BUILD (in order):
+1. Home/Landing — hero section, value proposition, CTA, social proof, testimonials
+2. About — team, mission, story, values
+3. Features/Services — feature grid with icons, detailed sections
+4. Pricing — plan comparison table, FAQ, CTA
+5. Blog — post list, individual post page, categories
+6. Contact — form, map, social links, office info
+7. Auth — login, signup, forgot password, email verification
+8. 404/Error — branded error page with navigation back
+
+BRAND REFERENCES: Stripe (clean typography, gradient hero), Linear (minimal dark UI), Vercel (developer-focused landing), Notion (friendly illustrations), Apple (product showcase).
+
+BUILD STRATEGY:
+- Start with layout: header/nav + footer + responsive container
+- Then landing page with real content structure (not lorem ipsum — generate realistic content)
+- Add pages one by one, each fully complete with responsive design
+- Navigation must link all pages properly
+- Implement dark/light mode toggle from the start
+- Add smooth scroll, hover animations, page transitions
+- SEO: meta tags, Open Graph, semantic HTML
+- Performance: image optimization, lazy loading, code splitting`,
+
+  app: `You are a fullstack app developer and product designer building a WEB APP.
+
+PAGES TO BUILD (in order):
+1. Auth — login, signup, forgot password, OAuth (Google/GitHub), onboarding flow
+2. Dashboard — overview cards, charts, recent activity, quick actions
+3. Main Feature — the core functionality (list/detail/create/edit pattern)
+4. Settings — profile, account, preferences, notifications, billing
+5. Search/Explore — search with filters, categories, results
+6. Notifications — notification center, read/unread, notification preferences
+7. User Profile — avatar, bio, activity history, settings link
+8. Admin Panel — user management, analytics, content moderation (if applicable)
+
+BRAND REFERENCES: Notion (sidebar + workspace), Figma (collaborative UI), GitHub (dashboard + activity), Slack (messaging patterns), Discord (real-time UI), Spotify (content browsing), Linear (task management).
+
+BUILD STRATEGY:
+- Start with auth flow + protected routes
+- Build app shell: sidebar navigation + header + main content area
+- Implement state management (Zustand/Context) for user session
+- Dashboard with real data patterns (use mock data, but realistic structure)
+- Each feature: list view → detail view → create/edit forms → delete confirmation
+- Add loading skeletons, empty states, error boundaries everywhere
+- Real-time feel: optimistic updates, toast notifications
+- Mobile responsive: collapsible sidebar, bottom nav on mobile
+- Keyboard shortcuts for power users`,
+
+  service: `You are a backend architect and API specialist building a SERVER/API SERVICE.
+
+COMPONENTS TO BUILD (in order):
+1. Project structure — src/, routes/, controllers/, models/, middleware/, utils/, config/
+2. Server setup — Express/Fastify/Hono with CORS, helmet, rate limiting, error handling
+3. Database — schema design, migrations, seed data, connection pooling
+4. Auth system — JWT/session, register, login, refresh tokens, password hashing
+5. Core API routes — CRUD for main resources, validation, pagination, filtering, sorting
+6. Middleware — auth guard, role-based access, request logging, error handler
+7. File upload — multipart handling, storage (local/S3), image processing
+8. Background jobs — email sending, scheduled tasks, queue processing (if needed)
+9. API documentation — OpenAPI/Swagger spec, auto-generated docs
+10. Testing — unit tests for utils, integration tests for routes, test fixtures
+
+BRAND REFERENCES: Stripe API (clean REST design, great error responses), GitHub API (pagination, filtering), Supabase (auto-generated types), Firebase (real-time patterns).
+
+BUILD STRATEGY:
+- Start with project scaffolding: package.json, tsconfig, folder structure
+- Server entry point with middleware chain
+- Database connection + first model + migration
+- Auth routes (register/login/me) with proper error handling
+- CRUD routes with validation (zod/joi)
+- Every response follows consistent format: { success, data, error, pagination }
+- Environment variables via .env with validation
+- Health check endpoint, graceful shutdown
+- Docker support: Dockerfile + docker-compose.yml
+- README with setup instructions, API docs, environment variables`,
+
+  tool: `You are a CLI/automation specialist building a DEVELOPER TOOL.
+
+COMPONENTS TO BUILD (in order):
+1. CLI entry point — argument parsing (commander/yargs), help text, version
+2. Core logic — the main functionality as importable modules
+3. Configuration — config file loading (.rc, .json, .yaml), defaults, validation
+4. Commands — subcommands with options and flags
+5. Output — colored terminal output, progress bars, spinners, tables
+6. File operations — read/write/watch files, glob patterns, template rendering
+7. Integration — API clients, webhook handlers, service connectors
+8. Error handling — friendly error messages, debug mode, stack traces
+9. Testing — unit tests for core logic, integration tests for commands
+10. Distribution — package.json bin field, npm publish config, README
+
+BRAND REFERENCES: Vite (fast DX, clear output), ESLint (plugin system), Prettier (opinionated defaults), Turborepo (monorepo tooling), Changesets (release management).
+
+BUILD STRATEGY:
+- Start with CLI scaffolding: bin entry, argument parser, help output
+- Core module with pure functions (testable, no side effects)
+- Config loading with sensible defaults and schema validation
+- One command at a time, each fully working before moving to next
+- Rich terminal output: chalk/picocolors for colors, ora for spinners
+- Progress feedback for long operations
+- --dry-run flag for destructive operations
+- --verbose / --quiet output levels
+- Watch mode for development workflows (if applicable)
+- npx-ready: works without global install
+- README with usage examples, GIFs of terminal output`,
+};
+
 // ─── Agent Loop: Autonomous coding agent based on Claude tool_use ──
 
 // Per-session backup data (original file contents)
@@ -118,8 +227,81 @@ export class AgentLoop {
   private filesRead = new Set<string>();
   private toolCallCount = 0;
 
+  // File content cache — LRU with size limit to prevent memory bloat
+  private fileCache = new Map<string, string>();
+  private fileCacheMaxBytes = 30 * 1024 * 1024; // 30MB cap
+  private fileCacheBytes = 0;
+
+  private evictFileCache() {
+    // Evict oldest entries (Map preserves insertion order)
+    for (const [key, val] of this.fileCache) {
+      if (this.fileCacheBytes <= this.fileCacheMaxBytes * 0.6) break;
+      this.fileCacheBytes -= val.length;
+      this.fileCache.delete(key);
+    }
+  }
+
   // Code pattern analysis cache (per rootDir, reused across sessions)
   private static codePatternsCache = new Map<string, string>();
+
+  // Model routing: pick model based on round context
+  private pickModel(round: number, lastToolNames: string[]): string {
+    const base = this.config.modelId;
+    // If user explicitly chose a model, respect it
+    if (base !== "claude-sonnet-4-20250514") return base;
+
+    // Round 0: planning phase → Sonnet (good reasoning)
+    if (round === 0) return "claude-sonnet-4-20250514";
+
+    // If last round was only read/list operations → Sonnet (reliable)
+    const readOnlyTools = ["read_file", "list_files", "search_files"];
+    if (lastToolNames.length > 0 && lastToolNames.every(t => readOnlyTools.includes(t))) {
+      return "claude-sonnet-4-20250514";
+    }
+
+    // If error detected in recent messages → Opus (max reasoning for debugging)
+    const recentMessages = this.messages.slice(-4);
+    const hasError = recentMessages.some(m => {
+      const content = typeof m.content === "string" ? m.content : JSON.stringify(m.content);
+      return content.includes("Error") || content.includes("error") || content.includes("failed");
+    });
+    if (hasError) return "claude-sonnet-4-20250514"; // Sonnet for errors (Opus too expensive for every error)
+
+    // Default: Sonnet for write operations
+    return "claude-sonnet-4-20250514";
+  }
+
+  // Context compression: summarize old messages to save tokens
+  private compressMessages(messages: Array<{ role: string; content: unknown }>): Array<{ role: string; content: unknown }> {
+    // Compress when messages exceed 16 to prevent context overflow
+    if (messages.length <= 16) return messages;
+
+    // Keep first message (user's original request) + last 10 messages
+    const first = messages[0];
+    const recent = messages.slice(-10);
+
+    // Summarize middle messages
+    const middle = messages.slice(1, -10);
+    const summary: string[] = [];
+    for (const msg of middle) {
+      if (msg.role === "assistant" && Array.isArray(msg.content)) {
+        for (const block of msg.content as Array<{ type: string; text?: string; name?: string }>) {
+          if (block.type === "text" && block.text) {
+            summary.push(block.text.slice(0, 100));
+          } else if (block.type === "tool_use") {
+            summary.push(`[Used tool: ${block.name}]`);
+          }
+        }
+      }
+    }
+
+    const compressed = [
+      first,
+      { role: "user", content: `[Previous context summary: ${summary.join(" → ")}]` },
+      ...recent,
+    ];
+    return compressed;
+  }
 
   constructor(config: AgentLoopConfig) {
     this.config = { maxRounds: 25, ...config };
@@ -147,10 +329,20 @@ export class AgentLoop {
     this.emitRollbackAvailable();
     this.config.onEvent({ type: "cancelled" });
     this.saveSession("cancelled").catch(() => {});
+    this.cleanup();
+  }
+
+  // Free memory after session ends
+  private cleanup() {
+    this.fileCache.clear();
+    this.fileCacheBytes = 0;
+    this.messages.length = 0;
+    if (typeof globalThis.gc === "function") globalThis.gc();
   }
 
   async run() {
-    const { apiKey, modelId, rootDir, input, onEvent, maxRounds } = this.config;
+    const { apiKey, rootDir, input, onEvent, maxRounds } = this.config;
+    let lastToolNames: string[] = [];
 
     // Build system prompt
     const systemPrompt = await this.buildSystemPrompt(input);
@@ -162,8 +354,15 @@ export class AgentLoop {
       if (this.abortController.signal.aborted) return;
 
       try {
+        // Smart model routing based on round context
+        const activeModel = this.pickModel(round, lastToolNames);
+        lastToolNames = [];
+
+        // Compress context if conversation is getting long
+        const messagesForApi = this.compressMessages(this.messages);
+
         // Call Claude API (tool_use)
-        const response = await this.callClaude(apiKey, modelId, systemPrompt, this.messages);
+        const response = await this.callClaude(apiKey, activeModel, systemPrompt, messagesForApi);
 
         // Parse response
         const assistantContent = response.content;
@@ -184,6 +383,7 @@ export class AgentLoop {
             .join("\n");
           onEvent({ type: "done", summary });
           await this.saveSession("completed", summary);
+          this.cleanup();
           return;
         }
 
@@ -197,6 +397,7 @@ export class AgentLoop {
 
             const { id: toolCallId, name: toolName, input: toolInput } = block;
             this.toolCallCount++;
+            lastToolNames.push(toolName);
             onEvent({ type: "tool_call", toolName, input: toolInput, toolCallId });
 
             const result = await this.executeTool(toolName, toolInput, rootDir, toolCallId);
@@ -236,23 +437,38 @@ export class AgentLoop {
     systemPrompt: string,
     messages: Array<{ role: string; content: unknown }>,
   ) {
+    // Use prompt caching: system prompt and tools are cached after first call
+    // This reduces input token cost by ~90% on subsequent rounds
+    const systemBlocks = [
+      {
+        type: "text",
+        text: systemPrompt,
+        cache_control: { type: "ephemeral" },
+      },
+    ];
+
+    const tools = AGENT_TOOLS.map((t, i, arr) => ({
+      name: t.name,
+      description: t.description,
+      input_schema: t.input_schema,
+      // Cache control on last tool to cache the entire tool list
+      ...(i === arr.length - 1 ? { cache_control: { type: "ephemeral" } } : {}),
+    }));
+
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "x-api-key": apiKey,
         "anthropic-version": "2023-06-01",
+        "anthropic-beta": "prompt-caching-2024-07-31",
       },
       body: JSON.stringify({
         model: modelId,
         max_tokens: 8192,
-        system: systemPrompt,
+        system: systemBlocks,
         messages,
-        tools: AGENT_TOOLS.map((t) => ({
-          name: t.name,
-          description: t.description,
-          input_schema: t.input_schema,
-        })),
+        tools,
       }),
       signal: this.abortController.signal,
     });
@@ -282,10 +498,19 @@ export class AgentLoop {
         if (!fullPath.startsWith(rootDir)) {
           return { text: `Error: Cannot access "${relPath}" — it is outside the project directory.`, isError: true };
         }
+        // Return cached content if file hasn't been modified
+        if (this.fileCache.has(relPath) && !this.filesChanged.has(relPath)) {
+          const cached = this.fileCache.get(relPath)!;
+          onEvent({ type: "file_read", filePath: relPath, preview: "(cached)" });
+          return { text: cached, isError: false };
+        }
         try {
           const content = await fs.promises.readFile(fullPath, "utf-8");
           const preview = content.length > 500 ? content.slice(0, 500) + "..." : content;
           this.filesRead.add(relPath);
+          this.fileCacheBytes += content.length;
+          this.fileCache.set(relPath, content);
+          if (this.fileCacheBytes > this.fileCacheMaxBytes) this.evictFileCache();
           onEvent({ type: "file_read", filePath: relPath, preview });
           return { text: content, isError: false };
         } catch {
@@ -340,6 +565,10 @@ export class AgentLoop {
             onEvent({ type: "file_created", filePath: relPath });
           }
           this.filesChanged.add(relPath);
+          const oldSize = this.fileCache.get(relPath)?.length ?? 0;
+          this.fileCacheBytes += newContent.length - oldSize;
+          this.fileCache.set(relPath, newContent);
+          if (this.fileCacheBytes > this.fileCacheMaxBytes) this.evictFileCache();
           return { text: `File written: ${relPath}`, isError: false };
         } catch (err) {
           const reason = err instanceof Error ? err.message : String(err);
@@ -611,66 +840,59 @@ export class AgentLoop {
 
   private async buildSystemPrompt(input: AgentLoopInput): Promise<string> {
     const ctx = input.context;
-    let prompt = `You are Meld AI, an autonomous coding agent integrated into a design-to-code IDE.
-You help developers modify their existing codebase based on natural language instructions.
-Your goal is to make precise, minimal changes that blend seamlessly into the existing project.
+    let prompt = `You are Meld AI, an autonomous coding agent. You operate on a Think-Act-Observe loop — you plan, execute, verify, and repeat until the job is done.
 
-WORKFLOW:
-1. Analyze the user's request carefully — understand intent before acting
-2. Use list_files or search_files to understand the project structure
-3. Use read_file to examine ALL relevant files (the target file AND its imports/dependencies)
-4. Study the existing code patterns, naming conventions, and architecture
-5. Plan your changes — make minimal, targeted edits that follow existing patterns
-6. Use write_file to propose changes (user reviews each edit before applying)
-7. Use run_command for npm install, git, build tools, etc.
-8. After editing, check if related files (imports, types, tests) need updating
+═══ CORE LOOP: THINK → ACT → OBSERVE → REPEAT ═══
 
-CRITICAL RULES:
-- ALWAYS read a file before editing it — never assume file contents
-- Make the SMALLEST changes possible — do NOT rewrite entire files
-- Preserve existing code style, patterns, indentation, and conventions exactly
-- Use the project's existing import style (named vs default, path aliases vs relative)
-- When modifying React/Vue components, maintain the existing hooks/lifecycle order
-- When adding new code, follow the same patterns as surrounding code
-- If creating a new file, explain why and follow the project's file naming convention
-- If unsure, explain your reasoning and ask the user
-- After editing, consider if related files need updating (types, exports, imports)
-- Use run_command sparingly and only when necessary (e.g., installing a dependency)
-- PORT MANAGEMENT: CRITICAL — read carefully.
-  BANNED PORTS: ${this.getBannedPortsList()}
-  These ports are already in use by Meld or other projects. NEVER use any of them.
-  When creating a new project or configuring a dev server:
-  1. Pick a random port between 18000-28000 that is NOT in the banned list above
-  2. Modify the project's package.json scripts to hardcode this port:
-     - Next.js: \`"dev": "next dev -p <port>"\`
-     - Vite/React: \`"dev": "vite --port <port>"\` or \`"start": "PORT=<port> react-scripts start"\`
-     - Express: set PORT env or hardcode in server file
-     - Vue: \`"dev": "vite --port <port>"\`
-  3. If a port conflict occurs, pick another random port in 18000-28000 and update the script
-  4. ALWAYS update the package.json script — do NOT rely on env vars alone
-  5. Before choosing a port, check the project's existing package.json for any hardcoded ports and avoid those too
-- DEV SERVER: When starting a dev server, if it exits immediately, check the error output. Common fixes: kill the process on the port, use a different port, or install missing dependencies first.
-- NEVER remove existing functionality unless explicitly asked
-- NEVER change unrelated code — keep your diff as small as possible
-- When adding imports, place them with the same group (e.g., React imports with React, lib imports with libs)
+THINK (Plan before acting):
+- Read .md files in project root (PLAN.md, README.md, PROJECT.md) to understand goals and identity.
+- If no PLAN.md exists, CREATE one: purpose, target pages, features, tech stack, progress checklist.
+- Decompose the user's request into concrete sub-tasks.
+- Decide which tools to use and in what order.
 
-CODE QUALITY RULES:
-- Match the existing indentation (tabs vs spaces, 2-space vs 4-space)
-- Preserve existing comment style (// vs /* */ vs JSDoc)
-- Keep consistent naming: camelCase, PascalCase, kebab-case — match what exists
-- If the project uses TypeScript, add proper types — never use \`any\`
-- If the project uses ESLint/Prettier, follow its configured rules
-- Preserve existing error handling patterns (try-catch, .catch(), error boundaries)
+ACT (Execute immediately — never ask, never describe, just do):
+- Use list_files → read_file → write_file → run_command in sequence.
+- Build complete, production-quality code. No placeholders, no "...rest of file".
+- Install dependencies, create files, modify code — whatever is needed.
 
-RESPONSE DISCIPLINE:
-- When using write_file, write the COMPLETE file content. No placeholders, no "...rest of file".
-- Each write_file must be a working, complete file.
-- Explanation in write_file's "explanation" field must be ONE sentence. No paragraphs.
-- After making changes, verify by reading the file back if unsure.
-- For visual edits (color, spacing, layout): make the change and STOP. Don't refactor surrounding code.
-- For multi-file changes: state the plan first as a message, then execute file by file.
-- NEVER apologize. NEVER say "I'll help you with that". Just do it.
+OBSERVE (Verify and self-correct):
+- After every change, check if it works: read back the file, check terminal logs for errors.
+- If something fails (build error, missing import, wrong port), FIX IT immediately.
+- Do NOT report errors to the user — fix them yourself and move on.
+
+REPEAT: Continue the loop until the task is FULLY complete. Then update PLAN.md with progress.
+
+═══ AUTONOMOUS RULES ═══
+- "이어서 진행해줘" / "continue" / "keep going" → Read project state, pick up where it left off, BUILD.
+- Incomplete project → Proactively build what's missing.
+- Terminal errors → Fix immediately without being asked.
+- Never say "what would you like?" — analyze and decide yourself.
+- Never apologize. Never narrate. Just execute.
+
+═══ CODE RULES ═══
+- ALWAYS read a file before editing — never assume contents.
+- Preserve existing patterns: style, imports, naming, indentation.
+- write_file must contain the COMPLETE working file. Explanation = ONE sentence.
+- Multi-file changes: state the plan briefly, then execute file by file.
+- Match the project's conventions exactly (TypeScript types, ESLint, comment style).
+
+═══ PORT MANAGEMENT ═══
+BANNED PORTS: ${this.getBannedPortsList()}
+Use random port 18000-28000, hardcode in package.json scripts. If conflict, pick another.
+
+═══ LANGUAGE (CRITICAL — HIGHEST PRIORITY) ═══
+- Detect the language of the user's FIRST message and respond ONLY in that same language for the ENTIRE session.
+- If the user writes in Korean (한국어), ALL your text responses MUST be in Korean. No exceptions.
+- If the user writes in English, respond in English.
+- This applies to: explanations in write_file, messages, tool call explanations — everything.
+- Code itself and code comments can remain in English, but ALL conversational text must match the user's language.
+- NEVER mix languages. NEVER default to English when the user wrote in another language.
 `;
+
+    // ─── Category persona specialization ───
+    if (ctx?.category && CATEGORY_PERSONAS[ctx.category]) {
+      prompt += `\nSPECIALIZATION:\n${CATEGORY_PERSONAS[ctx.category]}\n`;
+    }
 
     // ─── Framework-specific guidelines ───
     if (ctx?.framework) {
@@ -688,11 +910,26 @@ RESPONSE DISCIPLINE:
 
     // ─── Design system ───
     if (ctx?.designSystemMd) {
-      prompt += `\n--- DESIGN SYSTEM ---\n`;
-      prompt += `The project has a design system. You MUST use these tokens/variables for colors, spacing, typography.\n`;
-      prompt += `Do NOT hardcode color values or font sizes — reference the design system.\n`;
+      prompt += `\n═══ ACTIVE DESIGN SYSTEM (MANDATORY — READ EVERY SECTION) ═══\n`;
+      prompt += `A design system (DESIGN.md format) has been applied. You MUST follow it with ZERO deviations:\n\n`;
+      prompt += `ENFORCEMENT RULES:\n`;
+      prompt += `- EVERY color must come from the palette. Never write a raw hex value.\n`;
+      prompt += `- EVERY font-size must match the type scale. Never use arbitrary px values.\n`;
+      prompt += `- EVERY spacing (margin, padding, gap) must be a multiple of the base unit.\n`;
+      prompt += `- EVERY border-radius must use a defined radius token.\n`;
+      prompt += `- EVERY shadow must use a defined elevation level.\n`;
+      prompt += `- Follow the Do's and Don'ts section strictly.\n`;
+      prompt += `- Apply the Visual Atmosphere (glass effects, motion, surface layering).\n`;
+      prompt += `- Support responsive breakpoints as defined.\n\n`;
+      prompt += `DESIGN QUALITY STANDARDS:\n`;
+      prompt += `- Spacing rhythm: consistent breathing room, generous whitespace\n`;
+      prompt += `- Typography hierarchy: clear visual hierarchy using the type scale\n`;
+      prompt += `- Color harmony: primary for CTAs, secondary for accents, neutral for text/surfaces\n`;
+      prompt += `- Component states: every interactive element needs hover, focus, active, disabled\n`;
+      prompt += `- Modern patterns: subtle glassmorphism for overlays, smooth gradients for brand accents, micro-interactions (200ms ease)\n`;
+      prompt += `- Balance: content occupies 60-70% of space, never edge-to-edge cramped\n\n`;
       prompt += ctx.designSystemMd;
-      prompt += `\n--- END DESIGN SYSTEM ---\n`;
+      prompt += `\n═══ END DESIGN SYSTEM ═══\n`;
     }
 
     // ─── File tree ───
@@ -737,10 +974,11 @@ RESPONSE DISCIPLINE:
 
     // ─── Installed Skills ───
     if (ctx?.skillsContent) {
-      prompt += `\n--- INSTALLED SKILLS ---\n`;
-      prompt += `Follow these skill rules strictly:\n`;
+      prompt += `\n═══ INSTALLED SKILLS (TOOLS) ═══\n`;
+      prompt += `The user has installed these skills. Follow their rules and use their capabilities:\n`;
       prompt += ctx.skillsContent;
-      prompt += `\n--- END SKILLS ---\n`;
+      prompt += `\nThese skills extend your capabilities. Use them proactively when relevant to the task.\n`;
+      prompt += `═══ END SKILLS ═══\n`;
     }
 
     // ─── Behavioral Preferences ───
@@ -761,12 +999,22 @@ RESPONSE DISCIPLINE:
     }
 
     // ─── Connected MCP Services ───
-    // Inform AI about which external services are available
     if (ctx?.connectedServices) {
-      prompt += `\n--- CONNECTED SERVICES ---\n`;
-      prompt += `The following external services are connected and available. You can reference their data in your responses:\n`;
+      prompt += `\n═══ CONNECTED SERVICES (MCP) ═══\n`;
+      prompt += `These external services are connected and available to use:\n`;
       prompt += ctx.connectedServices;
-      prompt += `\n--- END SERVICES ---\n`;
+      prompt += `\nYou can leverage these services in your work:\n`;
+      prompt += `- GitHub: read repos, create issues/PRs, check CI status\n`;
+      prompt += `- Figma: extract design tokens, inspect components\n`;
+      prompt += `- Vercel: deploy, check deployment status, manage domains\n`;
+      prompt += `- Supabase: manage database, auth, storage\n`;
+      prompt += `- Sentry: check errors, resolve issues\n`;
+      prompt += `- Linear: create/update issues, track progress\n`;
+      prompt += `- Notion: read/write pages, manage databases\n`;
+      prompt += `- Slack: send messages, read channels\n`;
+      prompt += `When a task would benefit from a connected service, USE IT proactively.\n`;
+      prompt += `If a service is needed but not connected, tell the user to connect it in Settings > MCP Servers.\n`;
+      prompt += `═══ END SERVICES ═══\n`;
     }
 
     // ─── Pinned files ───

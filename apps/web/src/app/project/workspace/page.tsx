@@ -1,14 +1,21 @@
 "use client";
 
 import { Suspense, useState, useEffect, useRef, useCallback, useMemo } from "react";
+
+// Module-level deduplication state (persists across StrictMode remounts)
+// Using a counter-based lock: first caller increments and captures the value,
+// any subsequent caller with same key sees a different counter value and bails out
+let chatRequestPromise: Promise<void> | null = null;
+let chatRequestPromiseKey: string | null = null;
+let chatRequestCounter = 0;
 import { useSearchParams, useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   Loader2, Figma, FolderOpen, Github, X, Check, Plus, ArrowLeft, Blend,
   Link as LinkIcon, Terminal, Eye, Zap, Command, Sparkles,
   PanelLeftClose, PanelLeftOpen, ChevronDown, ChevronRight, ArrowRight, Play, Square, Clock,
   Sun, Moon, RefreshCw, ExternalLink, MessageSquare, CheckSquare, Package, Settings, Search, Palette, FileCode, ChevronUp,
-  Globe, Code, Layout, Blocks, Send, MousePointerClick,
+  Globe, Code, Layout, Blocks, Send, MousePointerClick, Smartphone, Server, Copy,
 } from "lucide-react";
 
 // ─── Theme System ─────────────────────────────────────
@@ -79,6 +86,7 @@ import { useProjectStore } from "@/lib/store/project-store";
 import { useAgentStore } from "@/lib/store/agent-store";
 import { useMCPStore } from "@/lib/store/mcp-store";
 import { useDesignSystemStore } from "@/lib/store/design-system-store";
+import { useCategoryStore } from "@/lib/store/category-store";
 // super-context removed - AI always receives full context
 import { useAuthStore } from "@/lib/store/auth-store";
 import { useElectronAgent } from "@/lib/hooks/useElectronAgent";
@@ -91,6 +99,20 @@ import { FigmaClient } from "@/lib/figma/client";
 import { trpc } from "@/lib/trpc/client";
 import { useAgentSessionStore } from "@/lib/store/agent-session-store";
 import { AgentActivityFeed } from "@/components/agent/AgentActivityFeed";
+import nextDynamic from "next/dynamic";
+
+// Monaco Editor (dynamic import for SSR compatibility)
+const MonacoEditor = nextDynamic(
+  () => import("@/components/workspace/MonacoEditor").then((mod) => mod.MonacoEditor),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full items-center justify-center">
+        <div className="h-5 w-5 animate-spin rounded-full border-2 border-t-transparent border-[#555]" />
+      </div>
+    ),
+  }
+);
 
 // ─── MCP Hub Modal (Manus style — white theme) ──────
 function MCPHubModal({ mcpServers, onSelect, onAddCustom, onClose }: {
@@ -296,7 +318,7 @@ function MCPDetailModal({ adapterId, connected, connecting, toolCount, userServi
   );
 }
 
-// ─── GitHub Connect Modal ─────────────────────────────
+// ─── GitHub Connect Modal (with repo list) ─────────────────────────────
 function GitHubModal({ onConnect, onClose }: {
   onConnect: (owner: string, repo: string, branch: string) => void;
   onClose: () => void;
@@ -304,18 +326,23 @@ function GitHubModal({ onConnect, onClose }: {
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState<"list" | "url">("list");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Fetch user's repos via tRPC
+  const { data: repos, isLoading: reposLoading } = trpc.git.listRepos.useQuery(undefined, {
+    staleTime: 60000, // Cache for 1 minute
+  });
 
   const parseGitHubUrl = (input: string): { owner: string; repo: string } | null => {
-    // https://github.com/owner/repo format
     const match = input.match(/github\.com\/([^/]+)\/([^/\s?#]+)/);
     if (match) return { owner: match[1], repo: match[2].replace(/\.git$/, "") };
-    // owner/repo format
     const short = input.match(/^([a-zA-Z0-9_.-]+)\/([a-zA-Z0-9_.-]+)$/);
     if (short) return { owner: short[1], repo: short[2] };
     return null;
   };
 
-  const handle = async () => {
+  const handleUrlConnect = async () => {
     const parsed = parseGitHubUrl(url.trim());
     if (!parsed) { setError("Invalid GitHub URL or owner/repo"); return; }
     setLoading(true); setError(null);
@@ -325,46 +352,141 @@ function GitHubModal({ onConnect, onClose }: {
     finally { setLoading(false); }
   };
 
+  const handleRepoSelect = (owner: string, repo: string) => {
+    onConnect(owner, repo, "main");
+  };
+
+  // Filter repos by search query
+  const filteredRepos = repos?.filter((r) =>
+    r.fullName.toLowerCase().includes(searchQuery.toLowerCase())
+  ) ?? [];
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in" onClick={onClose}>
-      <div className="w-full max-w-lg animate-scale-in rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-black/[0.06]" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-5">
+      <div className="w-full max-w-lg animate-scale-in rounded-2xl bg-white shadow-2xl ring-1 ring-black/[0.06]" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-[#F0F0EE] px-6 py-4">
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#F7F7F5]">
               <Github className="h-4 w-4 text-[#787774]" />
             </div>
             <div>
               <h3 className="text-[15px] font-bold text-[#1A1A1A]">Connect GitHub</h3>
-              <p className="text-[11px] text-[#B4B4B0]">Paste a repo URL or type owner/repo</p>
+              <p className="text-[11px] text-[#B4B4B0]">Select a repository or paste URL</p>
             </div>
           </div>
           <button onClick={onClose} className="rounded-lg p-1.5 text-[#B4B4B0] hover:bg-[#F5F5F4] hover:text-[#787774] transition-colors">
             <X className="h-4 w-4" />
           </button>
         </div>
-        <div className="flex gap-2">
-          <input
-            type="text" value={url}
-            onChange={(e) => { setUrl(e.target.value); setError(null); }}
-            onKeyDown={(e) => e.key === "Enter" && handle()}
-            placeholder="https://github.com/owner/repo or owner/repo"
-            className="flex-1 rounded-xl bg-[#F7F7F5] px-4 py-3 text-[13px] ring-1 ring-black/[0.04] placeholder:text-[#B4B4B0] focus:outline-none focus:ring-black/[0.08] transition-all"
-            disabled={loading} autoFocus
-          />
-          <button onClick={handle} disabled={!url.trim() || loading}
-            className="flex items-center gap-2 rounded-xl bg-[#1A1A1A] px-5 py-3 text-[12px] font-bold text-white transition-all hover:bg-[#333] active:scale-[0.97] disabled:opacity-40">
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LinkIcon className="h-4 w-4" />}
-            Connect
+
+        {/* Tabs */}
+        <div className="flex border-b border-[#F0F0EE]">
+          <button
+            onClick={() => setTab("list")}
+            className={`flex-1 py-3 text-[13px] font-medium transition-colors ${
+              tab === "list" ? "text-[#1A1A1A] border-b-2 border-[#1A1A1A]" : "text-[#B4B4B0] hover:text-[#787774]"
+            }`}
+          >
+            My Repositories
+          </button>
+          <button
+            onClick={() => setTab("url")}
+            className={`flex-1 py-3 text-[13px] font-medium transition-colors ${
+              tab === "url" ? "text-[#1A1A1A] border-b-2 border-[#1A1A1A]" : "text-[#B4B4B0] hover:text-[#787774]"
+            }`}
+          >
+            From URL
           </button>
         </div>
-        {error && <p className="mt-2 animate-fade-in text-[11px] text-red-500">{error}</p>}
 
-        {/* MCP connection status hint */}
-        <div className="mt-4 flex items-center gap-2 rounded-lg bg-[#F7F7F5] px-3 py-2">
-          <Zap className="h-3 w-3 text-[#B4B4B0]" />
-          <p className="text-[11px] text-[#B4B4B0]">
-            Connects via MCP protocol — AI can search code, detect frameworks, and edit files
-          </p>
+        <div className="p-4">
+          {tab === "list" ? (
+            <>
+              {/* Search input */}
+              <div className="relative mb-3">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#B4B4B0]" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search repositories..."
+                  className="w-full rounded-xl bg-[#F7F7F5] pl-10 pr-4 py-2.5 text-[13px] ring-1 ring-black/[0.04] placeholder:text-[#B4B4B0] focus:outline-none focus:ring-black/[0.08] transition-all"
+                />
+              </div>
+
+              {/* Repo list */}
+              <div className="max-h-[300px] overflow-y-auto rounded-xl border border-[#F0F0EE]">
+                {reposLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-5 w-5 animate-spin text-[#B4B4B0]" />
+                  </div>
+                ) : filteredRepos.length === 0 ? (
+                  <div className="py-8 text-center text-[13px] text-[#B4B4B0]">
+                    {searchQuery ? "No matching repositories" : "No repositories found"}
+                  </div>
+                ) : (
+                  filteredRepos.slice(0, 50).map((repo) => (
+                    <button
+                      key={repo.fullName}
+                      onClick={() => handleRepoSelect(repo.owner, repo.name)}
+                      className="flex w-full items-center gap-3 border-b border-[#F0F0EE] last:border-b-0 px-4 py-3 text-left transition-colors hover:bg-[#F7F7F5]"
+                    >
+                      <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-[#F7F7F5]">
+                        {repo.isPrivate ? (
+                          <svg className="h-4 w-4 text-[#B4B4B0]" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M4 4a4 4 0 018 0v2h.25c.966 0 1.75.784 1.75 1.75v5.5A1.75 1.75 0 0112.25 15h-8.5A1.75 1.75 0 012 13.25v-5.5C2 6.784 2.784 6 3.75 6H4V4zm8.25 2H3.75a.25.25 0 00-.25.25v5.5c0 .138.112.25.25.25h8.5a.25.25 0 00.25-.25v-5.5a.25.25 0 00-.25-.25zM10.5 4V6h-5V4a2.5 2.5 0 015 0z" />
+                          </svg>
+                        ) : (
+                          <Github className="h-4 w-4 text-[#B4B4B0]" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] font-medium text-[#1A1A1A] truncate">{repo.fullName}</p>
+                        <p className="text-[11px] text-[#B4B4B0]">
+                          {repo.isPrivate ? "Private" : "Public"} · Updated {new Date(repo.updatedAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 flex-shrink-0 text-[#B4B4B0]" />
+                    </button>
+                  ))
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              {/* URL input */}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={url}
+                  onChange={(e) => { setUrl(e.target.value); setError(null); }}
+                  onKeyDown={(e) => e.key === "Enter" && handleUrlConnect()}
+                  placeholder="https://github.com/owner/repo or owner/repo"
+                  className="flex-1 rounded-xl bg-[#F7F7F5] px-4 py-3 text-[13px] ring-1 ring-black/[0.04] placeholder:text-[#B4B4B0] focus:outline-none focus:ring-black/[0.08] transition-all"
+                  disabled={loading}
+                  autoFocus
+                />
+                <button
+                  onClick={handleUrlConnect}
+                  disabled={!url.trim() || loading}
+                  className="flex items-center gap-2 rounded-xl bg-[#1A1A1A] px-5 py-3 text-[12px] font-bold text-white transition-all hover:bg-[#333] active:scale-[0.97] disabled:opacity-40"
+                >
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LinkIcon className="h-4 w-4" />}
+                  Connect
+                </button>
+              </div>
+              {error && <p className="mt-2 animate-fade-in text-[11px] text-red-500">{error}</p>}
+            </>
+          )}
+
+          {/* MCP hint */}
+          <div className="mt-4 flex items-center gap-2 rounded-lg bg-[#F7F7F5] px-3 py-2">
+            <Zap className="h-3 w-3 text-[#B4B4B0]" />
+            <p className="text-[11px] text-[#B4B4B0]">
+              Connects via MCP protocol — AI can search code, detect frameworks, and edit files
+            </p>
+          </div>
         </div>
       </div>
     </div>
@@ -594,7 +716,7 @@ function MCPConnectedModal({ serverName, logo, toolCount, onClose }: {
 // ─── MCP Presets (synced with registry) ───────────────
 interface MCPPreset {
   id: string; name: string; icon: string; logo: string; category: string; hint: string;
-  auth: "oauth" | "token";            // Authentication method
+  auth: "oauth" | "token" | "none";   // Authentication method
   authUrl?: string;                   // OAuth redirect URL (auth === "oauth")
   permissions: string[];              // Permission descriptions shown to the user
   requiresLogin: boolean;             // Whether separate login is required (GitHub is already logged in)
@@ -661,20 +783,51 @@ const MCP_PRESETS: MCPPreset[] = [
     auth: "oauth", authUrl: "/api/auth/mcp?service=canva", requiresLogin: true,
     permissions: ["Search designs", "Create and edit designs", "Export as images"],
   },
+  // ── Local/System ──
+  {
+    id: "filesystem", name: "Filesystem", icon: "folder", logo: "/mcp-icons/filesystem.svg", category: "system",
+    hint: "Read and write files on local filesystem",
+    auth: "none", requiresLogin: false,
+    permissions: ["Read files and directories", "Write and modify files", "Watch file changes"],
+  },
+  {
+    id: "windows-mcp", name: "Windows MCP", icon: "monitor", logo: "/mcp-icons/windows.svg", category: "system",
+    hint: "Windows OS integration and system control",
+    auth: "none", requiresLogin: false,
+    permissions: ["Manage files and folders", "Control system processes", "Access Windows settings"],
+  },
+  {
+    id: "pdf-viewer", name: "PDF Viewer", icon: "file-text", logo: "/mcp-icons/pdf.svg", category: "docs",
+    hint: "Read, search, and extract text from PDFs",
+    auth: "none", requiresLogin: false,
+    permissions: ["Read PDF documents", "Search text content", "Extract pages and images"],
+  },
+  {
+    id: "agent-bridge", name: "Agent Bridge", icon: "plug", logo: "/mcp-icons/meld.svg", category: "integration",
+    hint: "External AI agent integration (Cursor, Copilot)",
+    auth: "token", requiresLogin: false,
+    permissions: ["Receive commands from external agents", "Execute Meld operations", "Return results to agents"],
+  },
 ];
 
 const MCP_LOGO_MAP = Object.fromEntries(MCP_PRESETS.map((p) => [p.id, p.logo]));
 
 // Per-service brand colors (for logo background — light/dark)
 const MCP_COLOR_MAP: Record<string, { light: { bg: string; hover: string }; dark: { bg: string; hover: string } }> = {
-  figma:    { light: { bg: "bg-[#F3E8FF]", hover: "group-hover:bg-[#E9D5FF]" }, dark: { bg: "bg-[#2D1B4E]", hover: "group-hover:bg-[#3D2560]" } },
-  github:   { light: { bg: "bg-[#E5E7EB]", hover: "group-hover:bg-[#D1D5DB]" }, dark: { bg: "bg-[#2A2D32]", hover: "group-hover:bg-[#363A40]" } },
-  vercel:   { light: { bg: "bg-[#F3F4F6]", hover: "group-hover:bg-[#E5E7EB]" }, dark: { bg: "bg-[#2A2A2A]", hover: "group-hover:bg-[#363636]" } },
-  supabase: { light: { bg: "bg-[#D1FAE5]", hover: "group-hover:bg-[#A7F3D0]" }, dark: { bg: "bg-[#1A3A2A]", hover: "group-hover:bg-[#224D36]" } },
-  sentry:   { light: { bg: "bg-[#FDE8E8]", hover: "group-hover:bg-[#FECACA]" }, dark: { bg: "bg-[#3D1F1F]", hover: "group-hover:bg-[#4D2828]" } },
-  linear:   { light: { bg: "bg-[#DBEAFE]", hover: "group-hover:bg-[#BFDBFE]" }, dark: { bg: "bg-[#1E2A4A]", hover: "group-hover:bg-[#283660]" } },
-  notion:   { light: { bg: "bg-[#F3F4F6]", hover: "group-hover:bg-[#E5E7EB]" }, dark: { bg: "bg-[#2A2A2A]", hover: "group-hover:bg-[#363636]" } },
-  slack:    { light: { bg: "bg-[#FEF3C7]", hover: "group-hover:bg-[#FDE68A]" }, dark: { bg: "bg-[#3D3520]", hover: "group-hover:bg-[#4D4228]" } },
+  figma:       { light: { bg: "bg-[#F3E8FF]", hover: "group-hover:bg-[#E9D5FF]" }, dark: { bg: "bg-[#2D1B4E]", hover: "group-hover:bg-[#3D2560]" } },
+  github:      { light: { bg: "bg-[#E5E7EB]", hover: "group-hover:bg-[#D1D5DB]" }, dark: { bg: "bg-[#2A2D32]", hover: "group-hover:bg-[#363A40]" } },
+  vercel:      { light: { bg: "bg-[#F3F4F6]", hover: "group-hover:bg-[#E5E7EB]" }, dark: { bg: "bg-[#2A2A2A]", hover: "group-hover:bg-[#363636]" } },
+  supabase:    { light: { bg: "bg-[#D1FAE5]", hover: "group-hover:bg-[#A7F3D0]" }, dark: { bg: "bg-[#1A3A2A]", hover: "group-hover:bg-[#224D36]" } },
+  sentry:      { light: { bg: "bg-[#FDE8E8]", hover: "group-hover:bg-[#FECACA]" }, dark: { bg: "bg-[#3D1F1F]", hover: "group-hover:bg-[#4D2828]" } },
+  linear:      { light: { bg: "bg-[#DBEAFE]", hover: "group-hover:bg-[#BFDBFE]" }, dark: { bg: "bg-[#1E2A4A]", hover: "group-hover:bg-[#283660]" } },
+  notion:      { light: { bg: "bg-[#F3F4F6]", hover: "group-hover:bg-[#E5E7EB]" }, dark: { bg: "bg-[#2A2A2A]", hover: "group-hover:bg-[#363636]" } },
+  slack:       { light: { bg: "bg-[#FEF3C7]", hover: "group-hover:bg-[#FDE68A]" }, dark: { bg: "bg-[#3D3520]", hover: "group-hover:bg-[#4D4228]" } },
+  gmail:       { light: { bg: "bg-[#FEE2E2]", hover: "group-hover:bg-[#FECACA]" }, dark: { bg: "bg-[#3D2020]", hover: "group-hover:bg-[#4D2828]" } },
+  canva:       { light: { bg: "bg-[#E0F2FE]", hover: "group-hover:bg-[#BAE6FD]" }, dark: { bg: "bg-[#1E3A4A]", hover: "group-hover:bg-[#284A5A]" } },
+  filesystem:  { light: { bg: "bg-[#FEF3C7]", hover: "group-hover:bg-[#FDE68A]" }, dark: { bg: "bg-[#3D3520]", hover: "group-hover:bg-[#4D4228]" } },
+  "windows-mcp": { light: { bg: "bg-[#DBEAFE]", hover: "group-hover:bg-[#BFDBFE]" }, dark: { bg: "bg-[#1E2A4A]", hover: "group-hover:bg-[#283660]" } },
+  "pdf-viewer": { light: { bg: "bg-[#FEE2E2]", hover: "group-hover:bg-[#FECACA]" }, dark: { bg: "bg-[#3D2020]", hover: "group-hover:bg-[#4D2828]" } },
+  "agent-bridge": { light: { bg: "bg-[#D1FAE5]", hover: "group-hover:bg-[#A7F3D0]" }, dark: { bg: "bg-[#1A3A2A]", hover: "group-hover:bg-[#224D36]" } },
 };
 const MCP_HINT_MAP = Object.fromEntries(MCP_PRESETS.map((p) => [p.id, p.hint]));
 
@@ -786,44 +939,80 @@ function WorkspaceToolsBar({ mcpServers, onMCPConnect, onAddMCP, isDark }: {
 
 // ─── Empty Workspace ─────────────────────────────────
 
-function EmptyWorkspace({ onLocal, onNewProject, onMCPConnect, onAddMCP, mcpServers, isDark }: {
+function EmptyWorkspace({ onLocal, onNewProject, onMCPConnect, onAddMCP, mcpServers, isDark, onStartWithPrompt }: {
   onLocal: () => void;
   onNewProject: () => void;
   onMCPConnect: (adapterId: string) => void;
   onAddMCP: () => void;
   mcpServers: Array<{ adapterId: string; name: string; icon: string; connected: boolean; connecting: boolean; toolCount: number; error: string | null }>;
   isDark?: boolean;
+  onStartWithPrompt?: (prompt: string, category: string) => void;
 }) {
   const router = useRouter();
   const [recentProjects, setRecentProjects] = useState<Array<{ id: string; name: string; lastOpened: string; projectPath?: string }>>([]);
-  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [prompt, setPrompt] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<"website" | "app" | "service" | "tool">("website");
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const isSubmittingRef = useRef(false);
 
   useEffect(() => {
     try {
       const stored = localStorage.getItem("meld-recent-projects");
       if (stored) setRecentProjects(JSON.parse(stored));
     } catch {}
-    // Show onboarding for first-time users
-    try {
-      if (!localStorage.getItem("meld-onboarded")) {
-        setShowOnboarding(true);
-      }
-    } catch {}
   }, []);
 
-  const dismissOnboarding = () => {
-    setShowOnboarding(false);
-    try { localStorage.setItem("meld-onboarded", "1"); } catch {}
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowCategoryDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 200) + "px";
+    }
+  }, [prompt]);
+
+  const categories = [
+    { id: "website" as const, label: "Website", icon: <Globe className="h-4 w-4" /> },
+    { id: "app" as const, label: "App", icon: <Smartphone className="h-4 w-4" /> },
+    { id: "service" as const, label: "Server", icon: <Server className="h-4 w-4" /> },
+    { id: "tool" as const, label: "Automation", icon: <Zap className="h-4 w-4" /> },
+  ];
+
+  const currentCategory = categories.find(c => c.id === selectedCategory) || categories[0];
+
+  const handleSubmit = () => {
+    if (!prompt.trim()) return;
+    // Prevent duplicate submissions (React StrictMode can trigger twice)
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+
+    if (onStartWithPrompt) {
+      onStartWithPrompt(prompt.trim(), selectedCategory);
+    }
+    // Reset after a short delay to allow new submissions
+    setTimeout(() => {
+      isSubmittingRef.current = false;
+    }, 1000);
   };
 
-  // Time-based greeting
-  const greeting = useMemo(() => {
-    const hour = new Date().getHours();
-    if (hour < 6) return "Burning the midnight oil";
-    if (hour < 12) return "Good morning";
-    if (hour < 18) return "Good afternoon";
-    return "Good evening";
-  }, []);
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
+    }
+  };
 
   return (
     <motion.div
@@ -836,111 +1025,110 @@ function EmptyWorkspace({ onLocal, onNewProject, onMCPConnect, onAddMCP, mcpServ
         delay: 0.1
       }}
     >
-      {/* Onboarding overlay */}
-      <AnimatePresence>
-        {showOnboarding && (
-          <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div
-              className={`w-full max-w-md rounded-2xl p-8 shadow-2xl ${isDark ? "bg-[#181818] ring-1 ring-white/[0.08]" : "bg-white ring-1 ring-black/[0.06]"}`}
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            >
-              <div className="text-center mb-6">
-                <motion.div
-                  className={`mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl ${isDark ? "bg-[#3A3A3A]" : "bg-[#F0F0EE]"}`}
-                  initial={{ scale: 0, rotate: -180 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{ type: "spring", damping: 15, stiffness: 200, delay: 0.2 }}
-                >
-                  <Blend className={`h-5 w-5 ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`} />
-                </motion.div>
-                <h2 className={`text-[20px] font-bold ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`}>Welcome to Meld</h2>
-                <p className={`mt-1 text-[13px] ${isDark ? "text-[#777]" : "text-[#9A9A95]"}`}>Build and modify projects with AI</p>
-              </div>
-              <div className="space-y-4 mb-8">
-                {[
-                  { step: "1", text: "Open a project folder or create new" },
-                  { step: "2", text: "Ask AI to build or modify your code" },
-                  { step: "3", text: "See changes live in the preview" },
-                ].map((item, idx) => (
-                  <motion.div
-                    key={item.step}
-                    className={`flex items-start gap-3 rounded-xl px-4 py-3 ${isDark ? "bg-[#353535]" : "bg-[#F7F7F5]"}`}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.3 + idx * 0.1 }}
-                  >
-                    <span className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[12px] font-bold ${isDark ? "bg-[#E8E8E5] text-[#1A1A1A]" : "bg-[#1A1A1A] text-white"}`}>{item.step}</span>
-                    <span className={`text-[14px] pt-0.5 ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`}>{item.text}</span>
-                  </motion.div>
-                ))}
-              </div>
-              <motion.button
-                onClick={dismissOnboarding}
-                className={`w-full rounded-xl py-3 text-[14px] font-semibold transition-colors ${isDark ? "bg-[#E8E8E5] text-[#1A1A1A] hover:bg-[#D4D4D0]" : "bg-[#1A1A1A] text-white hover:bg-[#333]"}`}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                Get Started
-              </motion.button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      <div className="w-full max-w-xl">
-        {/* Greeting */}
+      <div className="w-full max-w-2xl">
+        {/* Title */}
         <div className="text-center mb-8">
-          <div className={`mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl ${isDark ? "bg-[#333]" : "bg-[#F0F0EE]"}`}>
-            <Blend className={`h-5 w-5 ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`} />
-          </div>
-          <h1 className={`text-[22px] font-bold ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`}>{greeting}</h1>
-          <p className={`mt-1 text-[13px] ${isDark ? "text-[#777]" : "text-[#9A9A95]"}`}>What shall we build?</p>
+          <h1 className={`text-[28px] font-bold ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`}>
+            What do you want to build?
+          </h1>
+          <p className={`mt-2 text-[15px] ${isDark ? "text-[#777]" : "text-[#9A9A95]"}`}>
+            Describe your idea and AI will create it for you
+          </p>
         </div>
 
-        {/* Action buttons */}
-        <div className="space-y-2 mb-6">
-          <button
-            onClick={onNewProject}
-            className={`group w-full flex items-center gap-4 rounded-2xl p-5 text-left transition-all active:scale-[0.99] ${isDark ? "bg-[#2A2A2A] hover:bg-[#333]" : "bg-[#1A1A1A] hover:bg-[#333]"}`}
-          >
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10">
-              <Plus className="h-5 w-5 text-white/70" />
-            </div>
-            <div className="flex-1">
-              <p className={`text-[15px] font-bold ${isDark ? "text-[#E8E8E5]" : "text-white"}`}>New Project</p>
-              <p className={`text-[12px] ${isDark ? "text-[#9A9A95]" : "text-white/50"}`}>Start from scratch with AI</p>
-            </div>
-            <ArrowRight className={`h-4 w-4 ${isDark ? "text-[#666]" : "text-white/30"} transition-transform group-hover:translate-x-1`} />
-          </button>
+        {/* Main Input Box */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.15, ease: [0.4, 0, 0.2, 1] }}
+          className={`relative rounded-2xl border transition-all ${isDark ? "bg-[#1A1A1A] border-[#333]" : "bg-white border-[#E0E0E0]"} ${prompt ? (isDark ? "border-[#555]" : "border-[#CCC]") : ""}`}
+        >
+          {/* Textarea */}
+          <textarea
+            ref={textareaRef}
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="A portfolio website with dark mode and animated sections..."
+            className={`w-full resize-none rounded-t-2xl px-5 pt-5 pb-3 text-[15px] leading-relaxed outline-none ${isDark ? "bg-transparent text-[#E8E8E5] placeholder:text-[#555]" : "bg-transparent text-[#1A1A1A] placeholder:text-[#B4B4B0]"}`}
+            rows={3}
+            style={{ minHeight: "100px" }}
+          />
 
+          {/* Bottom Bar */}
+          <div className="flex items-center justify-between px-4 py-3">
+            {/* Category Selector */}
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-[13px] font-medium transition-colors ${isDark ? "bg-[#2A2A2A] hover:bg-[#333] text-[#E8E8E5]" : "bg-[#F0F0EE] hover:bg-[#E8E8E4] text-[#1A1A1A]"}`}
+              >
+                {currentCategory.icon}
+                <span>{currentCategory.label}</span>
+                <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showCategoryDropdown ? "rotate-180" : ""} ${isDark ? "text-[#666]" : "text-[#9A9A95]"}`} />
+              </button>
+
+              {/* Dropdown */}
+              {showCategoryDropdown && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                  transition={{ duration: 0.15 }}
+                  className={`absolute bottom-full left-0 mb-2 w-48 rounded-xl border shadow-xl overflow-hidden ${isDark ? "bg-[#1A1A1A] border-[#333]" : "bg-white border-[#E0E0E0]"}`}
+                >
+                  {categories.map((cat) => (
+                    <button
+                      key={cat.id}
+                      onClick={() => {
+                        setSelectedCategory(cat.id);
+                        setShowCategoryDropdown(false);
+                      }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${selectedCategory === cat.id ? (isDark ? "bg-[#2A2A2A]" : "bg-[#F0F0EE]") : ""} ${isDark ? "hover:bg-[#2A2A2A] text-[#E8E8E5]" : "hover:bg-[#F0F0EE] text-[#1A1A1A]"}`}
+                    >
+                      <span className={isDark ? "text-[#777]" : "text-[#9A9A95]"}>{cat.icon}</span>
+                      <span className="text-[14px] font-medium">{cat.label}</span>
+                      {selectedCategory === cat.id && (
+                        <Check className={`h-4 w-4 ml-auto ${isDark ? "text-violet-400" : "text-violet-500"}`} />
+                      )}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </div>
+
+            {/* Send Button - only show when user types */}
+            {prompt.trim() && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                onClick={handleSubmit}
+                className="flex items-center justify-center w-8 h-8 rounded-lg bg-white text-[#1A1A1A] hover:bg-[#F0F0F0] active:scale-[0.95] transition-all"
+              >
+                <ArrowRight className="h-4 w-4" />
+              </motion.button>
+            )}
+          </div>
+        </motion.div>
+
+        {/* Open Folder Link */}
+        <div className="mt-6 text-center">
           <button
             onClick={onLocal}
-            className={`group w-full flex items-center gap-4 rounded-2xl p-5 text-left transition-all active:scale-[0.99] ${isDark ? "bg-[#151515] hover:bg-[#2A2A2A]" : "bg-[#F0F0EE] hover:bg-[#E8E8E4]"}`}
+            className={`inline-flex items-center gap-2 text-[13px] transition-colors ${isDark ? "text-[#666] hover:text-[#999]" : "text-[#9A9A95] hover:text-[#666]"}`}
           >
-            <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${isDark ? "bg-[#3A3A3A]" : "bg-[#D4D4D0]"}`}>
-              <FolderOpen className={`h-5 w-5 ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`} />
-            </div>
-            <div className="flex-1">
-              <p className={`text-[15px] font-bold ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`}>Open Folder</p>
-              <p className={`text-[12px] ${isDark ? "text-[#777]" : "text-[#9A9A95]"}`}>Open an existing project</p>
-            </div>
-            <ArrowRight className={`h-4 w-4 ${isDark ? "text-[#555]" : "text-[#B4B4B0]"} transition-transform group-hover:translate-x-1`} />
+            <FolderOpen className="h-4 w-4" />
+            <span>or open an existing folder</span>
           </button>
         </div>
 
         {/* Recent projects */}
-        {recentProjects.length > 0 && (
-          <div className="mb-6">
+        {recentProjects.filter(p => p.projectPath).length > 0 && (
+          <div className="mt-10">
             <p className={`text-[11px] font-bold uppercase tracking-wider mb-3 ${isDark ? "text-[#666]" : "text-[#B4B4B0]"}`}>Recent</p>
             <div className="space-y-0.5">
-              {recentProjects.slice(0, 5).map((project) => (
+              {recentProjects.filter(p => p.projectPath).slice(0, 5).map((project) => (
                 <button
                   key={project.id}
                   onClick={() => router.push(`/project/workspace?id=${project.id}`)}
@@ -990,6 +1178,7 @@ const PROJECT_CATEGORIES = [
     label: "Website",
     desc: "Landing pages, blogs, portfolios",
     icon: <Globe className="h-6 w-6" />,
+    logos: ["/logos/airbnb.svg", "/logos/spotify.svg", "/logos/netflix.svg"],
     defaultFramework: "nextjs",
     frameworks: [
       { id: "nextjs", name: "Next.js", desc: "Fast, SEO-friendly (recommended)" },
@@ -1012,6 +1201,7 @@ const PROJECT_CATEGORIES = [
     label: "App",
     desc: "Interactive apps with login, dashboard, real-time",
     icon: <Layout className="h-6 w-6" />,
+    logos: ["/logos/slack.svg", "/logos/notion.svg", "/logos/discord.svg"],
     defaultFramework: "nextjs-fullstack",
     frameworks: [
       { id: "nextjs-fullstack", name: "Next.js Full-Stack", desc: "Login, database, dashboard included" },
@@ -1029,13 +1219,14 @@ const PROJECT_CATEGORIES = [
   },
   {
     id: "service" as const,
-    label: "API / Backend",
-    desc: "REST APIs, servers, databases",
+    label: "Server",
+    desc: "Data storage, user login, notifications",
     icon: <Terminal className="h-6 w-6" />,
+    logos: ["/logos/uber.svg", "/logos/instagram.svg", "/logos/twitter.svg"],
     defaultFramework: "express",
     frameworks: [
-      { id: "express", name: "Express", desc: "Classic Node.js server" },
-      { id: "nextjs-api", name: "Next.js API", desc: "Serverless API routes" },
+      { id: "express", name: "Express", desc: "Simple and reliable" },
+      { id: "nextjs-api", name: "Next.js API", desc: "Modern and fast" },
     ] as FrameworkOption[],
     buildCommand: (fw: string) => {
       switch (fw) {
@@ -1047,13 +1238,14 @@ const PROJECT_CATEGORIES = [
   },
   {
     id: "tool" as const,
-    label: "Script / Tool",
-    desc: "CLI tools, automation, utilities",
+    label: "Automation",
+    desc: "Repetitive tasks, file processing, scheduling",
     icon: <Code className="h-6 w-6" />,
+    logos: ["/logos/tiktok.svg", "/logos/youtube.svg", "/logos/kakao.svg"],
     defaultFramework: "cli",
     frameworks: [
-      { id: "cli", name: "CLI Tool", desc: "Command-line tool with options" },
-      { id: "script", name: "Script", desc: "Quick automation script" },
+      { id: "cli", name: "Command Tool", desc: "Run from terminal" },
+      { id: "script", name: "Quick Script", desc: "Simple automation" },
     ] as FrameworkOption[],
     buildCommand: (fw: string) => {
       switch (fw) {
@@ -2633,14 +2825,11 @@ function TemplateSelector({ onSelect, onBack, isDark }: {
     <div className="flex h-full items-center justify-center animate-fade-in px-6 py-8 overflow-y-auto">
       <div className="w-full max-w-2xl">
         {/* Header */}
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#444] to-[#2A2A2A] shadow-lg">
-            <Sparkles className="h-6 w-6 text-[#E8E8E5]" />
-          </div>
-          <h2 className={`text-[22px] font-bold ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`}>
+        <div className="mb-10 text-center">
+          <h2 className={`text-[32px] font-bold ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`}>
             {selectedCategory ? `Build a ${category?.label}` : "What do you want to build?"}
           </h2>
-          <p className={`mt-1.5 text-[13px] ${isDark ? "text-[#9A9A95]" : "text-[#787774]"}`}>
+          <p className={`mt-2 text-[16px] ${isDark ? "text-[#9A9A95]" : "text-[#787774]"}`}>
             {selectedCategory ? "AI will set everything up. Change the framework below if you want." : "Select a category. No coding knowledge needed."}
           </p>
         </div>
@@ -2679,75 +2868,33 @@ function TemplateSelector({ onSelect, onBack, isDark }: {
           </>
         ) : (
           <div className="animate-tab-fade-in">
-            {/* Confirmation card */}
-            <div className={`rounded-2xl p-6 ${isDark ? "bg-[#2E2E2E] ring-1 ring-white/[0.06]" : "bg-[#F7F7F5] ring-1 ring-black/[0.04]"}`}>
-              {/* Category icon + info */}
-              <div className="flex items-center gap-4 mb-5">
-                <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${isDark ? "bg-[#3A3A3A] text-[#E8E8E5]" : "bg-[#E0E0DC] text-[#1A1A1A]"}`}>
-                  {category?.icon}
-                </div>
-                <div>
-                  <p className={`text-[18px] font-bold ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`}>{category?.label}</p>
-                  <p className={`text-[12px] ${isDark ? "text-[#777]" : "text-[#9A9A95]"}`}>{category?.desc}</p>
-                </div>
+            {/* Simple confirmation */}
+            <div className="text-center mb-8">
+              <div className={`mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl ${isDark ? "bg-[#2E2E2E] text-[#E8E8E5]" : "bg-[#F0F0EE] text-[#1A1A1A]"}`}>
+                {category?.icon}
               </div>
-
-              {/* Framework selector — collapsible */}
-              <div className={`rounded-xl p-3 mb-5 ${isDark ? "bg-[#252525]" : "bg-[#EEEEEC]"}`}>
-                <button
-                  onClick={() => setShowFrameworks(!showFrameworks)}
-                  className="flex w-full items-center justify-between"
-                >
-                  <div className="flex items-center gap-2">
-                    <Settings className={`h-3.5 w-3.5 ${isDark ? "text-[#777]" : "text-[#9A9A95]"}`} />
-                    <span className={`text-[12px] font-medium ${isDark ? "text-[#9A9A95]" : "text-[#787774]"}`}>Framework</span>
-                    <span className={`text-[12px] font-semibold ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`}>{activeFrameworkObj?.name}</span>
-                  </div>
-                  <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showFrameworks ? "rotate-180" : ""} ${isDark ? "text-[#777]" : "text-[#9A9A95]"}`} />
-                </button>
-
-                {showFrameworks && (
-                  <div className="mt-3 space-y-1 animate-fade-in">
-                    {category?.frameworks.map((fw) => (
-                      <button
-                        key={fw.id}
-                        onClick={() => { setSelectedFramework(fw.id); setShowFrameworks(false); }}
-                        className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors ${
-                          activeFramework === fw.id
-                            ? isDark ? "bg-[#3A3A3A] ring-1 ring-white/[0.08]" : "bg-white ring-1 ring-black/[0.06]"
-                            : isDark ? "hover:bg-[#333]" : "hover:bg-white/60"
-                        }`}
-                      >
-                        <div className={`h-2 w-2 rounded-full flex-shrink-0 ${activeFramework === fw.id ? "bg-emerald-400" : isDark ? "bg-[#555]" : "bg-[#D4D4D0]"}`} />
-                        <div>
-                          <p className={`text-[13px] font-semibold ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`}>{fw.name}</p>
-                          <p className={`text-[11px] ${isDark ? "text-[#777]" : "text-[#9A9A95]"}`}>{fw.desc}</p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Start button */}
-              <button
-                onClick={handleStart}
-                className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-[14px] font-semibold transition-all active:scale-[0.98] ${
-                  isDark ? "bg-[#E8E8E5] text-[#1A1A1A] hover:bg-white" : "bg-[#1A1A1A] text-white hover:bg-[#333]"
-                }`}
-              >
-                <Sparkles className="h-4 w-4" />
-                Start Building
-              </button>
+              <p className={`text-[14px] ${isDark ? "text-[#9A9A95]" : "text-[#787774]"}`}>
+                AI will create a <span className={`font-semibold ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`}>{category?.label}</span> project for you
+              </p>
             </div>
 
-            {/* Back */}
+            {/* Start button with gradient */}
+            <button
+              onClick={handleStart}
+              className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 p-[1px] transition-all hover:shadow-lg hover:shadow-purple-500/25 active:scale-[0.98]"
+            >
+              <div className="relative rounded-[11px] bg-[#1A1A1A] px-8 py-3 transition-all group-hover:bg-[#1A1A1A]/80">
+                <span className="text-[15px] font-semibold text-white">Start Building</span>
+              </div>
+            </button>
+
+            {/* Back link */}
             <button
               onClick={() => { setSelectedCategory(null); setSelectedFramework(null); setShowFrameworks(false); }}
-              className={`mt-5 flex items-center gap-2 text-[13px] transition-colors ${isDark ? "text-[#777] hover:text-[#B4B4B0]" : "text-[#9A9A95] hover:text-[#787774]"}`}
+              className={`mt-6 w-full flex items-center justify-center gap-2 text-[14px] transition-colors ${isDark ? "text-[#666] hover:text-[#9A9A95]" : "text-[#ABABAB] hover:text-[#787774]"}`}
             >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              Back
+              <ArrowLeft className="h-4 w-4" />
+              Choose different type
             </button>
           </div>
         )}
@@ -3655,10 +3802,35 @@ function ChatHistoryPanel({ messages, setMessages, onOpenSettings, onOpenSkills 
     }
   }, []);
   const [inputPosition, setInputPosition] = useState<"top" | "bottom">("top");
-  const { selectedFilePath, setSelectedFilePath: setAgentSelectedFile, readFileFn, writeFileFn, setLastWrite, devServerFramework, dependencies, elementHistory, setDevServerUrl, inspectorEnabled, setInspectorEnabled, setInspectedElement } = useAgentStore();
+  const { selectedFilePath, setSelectedFilePath: setAgentSelectedFile, readFileFn, writeFileFn, setLastWrite, devServerFramework, dependencies, elementHistory, setDevServerUrl, inspectorEnabled, setInspectorEnabled, setInspectedElement, fileTree } = useAgentStore();
   const agentSession = useAgentSessionStore();
   const designSystem = useDesignSystemStore();
   const mcpStore = useMCPStore();
+
+  // Build project context for ai.chat
+  const buildProjectContext = async () => {
+    const ctx: { fileTree?: string[]; framework?: string; dependencies?: string[]; selectedFile?: string; currentCode?: string } = {};
+    if (fileTree.length > 0) {
+      const flatPaths = (entries: Array<{ path: string; type: string; children?: unknown[] }>): string[] => {
+        const result: string[] = [];
+        for (const e of entries) {
+          result.push(e.path);
+          if ((e as { children?: unknown[] }).children) result.push(...flatPaths((e as { children: Array<{ path: string; type: string; children?: unknown[] }> }).children));
+        }
+        return result;
+      };
+      ctx.fileTree = flatPaths(fileTree as Array<{ path: string; type: string; children?: unknown[] }>).slice(0, 100);
+    }
+    if (devServerFramework) ctx.framework = devServerFramework;
+    if (dependencies.length > 0) ctx.dependencies = dependencies;
+    if (selectedFilePath) {
+      ctx.selectedFile = selectedFilePath;
+      if (readFileFn) {
+        try { ctx.currentCode = await readFileFn(selectedFilePath); } catch {}
+      }
+    }
+    return Object.keys(ctx).length > 0 ? ctx : undefined;
+  };
 
   // Build skills content — ONLY connected skills
   const buildSkillsContent = () => {
@@ -3779,31 +3951,68 @@ function ChatHistoryPanel({ messages, setMessages, onOpenSettings, onOpenSkills 
   }, [messages.length, agentSession.events.length]);
 
   // Auto-trigger AI when external code adds a user message (e.g. "Fix with AI")
+  // Only fires for messages added externally — NOT from handleSend or onStartWithPrompt.
   const prevMsgCountRef = useRef(messages.length);
+  const handleSendActiveRef = useRef(false);
   useEffect(() => {
+    if (handleSendActiveRef.current) {
+      handleSendActiveRef.current = false;
+      prevMsgCountRef.current = messages.length;
+      return;
+    }
+    // Skip if onStartWithPrompt is already handling a request (module-level variable)
+    if (chatRequestPromiseKey) {
+      prevMsgCountRef.current = messages.length;
+      return;
+    }
     if (messages.length > prevMsgCountRef.current && !isProcessing) {
       const lastMsg = messages[messages.length - 1];
       if (lastMsg?.role === "user") {
         // Trigger AI with the message content
         const command = lastMsg.content;
+        const sendTime = Date.now();
         setIsProcessing(true);
-        setProcessingStart(Date.now());
-        processingMinEndRef.current = Date.now() + 1000;
+        setProcessingStart(sendTime);
+        processingMinEndRef.current = sendTime + 1000;
 
-        if (window.electronAgent?.agentLoop) {
-          agentSession.startSession();
-          window.electronAgent.agentLoop.start({
-            command,
-            modelId: "claude-sonnet-4-20250514",
-            context: {
-              framework: devServerFramework ?? undefined,
-              dependencies: dependencies?.length ? dependencies : undefined,
-            },
-          }).catch((err: unknown) => {
-            safeSetProcessingFalse();
-            agentSession.addEvent({ type: "error", message: formatAiError(err) });
-          });
-        }
+        // Use async IIFE
+        (async () => {
+          if (!window.electronAgent?.ai) return;
+
+          const hasProject = fileTree.length > 0;
+
+          // No project → simple chat API
+          if (!hasProject) {
+            try {
+              const savedCategory = useCategoryStore.getState().currentCategory;
+              const projectCtx = await buildProjectContext();
+              const response = await window.electronAgent.ai.chat(command, undefined, savedCategory ?? undefined, projectCtx);
+              const duration = Date.now() - sendTime;
+              setMessages((prev) => [...prev, { role: "assistant", content: response, id: crypto.randomUUID(), duration, timestamp: Date.now() }]);
+            } catch (err) {
+              setMessages((prev) => [...prev, { role: "assistant", content: formatAiError(err), id: crypto.randomUUID(), timestamp: Date.now() }]);
+            } finally {
+              safeSetProcessingFalse();
+            }
+            return;
+          }
+
+          // Project open → always use agent loop
+          if (window.electronAgent.agentLoop) {
+            agentSession.startSession();
+            window.electronAgent.agentLoop.start({
+              command,
+              modelId: "claude-sonnet-4-20250514",
+              context: {
+                framework: devServerFramework ?? undefined,
+                dependencies: dependencies?.length ? dependencies : undefined,
+              },
+            }).catch((err: unknown) => {
+              safeSetProcessingFalse();
+              agentSession.addEvent({ type: "error", message: formatAiError(err) });
+            });
+          }
+        })();
       }
     }
     prevMsgCountRef.current = messages.length;
@@ -3826,39 +4035,63 @@ function ChatHistoryPanel({ messages, setMessages, onOpenSettings, onOpenSkills 
     if (inputRef.current) inputRef.current.style.height = "auto";
 
     const sendTime = Date.now();
+    // Prevent the auto-trigger useEffect from firing for messages added by handleSend
+    handleSendActiveRef.current = true;
     setMessages((prev) => [...prev, { role: "user", content: command, id: crypto.randomUUID(), timestamp: sendTime }]);
     setIsProcessing(true);
     setProcessingStart(sendTime);
     processingMinEndRef.current = sendTime + 1000; // Show for at least 1 second
 
-    // Desktop + Agent Loop support
-    if (window.electronAgent?.agentLoop) {
-      agentSession.startSession();
-      const targetFile = selectedFilePath ?? undefined;
-      const getCode = async () => targetFile && readFileFn ? await readFileFn(targetFile) : undefined;
+    // Desktop mode
+    if (window.electronAgent?.ai) {
+      const hasProject = fileTree.length > 0;
 
-      // fire-and-forget — event listener handles completion/error
-      getCode().then(async (currentCode) => {
-        window.electronAgent?.agentLoop?.start({
-          command,
-          modelId: "claude-sonnet-4-20250514",
-          context: {
-            selectedFile: targetFile,
-            currentCode: currentCode,
-            framework: devServerFramework ?? undefined,
-            dependencies: dependencies.length > 0 ? dependencies : undefined,
-            designSystemMd: designSystem.getDesignMd() || undefined,
-            elementHistory: elementHistory.length > 0 ? elementHistory : undefined,
-            skillsContent: buildSkillsContent() || buildInstalledSkillsContent() || undefined,
-            terminalLogs: getRecentTerminalLogs(),
-            connectedServices: buildConnectedServices(),
-          },
-        }).catch((err: unknown) => {
+      // No project open → simple chat API
+      if (!hasProject) {
+        try {
+          const savedCategory = useCategoryStore.getState().currentCategory;
+          const projectCtx = await buildProjectContext();
+          const response = await window.electronAgent.ai.chat(command, undefined, savedCategory ?? undefined, projectCtx);
+          const duration = Date.now() - sendTime;
+          setMessages((prev) => [...prev, { role: "assistant", content: response, id: crypto.randomUUID(), duration, timestamp: Date.now() }]);
+        } catch (err) {
+          setMessages((prev) => [...prev, { role: "assistant", content: formatAiError(err), id: crypto.randomUUID(), timestamp: Date.now() }]);
+        } finally {
           safeSetProcessingFalse();
-          agentSession.addEvent({ type: "error", message: formatAiError(err) });
+        }
+        return;
+      }
+
+      // Project open → always use agent loop (autonomous agent with tools)
+      if (window.electronAgent.agentLoop) {
+        agentSession.startSession();
+        const targetFile = selectedFilePath ?? undefined;
+        const getCode = async () => targetFile && readFileFn ? await readFileFn(targetFile) : undefined;
+
+        // fire-and-forget — event listener handles completion/error
+        getCode().then(async (currentCode) => {
+          window.electronAgent?.agentLoop?.start({
+            command,
+            modelId: "claude-sonnet-4-20250514",
+            context: {
+              selectedFile: targetFile,
+              currentCode: currentCode,
+              framework: devServerFramework ?? undefined,
+              dependencies: dependencies.length > 0 ? dependencies : undefined,
+              designSystemMd: designSystem.getDesignMd() || undefined,
+              elementHistory: elementHistory.length > 0 ? elementHistory : undefined,
+              skillsContent: buildSkillsContent() || buildInstalledSkillsContent() || undefined,
+              terminalLogs: getRecentTerminalLogs(),
+              connectedServices: buildConnectedServices(),
+              category: useCategoryStore.getState().currentCategory ?? undefined,
+            },
+          }).catch((err: unknown) => {
+            safeSetProcessingFalse();
+            agentSession.addEvent({ type: "error", message: formatAiError(err) });
+          });
         });
-      });
-      return;
+        return;
+      }
     }
 
     // Web mode fallback
@@ -3906,7 +4139,7 @@ function ChatHistoryPanel({ messages, setMessages, onOpenSettings, onOpenSkills 
   // Chat sessions
   const [chatSessions, setChatSessions] = useState<Array<{ id: string; title: string; time: string; messageCount: number }>>([]);
   const [showHistory, setShowHistory] = useState(false);
-  const [autoApprove, setAutoApprove] = useState(false);
+  const [autoApprove, setAutoApprove] = useState(true);
 
   // Auto-approve pending edits when enabled
   useEffect(() => {
@@ -3928,6 +4161,8 @@ function ChatHistoryPanel({ messages, setMessages, onOpenSettings, onOpenSkills 
         messageCount: messages.length,
       }, ...prev].slice(0, 20));
       setMessages([]);
+      // Clear persisted chat for this workspace
+      try { Object.keys(localStorage).filter(k => k.startsWith("meld-chat-")).forEach(k => localStorage.removeItem(k)); } catch {}
       currentSessionId.current = crypto.randomUUID();
     }
     agentSession.reset();
@@ -4030,8 +4265,8 @@ function ChatHistoryPanel({ messages, setMessages, onOpenSettings, onOpenSkills 
             if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); setShowSlashMenu(false); handleSend(); }
             if (e.key === "Escape") setShowSlashMenu(false);
           }}
-          placeholder="Ask Meld to edit your code..."
-          className="w-full resize-none bg-transparent px-4 pt-4 pb-2 text-[15px] text-[#E8E8E5] placeholder:text-[#555] focus:outline-none"
+          placeholder={isProcessing ? "Meld is working..." : "Ask Meld to edit your code..."}
+          className={`w-full resize-none bg-transparent px-4 pt-4 pb-2 text-[15px] text-[#E8E8E5] placeholder:text-[#555] focus:outline-none ${isProcessing ? "cursor-not-allowed opacity-50" : ""}`}
           style={{ maxHeight: 200 }}
           disabled={isProcessing}
         />
@@ -4212,16 +4447,23 @@ function ChatHistoryPanel({ messages, setMessages, onOpenSettings, onOpenSkills 
 
     if (isUser) {
       return (
-        <div key={msg.id} className="animate-fade-in-up group">
-          <div className="mb-1.5 flex items-center gap-2 px-1">
-            <ArrowRight className="h-3 w-3 text-[#666]" />
-            <span className="text-[11px] font-bold uppercase tracking-wider text-[#666]">You</span>
+        <div key={msg.id} className="animate-fade-in-up group mb-6">
+          <div className="relative">
+            <div className="rounded-2xl rounded-tr-md bg-[#2E2E2E] px-3.5 py-2.5 text-[13px] leading-relaxed text-[#E8E8E5]">
+              <p className="whitespace-pre-wrap">{msg.content}</p>
+            </div>
             {msg.timestamp && (
-              <span className="text-[10px] text-[#555] opacity-0 group-hover:opacity-100 transition-opacity">{formatTimeAgo(msg.timestamp)}</span>
+              <span className="absolute -top-5 right-1 text-[9px] text-[#555] opacity-0 group-hover:opacity-100 transition-opacity">{formatTimeAgo(msg.timestamp)}</span>
             )}
-          </div>
-          <div className="rounded-xl rounded-tr-sm bg-[#353535] px-4 py-3 text-[14px] leading-relaxed text-[#E8E8E5]">
-            <p className="whitespace-pre-wrap">{msg.content}</p>
+            <div className="absolute -bottom-7 right-0 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button
+                onClick={() => { navigator.clipboard.writeText(msg.content); }}
+                className="rounded-md bg-[#2E2E2E] p-1.5 text-[#999] hover:text-[#E8E8E5] hover:bg-[#3A3A3A] transition-colors ring-1 ring-white/[0.06]"
+                title="Copy message"
+              >
+                <Copy className="h-3 w-3" />
+              </button>
+            </div>
           </div>
         </div>
       );
@@ -4230,24 +4472,21 @@ function ChatHistoryPanel({ messages, setMessages, onOpenSettings, onOpenSkills 
     return (
       <div key={msg.id} className="animate-fade-in-up group">
         {/* Assistant header */}
-        <div className="mb-2 flex items-center gap-2 px-1">
-          <div className="flex h-5 w-5 items-center justify-center rounded-md bg-gradient-to-br from-[#3A3A3A] to-[#2E2E2E]">
-            <Sparkles className="h-2.5 w-2.5 text-[#9A9A95]" />
-          </div>
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#666]">Meld</span>
+        <div className="mb-1.5 flex items-center gap-1.5 px-1">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-[#666]">Meld</span>
           {msg.duration != null && (
-            <span className="flex items-center gap-1 text-[10px] text-[#666]">
-              <Zap className="h-3 w-3" />
+            <span className="flex items-center gap-0.5 text-[9px] text-[#555]">
+              <Zap className="h-2.5 w-2.5" />
               {formatDuration(msg.duration)}
             </span>
           )}
           {msg.timestamp && (
-            <span className="text-[10px] text-[#555] opacity-0 group-hover:opacity-100 transition-opacity">{formatTimeAgo(msg.timestamp)}</span>
+            <span className="text-[9px] text-[#555] opacity-0 group-hover:opacity-100 transition-opacity">{formatTimeAgo(msg.timestamp)}</span>
           )}
         </div>
 
         {/* Message body */}
-        <div className={`rounded-xl rounded-tl-sm px-4 py-3 text-[14px] leading-relaxed ${
+        <div className={`rounded-xl rounded-tl-sm px-3.5 py-2.5 text-[13px] leading-relaxed ${
           isError
             ? "bg-red-500/10 text-red-400 ring-1 ring-red-500/20"
             : "text-[#E8E8E5] ring-1 ring-white/[0.06]"
@@ -4263,17 +4502,6 @@ function ChatHistoryPanel({ messages, setMessages, onOpenSettings, onOpenSkills 
       {/* Header */}
       <div className="flex items-center justify-between border-b border-[#3A3A3A] px-4 py-2.5">
         <span className="text-[14px] font-bold text-[#E8E8E5]">{messages.length > 0 ? messages[0].content.slice(0, 25) + (messages[0].content.length > 25 ? "..." : "") : "New Chat"}</span>
-        <div className="flex items-center gap-1">
-          <button onClick={() => setTerminalOpen(!terminalOpen)} className={`rounded-md p-1.5 transition-colors ${terminalOpen ? "bg-[#E8E8E5] text-[#1A1A1A]" : "text-[#666] hover:text-[#9A9A95] hover:bg-[#2E2E2E]"}`} title="Terminal">
-            <Terminal className="h-3.5 w-3.5" />
-          </button>
-          <button onClick={handleNewChat} className="rounded-md p-1.5 text-[#666] hover:text-[#9A9A95] hover:bg-[#2E2E2E] transition-colors" title="New chat">
-            <Plus className="h-3.5 w-3.5" />
-          </button>
-          <button onClick={() => setShowHistory(!showHistory)} className={`rounded-md p-1.5 transition-colors ${showHistory ? "bg-[#2E2E2E] text-[#9A9A95]" : "text-[#666] hover:text-[#9A9A95] hover:bg-[#2E2E2E]"}`} title="Chat history">
-            <Clock className="h-3.5 w-3.5" />
-          </button>
-        </div>
       </div>
 
       {showHistory ? (
@@ -4306,7 +4534,7 @@ function ChatHistoryPanel({ messages, setMessages, onOpenSettings, onOpenSkills 
             {messages.length === 0 && !isProcessing && agentSession.status === "idle" ? (
               <SidebarGuide onSetInput={setInput} />
             ) : (
-              <div className="space-y-4 p-3">
+              <div className="space-y-6 p-3">
                 {messages.map((msg, i) => renderMessage(msg, i === messages.length - 1))}
 
                 {/* Thinking + Agent Activity — show when last message is from user (waiting) */}
@@ -4563,43 +4791,63 @@ function WorkspaceContent() {
   const { theme, toggle: toggleTheme, isDark } = useTheme();
   const t = T[theme];
 
-  // Auth check — redirect to login if not authenticated
+  // Auth state (for display purposes only, NOT for redirects in Electron)
   const { user: authUserCheck, loading: authLoading, fetchUser: authFetch } = useAuthStore();
-  const isElectronEnv = typeof window !== "undefined" && !!(window as unknown as { electronAgent?: unknown }).electronAgent;
-  const [electronAuthChecked, setElectronAuthChecked] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
+  const [isElectronEnv, setIsElectronEnv] = useState<boolean | null>(null); // null = not yet detected
   const [electronUser, setElectronUser] = useState<{ id: string; name: string; avatar: string } | null>(null);
 
-  // Electron: Check saved session on mount
+  // Load user info on mount (no redirects - user already authenticated to reach this page)
   useEffect(() => {
-    if (isElectronEnv) {
-      const checkElectronSession = async () => {
+    const loadUserInfo = async () => {
+      // 1. Detect Electron environment synchronously
+      const isElectron = typeof window !== "undefined" && !!(window as unknown as { electronAgent?: unknown }).electronAgent;
+      console.log("[Workspace] Loading user info, isElectron:", isElectron);
+      setIsElectronEnv(isElectron);
+
+      if (isElectron) {
+        // Electron: Get user info from IPC (for display purposes)
         const ea = (window as unknown as { electronAgent?: { getSavedSession?: () => Promise<unknown> } }).electronAgent;
         if (ea?.getSavedSession) {
-          const saved = await ea.getSavedSession() as { id: string; githubUsername: string; avatarUrl?: string } | null;
-          if (saved) {
-            setElectronUser({ id: saved.id, name: saved.githubUsername, avatar: saved.avatarUrl ?? "" });
+          try {
+            const saved = await ea.getSavedSession() as { id: string; githubUsername: string; avatarUrl?: string } | null;
+            console.log("[Workspace] Electron getSavedSession result:", saved);
+            if (saved) {
+              setElectronUser({ id: saved.id, name: saved.githubUsername, avatar: saved.avatarUrl ?? "" });
+            }
+          } catch (err) {
+            console.error("[Workspace] Electron getSavedSession error:", err);
           }
         }
-        setElectronAuthChecked(true);
-      };
-      checkElectronSession();
-    }
-  }, [isElectronEnv]);
+        setAuthReady(true);
+      } else {
+        // Web: Fetch user from server
+        await authFetch();
+        setAuthReady(true);
+      }
+    };
 
-  // Web: Fetch user from server
-  useEffect(() => { if (!isElectronEnv) authFetch(); }, []);
+    loadUserInfo();
+  }, []);
 
-  // Redirect to login if not authenticated
+  // Web environment only: redirect to login if not authenticated
+  // Electron users are authenticated via IPC, not cookies
+  // IMPORTANT: Check for Electron synchronously to avoid race conditions
   useEffect(() => {
-    // Web: redirect if no user
-    if (!isElectronEnv && !authLoading && !authUserCheck) {
+    // Synchronous Electron check (must be done every time, not rely on state)
+    const isElectron = typeof window !== "undefined" && !!(window as unknown as { electronAgent?: unknown }).electronAgent;
+    if (isElectron) {
+      console.log("[Workspace] Electron environment detected, skipping auth redirect");
+      return; // NEVER redirect in Electron
+    }
+
+    if (!authReady) return; // Wait for auth check to complete
+
+    if (!authLoading && !authUserCheck) {
+      console.log("[Workspace] Web: No user, redirecting to login");
       router.replace("/login");
     }
-    // Electron: redirect if no saved session
-    if (isElectronEnv && electronAuthChecked && !electronUser) {
-      router.replace("/login");
-    }
-  }, [authLoading, authUserCheck, isElectronEnv, electronAuthChecked, electronUser]);
+  }, [authReady, authLoading, authUserCheck, router]);
 
   const {
     workspace, createWorkspace, closeWorkspace, loadWorkspace, setWorkspaceName, connectFigma, disconnectFigma,
@@ -4648,6 +4896,8 @@ function WorkspaceContent() {
   // No auto-connect for MCP — only connect when user clicks the connect button
   // Auto-connect only when returning from OAuth callback (URL has figma_connected etc. params)
   const mcpAutoConnected = useRef(false);
+  // Prevent duplicate chat requests (React StrictMode can trigger callbacks twice)
+  const chatRequestInFlightRef = useRef<string | null>(null);
   useEffect(() => {
     if (mcpAutoConnected.current || !authUser || mcpStore.servers.length === 0) return;
     mcpAutoConnected.current = true;
@@ -4715,7 +4965,20 @@ function WorkspaceContent() {
   const [nameInput, setNameInput] = useState("");
   const [fileContent, setFileContent] = useState<string | null>(null);
   const [showSourceModal, setShowSourceModal] = useState(false);
-  const [chatMessages, setChatMessages] = useState<Array<{ role: "user" | "assistant"; content: string; id: string }>>([]);
+  const chatStorageKey = `meld-chat-${workspace?.id ?? "default"}`;
+  const [chatMessages, setChatMessages] = useState<Array<{ role: "user" | "assistant"; content: string; id: string }>>(() => {
+    try {
+      const saved = localStorage.getItem(chatStorageKey);
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+
+  // Persist chat messages to localStorage
+  useEffect(() => {
+    if (chatMessages.length > 0) {
+      localStorage.setItem(chatStorageKey, JSON.stringify(chatMessages));
+    }
+  }, [chatMessages, chatStorageKey]);
   const devServerReady = !!(agentStore.devServerUrl || electronAgent.devServerUrl);
 
   // New Project from Scratch — template selector state
@@ -5168,23 +5431,25 @@ function WorkspaceContent() {
 
   const hasSources = workspace.figma || workspace.local || workspace.github;
   const hasLocalFiles = !!(workspace.local?.connected);
+  // Show sidebar if sources exist OR chat is active with messages
+  const showSidebar = hasSources || chatMessages.length > 0;
 
   return (
     <div className={`flex flex-col h-screen ${t.bg}`}>
       {/* Title bar — Cursor style (drag region) */}
       <div
-        className={`flex items-center flex-shrink-0 border-b select-none ${isDark ? "bg-[#181818] border-[#333]" : "bg-[#F0F0EE] border-[#E0E0DC]"}`}
-        style={{ height: 38, WebkitAppRegion: "drag" } as React.CSSProperties}
+        className={`flex items-center flex-shrink-0 border-b select-none titlebar-drag ${isDark ? "bg-[#181818] border-[#333]" : "bg-[#F0F0EE] border-[#E0E0DC]"}`}
+        style={{ height: 38 }}
       >
         {/* Left: traffic light spacer */}
         <div className="w-[80px] flex-shrink-0" />
 
         {/* Center: URL bar */}
-        <div className="flex-1 flex items-center justify-center px-4" style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}>
+        <div className="flex-1 flex items-center justify-center px-4">
           {hasSources && (() => {
             const currentUrl = agentStore.devServerUrl || electronAgent.devServerUrl;
             return (
-              <div className={`flex items-center w-full max-w-md h-[26px] rounded-lg overflow-hidden ${isDark ? "bg-[#181818] ring-1 ring-white/[0.04]" : "bg-[#E8E8E5] ring-1 ring-black/[0.04]"}`}>
+              <div className={`titlebar-no-drag flex items-center w-full max-w-md h-[26px] rounded-lg overflow-hidden ${isDark ? "bg-[#181818] ring-1 ring-white/[0.04]" : "bg-[#E8E8E5] ring-1 ring-black/[0.04]"}`}>
                 {/* Lock / globe icon */}
                 <div className={`flex items-center justify-center w-7 flex-shrink-0 ${isDark ? "text-[#666]" : "text-[#B4B4B0]"}`}>
                   {currentUrl ? (
@@ -5229,7 +5494,7 @@ function WorkspaceContent() {
         </div>
 
         {/* Right: layout toggle buttons */}
-        <div className="flex items-center gap-1 pr-3" style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}>
+        <div className="flex items-center gap-1 pr-3 titlebar-no-drag">
           {/* Left sidebar */}
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -5265,8 +5530,8 @@ function WorkspaceContent() {
 
       {/* Main area */}
       <div className="relative flex flex-1 overflow-hidden">
-        {/* Icon sidebar — Cursor style (hidden when no project) */}
-        <div className={`flex flex-shrink-0 flex-col items-center justify-between border-r ${t.border} ${isDark ? "bg-[#181818]" : "bg-[#EEEEEC]"} py-4 ${!hasSources ? "hidden" : ""}`} style={{ width: 60 }}>
+        {/* Icon sidebar — Cursor style (hidden when no project and no chat) */}
+        <div className={`flex flex-shrink-0 flex-col items-center justify-between border-r ${t.border} ${isDark ? "bg-[#181818]" : "bg-[#EEEEEC]"} py-4 ${!showSidebar ? "hidden" : ""}`} style={{ width: 60 }}>
           <div className="flex flex-col items-center gap-1.5">
             {([
               { id: "chat" as const, icon: <MessageSquare className="h-[22px] w-[22px]" />, title: "Chat", badge: chatMessages.length > 0 ? chatMessages.length : null, mainTab: null },
@@ -5326,10 +5591,10 @@ function WorkspaceContent() {
           </div>
         </div>
 
-        {/* Source panel (left) — resizable (hidden when no project) */}
+        {/* Source panel (left) — resizable (hidden when no project and no chat) */}
         <div
-          className={`relative flex-shrink-0 ${isDark ? "bg-[#151515]" : "bg-white"} ${!hasSources || sidebarCollapsed ? "w-0 overflow-hidden" : ""}`}
-          style={!hasSources || sidebarCollapsed ? undefined : { width: sidebarWidth, transition: isResizing.current ? "none" : "width 0.3s cubic-bezier(0.16,1,0.3,1)" }}
+          className={`relative flex-shrink-0 ${isDark ? "bg-[#151515]" : "bg-white"} ${!showSidebar || sidebarCollapsed ? "w-0 overflow-hidden" : ""}`}
+          style={!showSidebar || sidebarCollapsed ? undefined : { width: sidebarWidth, transition: isResizing.current ? "none" : "width 0.3s cubic-bezier(0.16,1,0.3,1)" }}
         >
           <div key={activeIconTab} className="h-full overflow-hidden animate-tab-slide-in" style={{ width: sidebarWidth }}>
             {/* Panel content — based on activeIconTab */}
@@ -5453,11 +5718,12 @@ function WorkspaceContent() {
           </div>
 
           {/* Tab content */}
-          <div className={`relative flex-1 overflow-hidden ${!hasSources ? (isDark ? "bg-[#181818]" : "bg-white") : ""}`}>
+          <div className={`relative flex-1 overflow-hidden ${!showSidebar ? (isDark ? "bg-[#181818]" : "bg-white") : ""}`}>
             {/* Preview tab */}
             <div className={activeMainTab === "preview" ? "h-full relative" : "hidden"}>
               {/* Home button removed */}
-              {!hasSources ? (
+              {/* Show EmptyWorkspace only when no sources AND no chat */}
+            {!hasSources && chatMessages.length === 0 ? (
                 showTemplateSelector ? (
                   <TemplateSelector
                     onSelect={handleTemplateSelect}
@@ -5486,6 +5752,168 @@ function WorkspaceContent() {
                     toolCount: s.toolCount, error: s.error,
                   }))}
                   isDark={isDark}
+                  onStartWithPrompt={async (prompt, category) => {
+                    console.log("[onStartWithPrompt] called with:", prompt, category);
+                    // Save category to store for AI persona specialization
+                    useCategoryStore.getState().setCategory(category as "website" | "app" | "service" | "tool");
+                    // Prevent duplicate calls (React StrictMode can trigger twice)
+                    // Simple approach: check if key already matches (someone else is handling it)
+                    const requestKey = `${prompt}:${Math.floor(Date.now() / 2000)}`;
+
+                    // Synchronous check + set in same statement to prevent race
+                    // If key already matches, another call is handling this request
+                    if (chatRequestPromiseKey === requestKey) {
+                      console.log("[onStartWithPrompt] BLOCKED - key already set:", requestKey);
+                      if (chatRequestPromise) {
+                        await chatRequestPromise;
+                      }
+                      return;
+                    }
+
+                    // Immediately claim the key (BEFORE any await)
+                    chatRequestPromiseKey = requestKey;
+                    chatRequestInFlightRef.current = requestKey;
+                    console.log("[onStartWithPrompt] CLAIMED key:", requestKey);
+
+                    // Create promise lock for others to wait on
+                    let resolvePromise: () => void;
+                    chatRequestPromise = new Promise<void>((resolve) => { resolvePromise = resolve; });
+
+                    try {
+                      // First, classify intent: create project vs simple chat
+                      let intent: "create" | "chat" = "chat";
+                      try {
+                        if (window.electronAgent?.ai?.classifyIntent) {
+                          intent = await window.electronAgent.ai.classifyIntent(prompt);
+                          console.log("[onStartWithPrompt] intent:", intent);
+                        }
+                      } catch {
+                        // Default to chat if classification fails
+                        intent = "chat";
+                      }
+
+                      // Open sidebar and switch to chat
+                      console.log("[onStartWithPrompt] opening sidebar, isElectron:", isElectron);
+                      if (sidebarCollapsed) setSidebarCollapsed(false);
+                      setActiveIconTab("chat");
+
+                      // Add user message
+                      setChatMessages((prev) => [
+                        ...prev,
+                        { role: "user", content: prompt, id: crypto.randomUUID(), timestamp: Date.now() },
+                      ]);
+
+                      // If simple chat (not project creation), use ai.chat (no project required)
+                      if (intent === "chat") {
+                        console.log("[onStartWithPrompt] chat intent, calling ai.chat");
+                        if (isElectron && window.electronAgent?.ai?.chat) {
+                          try {
+                            console.log("[onStartWithPrompt] ai.chat available, calling...");
+                            // Build project context from current store state
+                            const store = useAgentStore.getState();
+                            const onStartCtx: { fileTree?: string[]; framework?: string; dependencies?: string[] } = {};
+                            if (store.fileTree.length > 0) {
+                              const flat = (entries: Array<{ path: string; children?: unknown[] }>): string[] => {
+                                const r: string[] = [];
+                                for (const e of entries) { r.push(e.path); if ((e as { children?: unknown[] }).children) r.push(...flat((e as { children: Array<{ path: string; children?: unknown[] }> }).children)); }
+                                return r;
+                              };
+                              onStartCtx.fileTree = flat(store.fileTree as Array<{ path: string; children?: unknown[] }>).slice(0, 100);
+                            }
+                            if (store.devServerFramework) onStartCtx.framework = store.devServerFramework;
+                            if (store.dependencies.length > 0) onStartCtx.dependencies = store.dependencies;
+                            const response = await window.electronAgent.ai.chat(prompt, undefined, category, Object.keys(onStartCtx).length > 0 ? onStartCtx : undefined);
+                            console.log("[onStartWithPrompt] ai.chat response:", response?.substring(0, 50));
+                            // Response-level deduplication: check if last message is identical assistant response
+                            setChatMessages((prev) => {
+                              const lastMsg = prev[prev.length - 1];
+                              if (lastMsg?.role === "assistant" && lastMsg?.content === response) {
+                                console.log("[onStartWithPrompt] DEDUPE - identical assistant response already present, skipping");
+                                return prev; // Don't add duplicate
+                              }
+                              return [...prev, {
+                                role: "assistant",
+                                content: response,
+                                id: crypto.randomUUID(),
+                                timestamp: Date.now(),
+                              }];
+                            });
+                          } catch (err: unknown) {
+                            console.error("[onStartWithPrompt] ai.chat error:", err);
+                            const errorContent = formatAiError(err);
+                            setChatMessages((prev) => {
+                              const lastMsg = prev[prev.length - 1];
+                              if (lastMsg?.role === "assistant" && lastMsg?.content === errorContent) {
+                                return prev; // Don't add duplicate error
+                              }
+                              return [...prev, {
+                                role: "assistant",
+                                content: errorContent,
+                                id: crypto.randomUUID(),
+                              }];
+                            });
+                          }
+                        } else {
+                          console.log("[onStartWithPrompt] ai.chat NOT available, isElectron:", isElectron);
+                        }
+                        return;
+                      }
+
+                      // Intent is "create" - proceed with project creation
+                      const catConfig = PROJECT_CATEGORIES.find(c => c.id === category);
+                      if (!catConfig) {
+                        return;
+                      }
+
+                      const buildCommand = catConfig.buildCommand(catConfig.defaultFramework);
+                      const internalCommand = `${buildCommand}\n\nAfter setting up the project, build this:\n${prompt}`;
+
+                      // Electron env: create project folder automatically (no dialog)
+                      if (isElectron && window.electronAgent?.createProjectAuto) {
+                        // Generate AI-powered title
+                        let suggestedName = catConfig.label;
+                        try {
+                          if (window.electronAgent?.ai?.generateTitle) {
+                            suggestedName = await window.electronAgent.ai.generateTitle(prompt);
+                          }
+                        } catch {
+                          suggestedName = prompt.slice(0, 30).replace(/[^a-zA-Z0-9가-힣\s]/g, "").trim() || catConfig.label;
+                        }
+                        const result = await window.electronAgent.createProjectAuto(suggestedName);
+                        if (!result) {
+                          return;
+                        }
+                        applyProjectResult(result);
+
+                        await new Promise((r) => setTimeout(r, 300));
+
+                        // Start agent loop with internal command (includes scaffolding)
+                        if (window.electronAgent?.agentLoop) {
+                          window.electronAgent.agentLoop.start({
+                            command: internalCommand,
+                            modelId: "claude-sonnet-4-20250514",
+                            context: {
+                              framework: catConfig.defaultFramework,
+                              category: category,
+                            },
+                          }).catch((err: unknown) => {
+                            setChatMessages((prev) => [...prev, {
+                              role: "assistant",
+                              content: formatAiError(err),
+                              id: crypto.randomUUID(),
+                            }]);
+                          });
+                        }
+                      }
+                    } finally {
+                      // Release the promise lock so future requests can proceed
+                      console.log("[onStartWithPrompt] FINALLY - releasing promise lock");
+                      resolvePromise!();
+                      chatRequestPromise = null;
+                      chatRequestPromiseKey = null;
+                      chatRequestInFlightRef.current = null;
+                    }
+                  }}
                 />
                 )
               ) : (hasLocalFiles || devServerReady) ? (
@@ -5508,6 +5936,17 @@ function WorkspaceContent() {
                     <PreviewHint />
                   )}
                   {/* Properties panel moved to sidebar tab */}
+                </div>
+              ) : chatMessages.length > 0 ? (
+                /* Chat-only mode: Show welcome message when no project but chat active */
+                <div className="flex h-full flex-col items-center justify-center gap-4">
+                  <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${isDark ? "bg-gradient-to-br from-[#444] to-[#2A2A2A]" : "bg-gradient-to-br from-[#E8E8E5] to-[#D0D0CC]"}`}>
+                    <MessageSquare className={`h-6 w-6 ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`} />
+                  </div>
+                  <div className="text-center">
+                    <p className={`text-[16px] font-semibold ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`}>Chat with Meld AI</p>
+                    <p className={`mt-1 text-[13px] ${isDark ? "text-[#777]" : "text-[#9A9A95]"}`}>Ask questions or open a project to start coding</p>
+                  </div>
                 </div>
               ) : null}
             </div>
@@ -5710,23 +6149,25 @@ function WorkspaceContent() {
                           Save
                         </button>
                       </div>
-                      {/* Code editor with syntax highlighting */}
-                      <SyntaxEditor
-                        filePath={tab.filePath!}
-                        value={editorContents[tab.filePath!] ?? ""}
-                        onChange={(val) => {
-                          setEditorContents(prev => ({ ...prev, [tab.filePath!]: val }));
-                          setEditorDirty(prev => new Set(prev).add(tab.filePath!));
-                        }}
-                        onSave={() => {
-                          if (tab.filePath && agentStore.writeFileFn && editorContents[tab.filePath]) {
-                            agentStore.writeFileFn(tab.filePath, editorContents[tab.filePath]);
-                            agentStore.setLastWrite();
-                            setEditorDirty(prev => { const n = new Set(prev); n.delete(tab.filePath!); return n; });
-                          }
-                        }}
-                        isDark={isDark}
-                      />
+                      {/* Code editor with Monaco Editor (VSCode-style) */}
+                      <div className="flex-1 overflow-hidden">
+                        <MonacoEditor
+                          filePath={tab.filePath!}
+                          value={editorContents[tab.filePath!] ?? ""}
+                          onChange={(val) => {
+                            setEditorContents(prev => ({ ...prev, [tab.filePath!]: val }));
+                            setEditorDirty(prev => new Set(prev).add(tab.filePath!));
+                          }}
+                          onSave={() => {
+                            if (tab.filePath && agentStore.writeFileFn && editorContents[tab.filePath]) {
+                              agentStore.writeFileFn(tab.filePath, editorContents[tab.filePath]);
+                              agentStore.setLastWrite();
+                              setEditorDirty(prev => { const n = new Set(prev); n.delete(tab.filePath!); return n; });
+                            }
+                          }}
+                          isDark={isDark}
+                        />
+                      </div>
                     </div>
                   ) : (
                     <div className="flex h-full items-center justify-center">
@@ -5738,7 +6179,7 @@ function WorkspaceContent() {
             ))}
 
             {/* Floating chat when sidebar collapsed */}
-            {sidebarCollapsed && hasSources && activeMainTab === "preview" && (
+            {sidebarCollapsed && showSidebar && activeMainTab === "preview" && (
               <FloatingChatBar
                 projectId={workspace.id}
                 mode={workspace.local ? "local" : "cloud"}

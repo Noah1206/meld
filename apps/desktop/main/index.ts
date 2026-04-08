@@ -6,9 +6,15 @@ import { cleanup as cleanupDevServer } from "./dev-server.js";
 import { registerPreviewHandlers, cleanupPreview } from "./preview-view.js";
 import { registerAiHandlers } from "./ai-handler.js";
 
+// ─── Memory management: increase V8 heap limit ───
+app.commandLine.appendSwitch("js-flags", "--max-old-space-size=4096 --expose-gc");
+
 const APP_URL = "http://localhost:9090";
 let mainWindow: BrowserWindow | null = null;
 let authResolve: ((user: unknown) => void) | null = null;
+
+// Current user in memory (for session without "Remember me")
+let currentUser: SavedSession["user"] | null = null;
 
 // Session persistence
 const SESSION_FILE = path.join(app.getPath("userData"), "session.json");
@@ -90,23 +96,30 @@ function handleProtocolUrl(url: string) {
 
       if (userJson) {
         const user = JSON.parse(decodeURIComponent(userJson));
+        console.log("[Meld] OAuth success, user:", user.githubUsername);
 
-        // Only save session if "Remember me" was checked
+        // Always store current user in memory for this session
+        currentUser = user;
+        console.log("[Meld] currentUser set in memory");
+
+        // Only save session to disk if "Remember me" was checked
         if (rememberMe) {
           saveSession(user);
+          console.log("[Meld] Session saved to disk (remember_me=true)");
         } else {
           // Clear any existing saved session when "Remember me" is not checked
           clearSession();
+          console.log("[Meld] Session cleared from disk (remember_me=false)");
         }
 
         authResolve?.(user);
         authResolve = null;
 
-        // Navigate to onboarding (first-time) or workspace (returning user)
+        // Navigate to tutorial page after login
+        // Tutorial page will redirect to workspace if already completed
         if (mainWindow) {
-          // Check if onboarding was completed before (stored in renderer localStorage)
-          // For now, always go to onboarding - the page itself will skip if completed
-          mainWindow.loadURL(`${APP_URL}/onboarding`);
+          console.log("[Meld] Navigating to /tutorial");
+          mainWindow.loadURL(`${APP_URL}/tutorial`);
         }
       }
     }
@@ -175,15 +188,41 @@ function createWindow() {
 
   const isDev = !app.isPackaged;
 
-  if (isDev) {
+  // Check for saved session (Remember me)
+  const savedSession = loadSavedSession();
+  if (savedSession) {
+    // User previously logged in with "Remember me" - go directly to workspace
+    currentUser = savedSession.user;
+    console.log("[Meld] Saved session found for:", savedSession.user.githubUsername);
     mainWindow.loadURL(`${APP_URL}/project/workspace`);
-    // mainWindow.webContents.openDevTools({ mode: "detach" });
   } else {
-    mainWindow.loadURL(`${APP_URL}/project/workspace`);
+    // No saved session - start at onboarding
+    if (isDev) {
+      mainWindow.loadURL(`${APP_URL}/onboarding`);
+      // mainWindow.webContents.openDevTools({ mode: "detach" });
+    } else {
+      mainWindow.loadURL(`${APP_URL}/onboarding`);
+    }
   }
 
   mainWindow.once("ready-to-show", () => {
     mainWindow?.show();
+  });
+
+  // Debug: Track all navigation events
+  mainWindow.webContents.on("will-navigate", (event, url) => {
+    console.log("[Meld] will-navigate:", url);
+    // Block redirect to /login if we just tried to go to /project/workspace
+    if (url.includes("/login") && !url.includes("error=")) {
+      console.log("[Meld] BLOCKING redirect to /login");
+      event.preventDefault();
+    }
+  });
+  mainWindow.webContents.on("did-navigate", (_event, url) => {
+    console.log("[Meld] did-navigate:", url);
+  });
+  mainWindow.webContents.on("did-navigate-in-page", (_event, url) => {
+    console.log("[Meld] did-navigate-in-page:", url);
   });
 
   mainWindow.on("closed", () => {
@@ -192,12 +231,15 @@ function createWindow() {
 }
 
 // GitHub OAuth — Login via system browser, receive user info via meld:// protocol
-ipcMain.handle("auth:github", async () => {
+ipcMain.handle("auth:github", async (_event, options?: { rememberMe?: boolean }) => {
   return new Promise((resolve) => {
     authResolve = resolve;
 
     // 1. Open GitHub login in system browser (redirect_to points to desktop endpoint)
-    shell.openExternal(`${APP_URL}/api/auth/github?redirect_to=/api/auth/desktop`);
+    const rememberMe = options?.rememberMe ? "true" : "false";
+    const url = `${APP_URL}/api/auth/github?redirect_to=/api/auth/desktop&remember_me=${rememberMe}`;
+    console.log("[Meld] Opening GitHub OAuth with remember_me:", rememberMe, "URL:", url);
+    shell.openExternal(url);
 
     // 60 second timeout
     setTimeout(() => {
@@ -265,7 +307,14 @@ ipcMain.handle("auth:openExternal", async (_event, url: string) => {
 
 // Session IPC handlers
 ipcMain.handle("auth:getSavedSession", () => {
+  // First check memory (current session), then disk (persistent session)
+  console.log("[Meld] getSavedSession called, currentUser:", currentUser?.githubUsername ?? "null");
+  if (currentUser) {
+    console.log("[Meld] Returning currentUser from memory");
+    return currentUser;
+  }
   const session = loadSavedSession();
+  console.log("[Meld] Checking disk session:", session?.user?.githubUsername ?? "null");
   return session?.user ?? null;
 });
 
@@ -275,8 +324,32 @@ ipcMain.handle("auth:saveSession", (_event, user: SavedSession["user"]) => {
 });
 
 ipcMain.handle("auth:clearSession", () => {
+  currentUser = null;
   clearSession();
   return true;
+});
+
+// Navigate to URL via Electron loadURL (bypasses client-side routing)
+ipcMain.handle("navigate:loadURL", async (_event, path: string) => {
+  if (mainWindow) {
+    // Clear ALL cache to avoid stale redirects
+    await mainWindow.webContents.session.clearStorageData({
+      storages: ["cachestorage", "serviceworkers", "localstorage"],
+    });
+    await mainWindow.webContents.session.clearCache();
+    await mainWindow.webContents.session.clearHostResolverCache();
+
+    const url = path.startsWith("http") ? path : `${APP_URL}${path}`;
+    console.log("[Meld] IPC navigate:loadURL (all cache cleared):", url);
+
+    // Force reload with no-cache headers and cache-busting query
+    const finalUrl = url + (url.includes("?") ? "&" : "?") + "_t=" + Date.now();
+    mainWindow.loadURL(finalUrl, {
+      extraHeaders: "pragma: no-cache\nCache-Control: no-cache, no-store, must-revalidate\n",
+    });
+    return true;
+  }
+  return false;
 });
 
 // Register IPC handlers
@@ -284,7 +357,26 @@ registerIpcHandlers();
 registerPreviewHandlers();
 registerAiHandlers();
 
-app.whenReady().then(() => {
+// ─── Memory monitor: proactive GC at 85% heap usage ───
+setInterval(() => {
+  const mem = process.memoryUsage();
+  const heapRatio = mem.heapUsed / mem.heapTotal;
+  if (heapRatio > 0.85) {
+    console.log(`[Meld] Memory pressure: ${Math.round(heapRatio * 100)}% heap used (${Math.round(mem.heapUsed / 1024 / 1024)}MB). Running GC.`);
+    if (typeof globalThis.gc === "function") globalThis.gc();
+  }
+}, 15000);
+
+app.whenReady().then(async () => {
+  // --logout flag: clear session and start logged out
+  if (process.argv.includes("--logout") || process.argv.includes("--logged-out")) {
+    clearSession();
+    // Also clear Electron session cookies
+    const { session } = await import("electron");
+    await session.defaultSession.clearStorageData({ storages: ["cookies"] });
+    console.log("[Meld] Starting in logged-out state");
+  }
+
   // Set dock icon immediately (before window creation)
   if (process.platform === "darwin" && app.dock) {
     const earlyIcon = nativeImage.createFromPath(path.join(__dirname, "../../resources/icon.png"));

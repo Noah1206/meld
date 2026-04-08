@@ -3,6 +3,10 @@ import type { FileEntry } from "@figma-code-bridge/shared";
 interface ElectronAgent {
   isElectron: true;
   openExternalAuth(url: string): void;
+  navigateTo?(path: string): Promise<boolean>;
+  getSavedSession?(): Promise<{ id: string; githubUsername: string; avatarUrl?: string; hasFigmaToken?: boolean } | null>;
+  saveSession?(user: { id: string; githubUsername: string; avatarUrl?: string; hasFigmaToken?: boolean }): Promise<boolean>;
+  clearSession?(): Promise<boolean>;
   agentLoop?: {
     start(input: { command: string; modelId?: string; context?: Record<string, unknown> }): Promise<{ status: string }>;
     cancel(): void;
@@ -37,6 +41,11 @@ interface ElectronAgent {
     devServerUrl?: string | null;
   } | null>;
   createProject(name: string): Promise<{
+    projectPath: string;
+    projectName: string;
+    fileTree: FileEntry[];
+  } | null>;
+  createProjectAuto(suggestedName?: string): Promise<{
     projectPath: string;
     projectName: string;
     fileTree: FileEntry[];
@@ -94,6 +103,11 @@ interface ElectronAgent {
       name: string; primary: string; secondary: string; tertiary: string;
       fontFamily: string; headingFamily: string; baseFontSize: number; scale: number;
     }>;
+    generateTitle(prompt: string, modelId?: string): Promise<string>;
+    classifyIntent(prompt: string, modelId?: string): Promise<"create" | "chat">;
+    chat(prompt: string, modelId?: string, category?: string, projectContext?: { fileTree?: string[]; framework?: string; dependencies?: string[]; selectedFile?: string; currentCode?: string }): Promise<string>;
+    chatStream(prompt: string, modelId?: string, streamId?: string, category?: string): Promise<{ success: boolean; fullText?: string; error?: string }>;
+    onStreamChunk(cb: (data: { streamId: string; chunk: string; done: boolean; fullText?: string; error?: string }) => void): () => void;
   };
 }
 

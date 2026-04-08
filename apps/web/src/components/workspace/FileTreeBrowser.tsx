@@ -119,7 +119,7 @@ export function FileTreeBrowser({ files, selectedPath, onSelectFile }: FileTreeB
             placeholder="Search files..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg bg-[#1E1E1E] py-1.5 pl-7 pr-2.5 text-[12px] text-[#E8E8E5] ring-1 ring-white/[0.06] placeholder:text-[#555] focus:ring-white/[0.12] focus:outline-none transition-colors"
+            className="w-full rounded-lg bg-[#1E1E1E] py-2.5 pl-9 pr-3 text-[14px] text-[#E8E8E5] ring-1 ring-white/[0.06] placeholder:text-[#555] focus:ring-white/[0.12] focus:outline-none transition-colors"
           />
         </div>
       </div>
@@ -170,17 +170,17 @@ function FileItem({
 
   return (
     <button
-      className={`group relative flex w-full items-center gap-1.5 rounded-md px-1.5 py-[3px] text-left text-[12px] transition-colors ${
+      className={`group relative flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left text-[14px] transition-colors ${
         isSelected
           ? "bg-[#37373D] text-[#E8E8E5]"
           : "text-[#CCCCCC] hover:bg-[#2A2D2E]"
       }`}
-      style={{ paddingLeft: 6 + indent * 16 }}
+      style={{ paddingLeft: 10 + indent * 20 }}
       onClick={() => !isDir && onSelect(entry.path)}
     >
       {/* Icon */}
       <span
-        className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-[2px] text-[8px] font-bold leading-none"
+        className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-[3px] text-[10px] font-bold leading-none"
         style={{ color: iconInfo.color }}
       >
         {iconInfo.icon}
@@ -217,12 +217,12 @@ function TreeEntry({
       <div className="flex items-center">
         {hasChildren && (
           <button
-            className="flex-shrink-0 px-0.5 text-[#858585] hover:text-[#CCCCCC] transition-colors"
-            style={{ marginLeft: indent * 16 }}
+            className="flex-shrink-0 px-1 text-[#858585] hover:text-[#CCCCCC] transition-colors"
+            style={{ marginLeft: indent * 20 }}
             onClick={() => onToggle(entry.path)}
           >
             <ChevronRight
-              className={`h-3 w-3 transition-transform duration-150 ${isCollapsed ? "" : "rotate-90"}`}
+              className={`h-4 w-4 transition-transform duration-150 ${isCollapsed ? "" : "rotate-90"}`}
             />
           </button>
         )}

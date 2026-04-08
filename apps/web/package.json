@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@figma-code-bridge/shared": "workspace:*",
+    "@monaco-editor/react": "^4.7.0",
     "@octokit/rest": "^22.0.1",
     "@polar-sh/nextjs": "^0.9.5",
     "@polar-sh/sdk": "^0.46.6",
@@ -27,6 +28,7 @@
     "framer-motion": "^12.38.0",
     "jose": "^6.2.2",
     "lucide-react": "^0.577.0",
+    "monaco-editor": "^0.55.1",
     "next": "16.2.1",
     "react": "19.2.4",
     "react-dom": "19.2.4",

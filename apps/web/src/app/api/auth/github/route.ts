@@ -67,10 +67,10 @@ export async function GET(req: NextRequest) {
       githubAccessToken: accessToken,
     });
 
-    // 5. Check redirect_to cookie → redirect to original destination or dashboard
+    // 5. Check redirect_to cookie → redirect to original destination or tutorial
     const cookieHeader = req.headers.get("cookie") ?? "";
     const redirectMatch = cookieHeader.match(/redirect_to=([^;]*)/);
-    const redirectTo = redirectMatch ? decodeURIComponent(redirectMatch[1]) : "/dashboard";
+    const redirectTo = redirectMatch ? decodeURIComponent(redirectMatch[1]) : "/tutorial";
 
     // Desktop app: redirect_to=/api/auth/desktop → always use localhost
     // because Desktop app runs on localhost:9090

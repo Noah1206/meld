@@ -53,8 +53,10 @@ export interface MCPServerAdapter {
 }
 
 // ─── Auth (generic) ───────────────────────────────────
+export type MCPAuthType = "bearer" | "api_key" | "oauth" | "none" | "custom";
+
 export interface MCPAuth {
-  type: "bearer" | "api_key" | "custom";
+  type: MCPAuthType;
   token: string;
   extra?: Record<string, string>;  // Additional auth info (e.g., org ID)
 }
@@ -77,7 +79,7 @@ export interface MCPServerPreset {
   icon: string;
   category: string;
   authHint: string;                // Hint text like "Figma OAuth token"
-  authType: MCPAuth["type"];
+  authType: MCPAuthType;
   docsUrl?: string;
 }
 
