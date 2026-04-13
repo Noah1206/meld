@@ -1,0 +1,22 @@
+FROM e2bdev/code-interpreter:latest
+
+# Install Node.js 22 LTS
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
+    apt-get install -y nodejs && \
+    npm install -g pnpm@latest
+
+# Install common tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git curl wget jq \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Playwright with Chromium
+RUN npx playwright install-deps chromium && \
+    npx playwright install chromium
+
+# Pre-install common project dependencies for faster startup
+RUN npm install -g typescript create-next-app create-vite
+
+# Create workspace
+RUN mkdir -p /home/user/project
+WORKDIR /home/user/project

@@ -3,9 +3,19 @@ import { create } from "zustand";
 // Agent event types (defined directly in web instead of importing from shared)
 export type AgentEventType =
   | "thinking" | "tool_call" | "tool_result"
-  | "file_read" | "file_edit" | "file_created"
+  | "file_read" | "file_edit" | "file_edit_auto" | "file_created" | "file_delete" | "file_rename"
+  | "devServer"
   | "command_start" | "command_output" | "command_done"
-  | "message" | "done" | "error" | "cancelled" | "awaiting_approval";
+  | "message" | "done" | "error" | "cancelled" | "awaiting_approval"
+  | "rollback_available" | "rollback_complete"
+  | "mcp_connect_required"
+  // Autonomous agent events
+  | "agent_plan" | "agent_plan_progress"
+  | "agent_question" | "agent_service_request"
+  | "agent_complete" | "preview_check"
+  // Browser automation events
+  | "browser_open" | "browser_click" | "browser_type"
+  | "browser_screenshot" | "browser_evaluate" | "browser_scroll";
 
 export interface AgentEvent {
   type: AgentEventType;
@@ -61,7 +71,10 @@ export const useAgentSessionStore = create<AgentSessionStore>((set, get) => ({
 
     switch (event.type) {
       case "thinking":
-        set({ currentThinking: state.currentThinking + (event.content as string) });
+        set({
+          currentThinking: event.content as string,
+          events: [...state.events, event],
+        });
         break;
 
       case "message":

@@ -1,1 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="m8 12 2.5 2.5L16 9"/></svg>
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="24" height="24" rx="6" fill="#1A1A1A"/>
+  <!-- Bridge/connection icon representing "Meld" -->
+  <!-- Left tower -->
+  <rect x="4" y="7" width="3" height="10" rx="1" fill="white"/>
+  <!-- Right tower -->
+  <rect x="17" y="7" width="3" height="10" rx="1" fill="white"/>
+  <!-- Bridge arch -->
+  <path d="M5.5 10C5.5 10 8 6.5 12 6.5S18.5 10 18.5 10" stroke="white" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+  <!-- Bridge deck -->
+  <path d="M5.5 13h13" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+  <!-- Cables -->
+  <path d="M8 13V8.5M12 13V6.5M16 13V8.5" stroke="white" stroke-width="1" stroke-linecap="round" opacity="0.6"/>
+</svg>

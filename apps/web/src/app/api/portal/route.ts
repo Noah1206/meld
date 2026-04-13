@@ -16,7 +16,7 @@ export async function GET(req: Request) {
   try {
     const { customerPortalUrl } = await polar.customerSessions.create({
       externalCustomerId: session.userId,
-      returnUrl: process.env.NEXT_PUBLIC_APP_URL + "/dashboard",
+      returnUrl: process.env.NEXT_PUBLIC_APP_URL + "/project/workspace",
     });
     return NextResponse.redirect(customerPortalUrl);
   } catch {

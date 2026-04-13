@@ -56,7 +56,7 @@ export default async function CheckoutSuccessPage({
         )}
 
         <Link
-          href="/dashboard"
+          href="/project/workspace"
           className="mt-10 inline-flex items-center rounded-lg border border-[#C5B882]/30 bg-transparent px-6 py-3 text-[15px] font-medium text-[#C5B882] transition-all hover:bg-[#C5B882]/10 active:scale-[0.98]"
         >
           {text.dashboard}

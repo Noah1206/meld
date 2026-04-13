@@ -14,14 +14,22 @@ import { useAgentStore } from "@/lib/store/agent-store";
 
 type TabId = "chat" | "files" | "properties" | "diff" | "git" | "preview" | "design";
 
+interface AgentConnectionLike {
+  startAgent: (input: { command: string; context?: Record<string, unknown> }) => void;
+  cancelAgent: () => void;
+  approveEdit: (toolCallId: string, approved: boolean) => void;
+  getTerminalBuffer?: () => Promise<string[]>;
+}
+
 interface ChatPanelProps {
   projectId: string;
   githubOwner: string;
   githubRepo: string;
   mode?: "cloud" | "local";
+  agentConnection?: AgentConnectionLike;
 }
 
-export function ChatPanel({ projectId, githubOwner, githubRepo, mode = "cloud" }: ChatPanelProps) {
+export function ChatPanel({ projectId, githubOwner, githubRepo, mode = "cloud", agentConnection }: ChatPanelProps) {
   const isLocal = mode === "local";
   const isSandbox = projectId === "sandbox";
 
@@ -106,7 +114,7 @@ export function ChatPanel({ projectId, githubOwner, githubRepo, mode = "cloud" }
             {/* Input at top */}
             {inputPosition === "top" && (
               <div className="flex-shrink-0 border-b border-[#E0E0DC]">
-                <ChatInput projectId={projectId} mode={mode} />
+                <ChatInput projectId={projectId} mode={mode} agentConnection={agentConnection} />
               </div>
             )}
             <div className="min-h-0 flex-1 overflow-y-auto pb-4">
@@ -115,7 +123,7 @@ export function ChatPanel({ projectId, githubOwner, githubRepo, mode = "cloud" }
             {/* Input at bottom */}
             {inputPosition === "bottom" && (
               <div className="flex-shrink-0 border-t border-[#E0E0DC]">
-                <ChatInput projectId={projectId} mode={mode} />
+                <ChatInput projectId={projectId} mode={mode} agentConnection={agentConnection} />
               </div>
             )}
           </div>

@@ -1,0 +1,16 @@
+# This is a config for E2B sandbox template.
+# You can use template ID (m9vyffitw4hvynlsdn4o) or template name (meld-agent) to create a sandbox:
+
+# Python SDK
+# from e2b import Sandbox, AsyncSandbox
+# sandbox = Sandbox.create("meld-agent") # Sync sandbox
+# sandbox = await AsyncSandbox.create("meld-agent") # Async sandbox
+
+# JS SDK
+# import { Sandbox } from 'e2b'
+# const sandbox = await Sandbox.create('meld-agent')
+
+team_id = "7fc769f0-e852-4442-9d1d-e68e52a80251"
+dockerfile = "Dockerfile"
+template_name = "meld-agent"
+template_id = "m9vyffitw4hvynlsdn4o"

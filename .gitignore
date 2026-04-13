@@ -31,3 +31,6 @@ pnpm-debug.log*
 
 # meld agent sessions/backups
 .meld/
+
+# Claude Code session artifacts (auto-memory, skills, shell snapshots)
+.claude/

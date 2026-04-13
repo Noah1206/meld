@@ -1,113 +1,81 @@
 # CLAUDE.md
 
 ## Project: Meld
-AI-powered design-to-code IDE. Edit existing codebases with AI — not generate new prototypes.
-Desktop app (Electron) + Web app (Next.js). No Figma plugin — uses Figma REST API.
+AI-powered coding agent web app. User types prompt → E2B cloud sandbox runs autonomous agent → real-time preview.
+Web-first MVP (Next.js). Desktop app (Electron) is secondary.
+
+## Quick Start
+```bash
+pnpm dev          # port 9090
+pnpm build        # production build
+pnpm lint         # ESLint
+```
 
 ## Architecture
-- **Desktop app**: Electron + Next.js (loads `localhost:9090` in BrowserWindow)
-- **Web app**: Next.js 16 (App Router) + TypeScript + Tailwind
-- **AI**: Claude Sonnet 4 (main reasoning engine) via agent loop with tool use
-- **State**: Zustand stores (agent, auth, project, mcp, super-context, chat)
+- **Web app**: Next.js 16 (App Router) + TypeScript + Tailwind + Zustand
+- **AI Agent**: Claude Sonnet 4 via tool-use loop, 50 rounds max, 16K tokens
+- **Sandbox**: E2B cloud (custom template `meld-agent` — Node.js 22 + pnpm + Playwright)
+- **DB/Auth**: Supabase (Postgres + GitHub OAuth)
+- **Payment**: Polar (Free / Pro $20 / Unlimited $49)
+- **Search**: Serper (Google) + Firecrawl (scraping + Vision AI)
 
-## Core Features
-1. **AI Agent Loop** — Autonomous coding agent with 5 tools (read_file, write_file, list_files, search_files, run_command)
-2. **Live Preview** — iframe preview with dev server auto-detection + hot reload
-3. **Visual Editor** — Click elements in preview to inspect, drag to move/resize, color picker, text edit
-4. **Smart Context Chains** — Auto-load related files (CSS, tests, API routes) when editing
-5. **Behavioral Learning** — Learn user preferences from accept/reject patterns
-6. **Super-Context** — 11 toggleable context sources injected into AI prompts
-7. **Skills & Plugins** — Install Claude Code skills from GitHub
-8. **MCP Servers** — 14 connectable MCP servers (GitHub, Figma, Vercel, Supabase, etc.)
-9. **Syntax-highlighted Editor** — Token-based code editor with VSCode-style colors
-10. **Properties Panel** — CSS property editor (layout, spacing, colors, border-radius)
-
-## Tech Stack
-- Next.js 16 (App Router) + TypeScript + Tailwind CSS
-- Electron 33 (desktop) + tsup (build) + node-pty (terminal)
-- Zustand (state) + tRPC v11 + React Query
-- Supabase (Postgres + Auth), Claude Sonnet 4 (main), GitHub API
-- Deploy: Vercel (web) + electron-builder (desktop)
-
-## Commands
-- `pnpm dev` — Start web dev server (port 9090)
-- `pnpm build` — Production build
-- `cd apps/desktop && pnpm build && npx electron .` — Desktop app
-- `pnpm lint` — ESLint
-
-## Structure
+## Core Flow
 ```
-apps/
-  web/                          — Next.js web app
-    src/app/project/workspace/  — Main workspace page (single-page IDE)
-    src/components/workspace/   — PreviewFrame, FileTreeBrowser
-    src/lib/store/              — Zustand stores
-      agent-store.ts            — File tree, dev server, inspector state
-      agent-session-store.ts    — AI session events, pending edits
-      super-context-store.ts    — Context sources, chains, behavioral learning
-      project-store.ts          — Workspace, integrations (Figma, Local, GitHub)
-      mcp-store.ts              — MCP server connections
-      auth-store.ts             — User auth state
-    src/lib/ai/                 — AI providers (Claude, GPT, Gemini)
-  desktop/
-    main/
-      index.ts                  — Electron main process
-      agent-loop.ts             — AI agent with tool use (read/write/search/run)
-      dev-server.ts             — Dev server management (port detection, auto-restart)
-      code-patterns.ts          — Auto-detect project code style
-      ipc-handlers.ts           — IPC handlers (file ops, dev server, agent loop)
-      inspector-script.ts       — Visual editor (drag, resize, color pick, text edit)
-    preload/index.ts            — Electron preload (exposes electronAgent API)
-    renderer/                   — Vite renderer (unused, loads web app instead)
-packages/
-  agent/                        — Local agent CLI (WebSocket + file watcher)
-  shared/                       — Shared types, agent tools, protocols
+User prompt → POST /api/ai/agent-run
+  → Sandbox.create("meld-agent") (E2B cloud)
+  → Claude agent loop (9 tools, 50 rounds)
+  → Browser polls /api/ai/agent-run/events every 500ms
+  → AgentActivityFeed shows step cards in real-time
+  → Dev server auto-detected → sandbox.getHost(port) → preview URL
 ```
 
-## AI Agent System
-- **System prompt**: Framework-specific guidelines, dependency awareness, code pattern analysis
-- **Tools**: read_file, write_file, list_files, search_files, run_command
-- **Port management**: Random ports 18000-28000, saved per project in `.meld/port`
-- **Port conflict**: Auto-detect EADDRINUSE, suggest new port, scan system ports
-- **Approval flow**: Pending edits require user approval (or auto-approve toggle)
-- **Session recording**: Saved to `.meld/sessions/`, backup/rollback support
+## Agent Tools (9)
+read_file, write_file, delete_file, rename_file, list_files, search_files, run_command, web_search, browse_url
 
-## Integrations (Settings > Integrations)
-- **Figma**: OAuth connection, extract design tokens, node tree browsing
-- **Local Folder**: Native directory dialog, file watcher, dev server auto-start
-- **GitHub**: Coming soon (OAuth ready, repo connection planned)
+## Key Files
+```
+apps/web/src/app/project/workspace/page.tsx  — Main workspace (6000+ lines)
+apps/web/src/app/api/ai/agent-run/route.ts   — Agent loop + E2B (core)
+apps/web/src/app/api/ai/agent-run/events/    — Event polling endpoint
+apps/web/src/app/api/search/route.ts         — Web search (Serper/Firecrawl)
+apps/web/src/app/api/browse/route.ts         — URL scraping + Vision AI
+apps/web/src/app/api/compute/provision/      — E2B sandbox provisioning
+apps/web/src/app/projects/page.tsx           — Project list + sidebar
+apps/web/src/app/pricing/                    — Pricing page + Polar checkout
+apps/web/src/components/agent/AgentActivityFeed.tsx — Manus-style activity feed
+apps/web/src/lib/store/
+  agent-session-store.ts     — Session events, pending edits
+  agent-store.ts             — File tree, dev server, inspector
+  mcp-store.ts               — MCP server connections
+infra/e2b-template/          — E2B custom template (v2 build, no Docker needed)
+packages/agent/              — Local agent CLI (WebSocket, for future local terminal mode)
+```
 
-## MCP Servers (Settings > MCP Servers)
-14 servers: GitHub, Figma, Vercel, Supabase, Sentry, Linear, Notion, Slack, Gmail, Filesystem, Windows MCP, PDF Viewer, Canva, Agent Bridge
+## Agent Config
+- maxRounds: 50
+- max_tokens: 16,384
+- Sandbox timeout: 30 min
+- Command timeout: 5 min
+- Dev server: background execution, 8 detection patterns
+- Fully autonomous: no approval flow, no Haiku classifier
 
-## Super-Context (Settings > Super-Context)
-11 toggleable sources: File Tree, Active File, Smart Chains, Code Patterns, Framework, Dependencies, Skills, Preferences, Design System, Figma, Terminal
-- Depth presets: Minimal (3) / Standard (7) / Maximum (all)
-- Chain depth: 1-3 levels
-- Pinned files: Always included in context
-- Custom instructions: Project-specific AI rules
+## UI Design
+- Manus-style: monochrome + single blue dot accent
+- Step cards: spinner (running) / check (done), expandable tool list
+- Tool-specific cards: web_search (blue), browse_url (indigo), devServer (green gradient, "보기" button)
+- Bottom progress bar: blue dot + step label + elapsed time + counter
+- Input bar: + popup menu (서비스 연결, 스킬 사용, 파일 추가) + MCP icons + Monitor button
+- Typewriter effect on assistant messages
 
-## UI/UX
-- Dark theme (primary), light theme support
-- VSCode-style: icon sidebar (60px) + collapsible panel + tab bar + main content
-- Title bar: hiddenInset (macOS traffic lights) + layout toggle buttons
-- Right panel: Terminal (server logs) + Properties (CSS editor)
-- Floating chat bar: Appears when sidebar collapsed
-- Skills marketplace: 53 real GitHub skills with star counts via API
+## MCP Servers (14 presets)
+figma, github, vercel, supabase, sentry, linear, notion, slack, gmail, canva, filesystem, windows-mcp, pdf-viewer, agent-bridge
 
-## AI Models (16 models, 7 providers)
-**Main Engine**: Claude Sonnet 4 (all operations)
-- **Anthropic**: Opus 4, Sonnet 4, Haiku 3.5
-- **OpenAI**: GPT-4o, GPT-4o mini, GPT-4.1, o3-mini
-- **Google**: Gemini 2.5 Pro, Gemini 2.5 Flash
-- **DeepSeek**: V3, R1
-- **Mistral**: Large, Codestral
-- **Groq**: Llama 4 Scout
-- **xAI**: Grok 3, Grok 3 mini
+## Current Status
+See PROJECT_STATUS.md for detailed progress, remaining tasks, and decisions.
 
 ## Code Style
 - Korean comments allowed
 - Functional components + hooks
 - Error handling: try-catch
 - Types: strict mode, no any
-- All colors: CSS variables in globals.css (dark theme defaults)
+- Dark theme colors via CSS variables in globals.css

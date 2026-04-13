@@ -5,13 +5,23 @@ import { Loader2, Send, FileCode, ArrowLeft, MousePointerClick, Sparkles, ArrowU
 import { useFigmaStore } from "@/lib/store/figma-store";
 import { useChatStore } from "@/lib/store/chat-store";
 import { useAgentStore } from "@/lib/store/agent-store";
+import { useCategoryStore } from "@/lib/store/category-store";
+import { useMCPStore } from "@/lib/store/mcp-store";
 import { trpc } from "@/lib/trpc/client";
 import { matchByNaming } from "@/lib/mapping/engine";
 import { useDesignSystemStore } from "@/lib/store/design-system-store";
 
+interface AgentConnectionLike {
+  startAgent: (input: { command: string; context?: Record<string, unknown> }) => void;
+  cancelAgent: () => void;
+  approveEdit: (toolCallId: string, approved: boolean) => void;
+  getTerminalBuffer?: () => Promise<string[]>;
+}
+
 interface ChatInputProps {
   projectId: string;
   mode?: "cloud" | "local";
+  agentConnection?: AgentConnectionLike;
 }
 
 function flattenFilePaths(entries: { name: string; path: string; type: "file" | "directory"; children?: unknown[] }[]): string[] {
@@ -23,7 +33,7 @@ function flattenFilePaths(entries: { name: string; path: string; type: "file" | 
   return paths;
 }
 
-export function ChatInput({ projectId, mode = "cloud" }: ChatInputProps) {
+export function ChatInput({ projectId, mode = "cloud", agentConnection }: ChatInputProps) {
   const [input, setInput] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { selectedNode } = useFigmaStore();
@@ -38,7 +48,20 @@ export function ChatInput({ projectId, mode = "cloud" }: ChatInputProps) {
 
   const editCodeMutation = trpc.ai.editCode.useMutation();
   const getDesignMd = useDesignSystemStore((s) => s.getDesignMd);
+  const currentCategory = useCategoryStore((s) => s.currentCategory);
+  const mcpServers = useMCPStore((s) => s.servers);
   const isLocal = mode === "local";
+
+  // Load customInstructions from API (cached in state)
+  const [customInstructions, setCustomInstructions] = useState<string | null>(null);
+  useEffect(() => {
+    fetch("/api/user-settings")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.custom_instructions) setCustomInstructions(data.custom_instructions);
+      })
+      .catch(() => {});
+  }, []);
 
   // Mapping suggestion (cloud mode)
   const [mappingSuggestion, setMappingSuggestion] = useState<{ filePath: string; confidence: number } | null>(null);
@@ -104,6 +127,69 @@ export function ChatInput({ projectId, mode = "cloud" }: ChatInputProps) {
     setProcessing(true);
 
     try {
+      // Agent loop mode: use WebSocket agent for autonomous multi-round coding
+      if (isLocal && agentConnection) {
+        const targetFile = selectedFilePath ?? "";
+        const currentCode = targetFile && readFileFn ? await readFileFn(targetFile) : "";
+        const elementContext = buildElementContext();
+
+        // Build file tree paths for agent context
+        const fileTreePaths = flattenFilePaths(fileTree as never[]);
+
+        // Build skills content from localStorage
+        let skillsContent: string | undefined;
+        try {
+          const installed = JSON.parse(localStorage.getItem("meld-installed-skills") || "[]") as string[];
+          const cached = JSON.parse(localStorage.getItem("meld-skill-contents") || "{}") as Record<string, string>;
+          if (installed.length > 0) {
+            const parts = installed.map((name) => cached[name] ? `### ${name}\n${cached[name]}` : null).filter(Boolean);
+            if (parts.length > 0) skillsContent = parts.join("\n\n");
+          }
+        } catch { /* ignore */ }
+
+        // Build connected MCP services summary
+        let connectedServices: string | undefined;
+        const connected = mcpServers.filter((s) => s.connected);
+        if (connected.length > 0) {
+          connectedServices = connected.map((s) => `- ${s.name} (${s.category}, ${s.toolCount} tools)`).join("\n");
+        }
+
+        // Get recent terminal logs for error context
+        let terminalLogs: string | undefined;
+        if (agentConnection.getTerminalBuffer) {
+          try {
+            const logs = await agentConnection.getTerminalBuffer();
+            if (logs.length > 0) {
+              terminalLogs = logs.slice(-30).join("")
+                .replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "")
+                .slice(-2000) || undefined;
+            }
+          } catch { /* ignore */ }
+        }
+
+        agentConnection.startAgent({
+          command,
+          context: {
+            selectedFile: targetFile || undefined,
+            currentCode: currentCode || undefined,
+            framework: devServerFramework ?? undefined,
+            dependencies: dependencies.length > 0 ? dependencies : undefined,
+            designSystemMd: getDesignMd() || undefined,
+            elementHistory: elementContext ? [elementContext] : undefined,
+            fileTree: fileTreePaths.length > 0 ? fileTreePaths : undefined,
+            category: currentCategory ?? undefined,
+            skillsContent,
+            connectedServices,
+            customInstructions: customInstructions || undefined,
+            terminalLogs,
+          },
+        });
+
+        addMessage({ role: "assistant", content: "Agent started..." });
+        setProcessing(false);
+        return;
+      }
+
       if (isLocal && (selectedFilePath || inspectedElement)) {
         const targetFile = selectedFilePath ?? "";
         const currentCode = targetFile && readFileFn ? await readFileFn(targetFile) : "";

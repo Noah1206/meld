@@ -85,7 +85,7 @@ export async function GET(req: NextRequest) {
       } catch { /* state parse failed — cookie fallback */ }
     }
     // Cookie fallback (same domain)
-    if (redirectTo === "/dashboard") {
+    if (redirectTo === "/project/workspace") {
       const cookies = req.headers.get("cookie") ?? "";
       const redirectMatch = cookies.match(/figma_redirect_to=([^;]+)/);
       if (redirectMatch) redirectTo = decodeURIComponent(redirectMatch[1]);

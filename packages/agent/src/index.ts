@@ -10,16 +10,24 @@ export { scanProject } from "./scanner.js";
 export { createWatcher } from "./watcher.js";
 export type { FileChangeEvent, ChangeHandler } from "./watcher.js";
 export { detectFramework, checkPort } from "./server.js";
+export { AgentLoop, rollbackSession, getBackupSessionIds, loadRecentSessions } from "./agent-loop.js";
+export type { SessionRecord } from "./agent-loop.js";
+export { HeartbeatScheduler } from "./heartbeat.js";
+export type { HeartbeatConfig, StandingOrder, HeartbeatInstruction } from "./heartbeat.js";
+export { EventHooks } from "./event-hooks.js";
+export type { EventHookConfig } from "./event-hooks.js";
+export { bootVMScreen, shutdownVMScreen, vmNavigate, vmClick, vmType, vmScroll, vmScreenshot, vmEvaluate, isVMScreenRunning } from "./vm-screen.js";
 
 const program = new Command();
 
 program
-  .name("figma-code-bridge")
-  .description("FigmaCodeBridge local agent — connects web app to local project")
+  .name("meld-agent")
+  .description("Meld local agent — connects web IDE to your project")
   .version("0.1.0")
   .argument("[path]", "Project path (default: current directory)", ".")
-  .option("-p, --port <number>", "WebSocket 포트", "3100")
-  .action((projectPath: string, options: { port: string }) => {
+  .option("-p, --port <number>", "WebSocket port", "3100")
+  .option("-k, --api-key <key>", "Anthropic API key (or set ANTHROPIC_API_KEY env var)")
+  .action((projectPath: string, options: { port: string; apiKey?: string }) => {
     const rootDir = path.resolve(process.cwd(), projectPath);
 
     // Path validation
@@ -39,7 +47,22 @@ program
       process.exit(1);
     }
 
-    startServer({ port, rootDir });
+    // Resolve API key: CLI flag > env var > .meld/config.json
+    let apiKey = options.apiKey || process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      const configPath = path.join(rootDir, ".meld", "config.json");
+      try {
+        const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+        apiKey = config.apiKey;
+      } catch { /* no config file */ }
+    }
+
+    if (!apiKey) {
+      console.log(`\n  ⚠️  No API key found. AI agent features will not work.`);
+      console.log(`  Set ANTHROPIC_API_KEY env var or use --api-key flag.\n`);
+    }
+
+    startServer({ port, rootDir, apiKey });
   });
 
 program.parse();

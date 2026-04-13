@@ -54,6 +54,104 @@
   --color-accent: #E8E8E5;
 }
 
+/* === Button hover fill — auto-applied to all buttons/interactive elements === */
+/* Creates a subtle background fill on hover/active using currentColor.
+   The color automatically matches the text color, so it looks natural
+   on any background. Add .no-hover-fill to opt out. */
+button, [role="button"], a.btn, .btn {
+  position: relative;
+  overflow: hidden;
+}
+
+button::before, [role="button"]::before, a.btn::before, .btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity 0.2s ease-out;
+  pointer-events: none;
+  z-index: 0;
+}
+
+button:hover::before, [role="button"]:hover::before, a.btn:hover::before, .btn:hover::before {
+  opacity: 0.07;
+}
+
+button:active::before, [role="button"]:active::before, a.btn:active::before, .btn:active::before {
+  opacity: 0.12;
+  transition: opacity 0.05s ease-out;
+}
+
+/* Opt-out: add .no-hover-fill to skip this effect */
+.no-hover-fill::before {
+  display: none !important;
+}
+
+/* Ensure button children stay above the pseudo-element */
+button > *, [role="button"] > *, a.btn > *, .btn > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* === Active press effect — subtle scale for tactile feel === */
+button:active:not(.no-press), [role="button"]:active:not(.no-press) {
+  transform: scale(0.98);
+  transition: transform 0.1s ease-out;
+}
+
+/* === Focus visible ring — keyboard accessibility (buttons/links only) === */
+button:focus-visible, [role="button"]:focus-visible, a:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-bg), 0 0 0 4px rgba(59, 130, 246, 0.5);
+}
+
+/* Inputs/textareas — no focus ring (styled individually) */
+input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: none;
+}
+
+/* === Animated gradient border (for upgrade buttons) === */
+.gradient-border-spin {
+  position: relative;
+  z-index: 0;
+  transition: background-color 0.3s ease;
+}
+
+.gradient-border-spin::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid transparent;
+  background:
+    linear-gradient(90deg, #8b5cf600, #8b5cf6, #a78bfa, #c084fc, #ec4899, #8b5cf6, #8b5cf600)
+    border-box;
+  -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  background-size: 300% 100%;
+  opacity: 0;
+  transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+  animation: border-slide 2s linear infinite;
+}
+
+.gradient-border-spin:hover::after {
+  opacity: 1;
+}
+
+.gradient-border-spin:not(:hover)::after {
+  opacity: 0;
+}
+
+@keyframes border-slide {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 300% 50%; }
+}
+
 /* === Light Theme === */
 [data-theme="light"], .theme-light {
   --color-bg: #FFFFFF;
@@ -217,6 +315,258 @@ body {
 .animate-gradient {
   background-size: 200% 200%;
   animation: gradientShift 4s ease infinite;
+}
+
+/* ============================================
+   MOTION SYSTEM — Smooth, intentional, subtle
+   Inspired by Linear, Raycast, Superhuman
+   ============================================ */
+
+/* === Easing curves === */
+/* "spring" feel — fast start, smooth settle */
+:root {
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* === Entrance animations === */
+
+/* Content appearing in a page — slides up with fade */
+@keyframes contentReveal {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Panel sliding in from side */
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Modal/popover appearing */
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Tab content switching */
+@keyframes tabSwitch {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* List items appearing in sequence */
+@keyframes listItemIn {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Card appearing */
+@keyframes cardIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Subtle pulse for status indicators */
+@keyframes subtlePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* Progress bar fill */
+@keyframes progressFill {
+  from { width: 0%; }
+  to { width: var(--progress, 100%); }
+}
+
+/* === Utility classes === */
+
+.animate-content-reveal {
+  animation: contentReveal 0.4s var(--ease-spring) both;
+}
+
+.animate-slide-from-right {
+  animation: slideInFromRight 0.3s var(--ease-spring) both;
+}
+
+.animate-slide-from-left {
+  animation: slideInFromLeft 0.3s var(--ease-spring) both;
+}
+
+.animate-pop-in {
+  animation: popIn 0.25s var(--ease-spring) both;
+}
+
+.animate-tab-switch {
+  animation: tabSwitch 0.2s var(--ease-out-expo) both;
+}
+
+.animate-list-item {
+  animation: listItemIn 0.25s var(--ease-spring) both;
+}
+
+.animate-card-in {
+  animation: cardIn 0.35s var(--ease-spring) both;
+}
+
+.animate-subtle-pulse {
+  animation: subtlePulse 2s ease-in-out infinite;
+}
+
+/* === Stagger delays (for lists/grids) === */
+.stagger-1 { animation-delay: 30ms; }
+.stagger-2 { animation-delay: 60ms; }
+.stagger-3 { animation-delay: 90ms; }
+.stagger-4 { animation-delay: 120ms; }
+.stagger-5 { animation-delay: 150ms; }
+.stagger-6 { animation-delay: 180ms; }
+.stagger-7 { animation-delay: 210ms; }
+.stagger-8 { animation-delay: 240ms; }
+
+/* === Transition utilities === */
+
+/* Smooth color/bg transitions for interactive elements */
+.transition-interactive {
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+
+/* Smooth layout transitions (for panels resizing, etc.) */
+.transition-layout {
+  transition: width 0.3s var(--ease-spring), height 0.3s var(--ease-spring), transform 0.3s var(--ease-spring), opacity 0.2s ease;
+}
+
+/* === Hover micro-interactions === */
+
+/* Lift effect — for cards */
+.hover-lift {
+  transition: transform 0.2s var(--ease-spring), box-shadow 0.2s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+.hover-lift:active {
+  transform: translateY(0);
+}
+
+/* Glow effect — for primary buttons */
+.hover-glow {
+  transition: box-shadow 0.2s ease;
+}
+.hover-glow:hover {
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.2);
+}
+
+/* Scale effect — for icons/small buttons */
+.hover-scale {
+  transition: transform 0.15s var(--ease-spring);
+}
+.hover-scale:hover {
+  transform: scale(1.05);
+}
+.hover-scale:active {
+  transform: scale(0.95);
+}
+
+/* === Page transition wrapper === */
+.page-enter {
+  animation: contentReveal 0.5s var(--ease-spring) both;
+}
+
+/* === Sidebar transition === */
+.sidebar-enter {
+  animation: slideInFromLeft 0.25s var(--ease-spring) both;
+}
+
+.sidebar-exit {
+  animation: slideInFromLeft 0.2s var(--ease-spring) both reverse;
+}
+
+/* === Panel transitions (property panel, etc.) === */
+.panel-enter-right {
+  animation: slideInFromRight 0.25s var(--ease-spring) both;
+}
+
+/* === Section collapse animation === */
+.section-content-enter {
+  animation: contentReveal 0.2s var(--ease-out-expo) both;
+  transform-origin: top;
+}
+
+/* === Tooltip/popover animation === */
+.tooltip-enter {
+  animation: popIn 0.15s var(--ease-spring) both;
+}
+
+/* === Loading skeleton animation === */
+@keyframes skeletonShimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #1E1E1E 0%, #2A2A2A 40%, #2A2A2A 60%, #1E1E1E 100%);
+  background-size: 800px 100%;
+  animation: skeletonShimmer 1.5s ease-in-out infinite;
+  border-radius: 6px;
+}
+
+/* === Reduced motion === */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 .animate-pulse-glow {
@@ -489,4 +839,50 @@ body {
 /* === Notion-style subtle divider === */
 .divider-notion {
   border-color: var(--color-border);
+}
+
+/* === 3D Blackhole Spinner === */
+@keyframes blackhole-orbit {
+  0% { transform: rotateX(75deg) rotateZ(0deg); }
+  100% { transform: rotateX(75deg) rotateZ(360deg); }
+}
+@keyframes blackhole-orbit-reverse {
+  0% { transform: rotateX(75deg) rotateZ(0deg); }
+  100% { transform: rotateX(75deg) rotateZ(-360deg); }
+}
+@keyframes blackhole-pulse {
+  0%, 100% { box-shadow: 0 0 3px 1px rgba(255,255,255,0.08); }
+  50% { box-shadow: 0 0 6px 2px rgba(255,255,255,0.15); }
+}
+.blackhole-spinner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  perspective: 200px;
+}
+.blackhole-spinner .ring-outer {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid transparent;
+  border-top-color: rgba(255,255,255,0.5);
+  border-right-color: rgba(255,255,255,0.15);
+  animation: blackhole-orbit 2.2s linear infinite;
+}
+.blackhole-spinner .ring-inner {
+  position: absolute;
+  inset: 25%;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  border-bottom-color: rgba(255,255,255,0.35);
+  border-left-color: rgba(255,255,255,0.1);
+  animation: blackhole-orbit-reverse 3s linear infinite;
+}
+.blackhole-spinner .core {
+  width: 30%;
+  height: 30%;
+  border-radius: 50%;
+  background: radial-gradient(circle, #555 0%, #222 70%, transparent 100%);
+  animation: blackhole-pulse 2s ease-in-out infinite;
 }

@@ -96,7 +96,7 @@ function SandboxContent() {
           <p className="mt-3 text-[14px] font-medium text-[#1A1A1A]">{t.invalidAccess}</p>
           <p className="mt-1 text-[13px] text-[#787774]">{t.invalidAccessDesc}</p>
           <button
-            onClick={() => router.push("/dashboard")}
+            onClick={() => router.push("/project/workspace")}
             className="mt-4 rounded-lg bg-[#1A1A1A] px-4 py-2 text-[13px] font-medium text-white"
           >
             {t.backToDashboard}
@@ -187,7 +187,7 @@ function SandboxContent() {
   return (
     <WorkspaceLayout
       projectName={wc.projectName}
-      onBack={() => router.push("/dashboard")}
+      onBack={() => router.push("/project/workspace")}
       sidebarSide="left"
       headerActions={
         <div className="flex items-center gap-2">

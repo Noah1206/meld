@@ -1,11 +1,11 @@
 {
   "name": "@figma-code-bridge/agent",
   "version": "0.1.0",
-  "description": "FigmaCodeBridge 로컬 에이전트 — 웹앱과 로컬 프로젝트를 WebSocket으로 연결",
+  "description": "Meld local agent — connects web IDE to your project via WebSocket",
   "private": true,
   "type": "module",
   "bin": {
-    "figma-code-bridge": "./dist/index.js"
+    "meld-agent": "./dist/index.js"
   },
   "exports": {
     ".": {
@@ -26,8 +26,8 @@
     }
   },
   "scripts": {
-    "build": "tsup src/index.ts src/scanner.ts src/watcher.ts src/server.ts --format esm --dts --clean",
-    "dev": "tsup src/index.ts src/scanner.ts src/watcher.ts src/server.ts --format esm --watch"
+    "build": "tsup src/index.ts src/scanner.ts src/watcher.ts src/server.ts src/agent-loop.ts src/code-patterns.ts src/dev-server-manager.ts src/heartbeat.ts src/event-hooks.ts src/browser-agent.ts src/vm-screen.ts src/preview-checker.ts --format esm --dts --clean",
+    "dev": "tsup src/index.ts src/scanner.ts src/watcher.ts src/server.ts src/agent-loop.ts src/code-patterns.ts src/dev-server-manager.ts src/heartbeat.ts src/event-hooks.ts src/browser-agent.ts src/vm-screen.ts src/preview-checker.ts --format esm --watch"
   },
   "dependencies": {
     "ws": "^8.18.0",
