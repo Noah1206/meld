@@ -1,6 +1,6 @@
 # Meld AI — 내가 해야 할 일
 
-> 업데이트: 2026-04-14
+> 업데이트: 2026-04-14 — 프로덕션 배포 완료 (meld-psi.vercel.app)
 
 ## 지금 바로 (P0 — 블로커)
 
@@ -49,10 +49,17 @@
 - [ ] 남은 warning 262건 — 대부분 unused imports/vars, 차후 cleanup
 
 ### 배포 단계
-- [ ] 미커밋 변경사항 정리 (36+ 파일 modified, 여러 신규 디렉토리 추가됨 — WIP 커밋 `ASDF`, `sadf` 리베이스 필요)
-- [ ] GitHub push
-- [ ] Vercel 연결 + 환경변수 설정 (`POLAR_WEBHOOKS_SECRET` 포함)
-- [ ] Supabase 프로덕션 프로젝트 + DB 마이그레이션
+- [x] 미커밋 변경사항 정리 — 논리 단위 5개 커밋 + 후속 3개 fix 커밋
+- [x] GitHub push (Noah1206/meld main)
+- [x] Vercel 프로젝트 연결 + 환경변수 설정
+  - E2B_API_KEY, SERPER_API_KEY, FIRECRAWL_API_KEY 신규 등록
+  - Polar webhook은 `POLAR_WEBHOOK_SECRET`/`POLAR_WEBHOOKS_SECRET` 양쪽 fallback 지원
+- [x] **Vercel 프로덕션 빌드 성공** (meld-eg3z1kzfp, HTTP 200 OK)
+  - `vercel.json`을 `apps/web/`에 배치 + workspace-aware build command
+  - `tailwindcss` + `@tailwindcss/postcss`를 dependencies로 이동 (NODE_ENV=production에서 skip 방지)
+  - tsconfig에서 `vitest.config.ts` + 테스트 파일 exclude
+- [x] 배포 URL: https://meld-psi.vercel.app
+- [ ] Supabase 프로덕션 프로젝트 + DB 마이그레이션 (Supabase는 이미 연결됨, 추가 마이그레이션 여부 미확인)
 - [ ] 도메인 구매 + 연결
 - [ ] 에러 메시지 개선 ("fetch failed" 같은 raw 에러 → 사용자 친화 문구)
 - [ ] 새 세션 시작 시 이전 에이전트 세션 UI 잔상 제거
@@ -112,9 +119,16 @@ Manus(task 사이드바) + Claude(conversation list) 디자인 하이브리드.
 
 ```
 1. AWS 키 교체 (보안)               ← 유저 직접 (IAM 콘솔)
-2. E2E 테스트 (에이전트 전체 플로우)  ← 동작 확신
-3. Polar 결제 E2E 테스트            ← 돈 벌 준비
-4. 커밋 정리 + GitHub push          ← 배포 전 단계
-5. Vercel + Supabase + 도메인       ← 공개
-6. 로컬 터미널 연결                 ← 차별화
+2. Polar 결제 E2E 테스트            ← 돈 벌 준비 (브라우저 실결제)
+3. 도메인 연결                      ← meld-psi.vercel.app → meld.app 등
+4. 로컬 터미널 연결                 ← 차별화 (`npx meld-agent`)
 ```
+
+## 완료 (2026-04-14 배포 세션)
+
+- [x] 커밋 정리 + GitHub push (8 commits)
+- [x] Vercel 프로덕션 배포: https://meld-psi.vercel.app
+- [x] E2B E2E 인프라 검증 (API → Sandbox → Claude까지 도달, Anthropic overloaded로 실제 응답은 미검증)
+- [x] Polar webhook secret 네이밍 버그 수정 + dual fallback
+- [x] 멀티 에이전트 병렬 실행 UI + 세션별 히스토리/대화 복원
+- [x] Lint 106 errors → 0 (react-compiler 전면 대응)
