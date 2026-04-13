@@ -14,8 +14,13 @@ function getProductPlan(productId: string): Plan {
   return "pro";
 }
 
+// Accept either spelling so local (.env.local uses `POLAR_WEBHOOKS_SECRET`)
+// and Vercel (uses `POLAR_WEBHOOK_SECRET`) keep working without drift.
+const POLAR_WEBHOOK_SECRET =
+  process.env.POLAR_WEBHOOKS_SECRET ?? process.env.POLAR_WEBHOOK_SECRET ?? "";
+
 export const POST = Webhooks({
-  webhookSecret: process.env.POLAR_WEBHOOKS_SECRET!,
+  webhookSecret: POLAR_WEBHOOK_SECRET,
 
   // 결제 기록 + 크레딧 충전
   onOrderCreated: async (payload) => {
