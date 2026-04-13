@@ -15,7 +15,7 @@ function getProductPlan(productId: string): Plan {
 }
 
 export const POST = Webhooks({
-  webhookSecret: process.env.POLAR_WEBHOOK_SECRET!,
+  webhookSecret: process.env.POLAR_WEBHOOKS_SECRET!,
 
   // 결제 기록 + 크레딧 충전
   onOrderCreated: async (payload) => {
