@@ -1,6 +1,11 @@
 "use client";
+/* eslint-disable react-hooks/static-components */
+// Sandbox demo dashboard — renders several helper sub-components inline so
+// they can close over local selection state. Lifting them out would require
+// threading many props through long JSX trees with little runtime benefit,
+// so we accept the react-compiler warning for this file only.
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Plus, Trash2, X, Download, Search, Home, User, Sparkles, Loader2, Pin, Check,
   Bell, Settings, Heart, Star, Mail, Shield, Zap, Globe, Camera, Music,
@@ -75,7 +80,9 @@ function ComponentPreview({ primary, secondary, tertiary, activeColorIdx = 0, on
   const getColor = (key: string, def = 0) => getBg(key, def);
   const getOnColor = (key: string, def = 0) => getOnBg(key, def);
 
-  // Apply color externally (when header color is clicked)
+  // Apply color externally (when header color is clicked). Consumed via
+  // applyColorRef so parents can trigger it as an imperative side-effect
+  // rather than an effect-driven prop watcher (react-compiler happy).
   const applyColor = useCallback((colorIdx: number) => {
     if (!selected) return;
     if (colorTarget === "bg") setBgIdx((p) => ({ ...p, [selected]: colorIdx }));
@@ -83,9 +90,18 @@ function ComponentPreview({ primary, secondary, tertiary, activeColorIdx = 0, on
     else if (colorTarget === "border") setBdrIdx((p) => ({ ...p, [selected]: colorIdx }));
   }, [selected, colorTarget]);
 
-  // Apply to selected component when activeColorIdx changes
+  // Track the last applied value so we only invoke applyColor on real changes.
+  // NOTE: `applyColor` internally calls setState — this is a legitimate
+  // "react to external prop change" pattern that predates react-compiler.
+  // Refactoring to pure derivation would require lifting bg/txt/bdr state
+  // to the parent, which is a much larger change.
+  const lastAppliedRef = useRef<number | undefined>(undefined);
   useEffect(() => {
-    if (selected) applyColor(activeColorIdx);
+    if (!selected) return;
+    if (lastAppliedRef.current === activeColorIdx) return;
+    lastAppliedRef.current = activeColorIdx;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    applyColor(activeColorIdx);
   }, [activeColorIdx, selected, applyColor]);
 
   // Selection change callback
@@ -104,10 +120,9 @@ function ComponentPreview({ primary, secondary, tertiary, activeColorIdx = 0, on
           ? "ring-1 ring-white/40"
           : "ring-1 ring-white/[0.06] hover:ring-white/[0.10]"
       } ${className}`}
-      onClick={(e) => { e.stopPropagation(); id && handleSelect(id); }}
+      onClick={(e) => { e.stopPropagation(); if (id) handleSelect(id); }}
     >
       {children}
-      {/* Target toggle bar when selected */}
       {selected === id && (
         <div className="mt-3 flex items-center gap-1 rounded-lg bg-[#1A1A1A] p-1" onClick={(e) => e.stopPropagation()}>
           {(["bg", "text", "border"] as ColorTarget[]).map((t) => (
@@ -663,7 +678,7 @@ function AiDesignGenerator() {
       {/* Title */}
       <div className="mb-8">
         <h2 className="text-[24px] font-bold tracking-tight text-[#E8E8E5]">Design System</h2>
-        <p className="mt-1 text-[14px] text-[#9A9A95]">Define your project's design language</p>
+        <p className="mt-1 text-[14px] text-[#9A9A95]">Define your project&apos;s design language</p>
       </div>
 
       {/* URL Extraction */}
@@ -797,16 +812,16 @@ export function DesignSystemDashboard() {
 
   const [creating, setCreating] = useState(false);
   const [activeColorIdx, setActiveColorIdx] = useState(0);
-  const [pinned, setPinned] = useState(false);
+  // Local override — null means "derive from localStorage + current".
+  const [pinnedOverride, setPinnedOverride] = useState<boolean | null>(null);
   const getDesignMd = useDesignSystemStore((s) => s.getDesignMd);
 
-  // Check pinned state for project
-  useEffect(() => {
-    if (current) {
-      const stored = localStorage.getItem("meld-active-design-system");
-      setPinned(stored === current.id);
-    }
-  }, [current]);
+  const pinnedFromStorage =
+    typeof window !== "undefined" && current
+      ? window.localStorage.getItem("meld-active-design-system") === current.id
+      : false;
+  const pinned = pinnedOverride ?? pinnedFromStorage;
+  const setPinned = setPinnedOverride;
 
   // Auto-sync: when pinned system changes, update localStorage
   useEffect(() => {

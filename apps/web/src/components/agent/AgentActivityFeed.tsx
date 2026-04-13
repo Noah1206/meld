@@ -2,259 +2,28 @@
 
 import { useEffect, useRef, useState, useMemo } from "react";
 import {
-  Loader2, FileText, Terminal, Search, FolderOpen, Check, X,
-  Sparkles, AlertCircle, ChevronDown, ChevronRight, Zap, Eye, EyeOff,
-  Clock, Pencil, Copy, CheckCheck, RefreshCw, ThumbsUp, ThumbsDown,
-  Activity, Hash,
+  Loader2, FileText, Terminal, Search, Check, X,
+  ChevronDown, ChevronUp, Eye,
+  Copy, CheckCheck, RefreshCw, ThumbsUp, ThumbsDown,
+  Globe, MonitorSmartphone, Pencil, Trash2, ArrowRight,
 } from "lucide-react";
 import { useAgentSessionStore, type AgentEvent, type PendingEdit } from "@/lib/store/agent-session-store";
 
-// ─── File Activity Timeline Entry ──────────────────────
-interface FileActivity {
-  filePath: string;
-  action: "read" | "edit" | "create" | "command";
-  timestamp: number;
-  detail?: string;
+// ─── Types ──────────────────────────────────────
+interface ToolEntry {
+  icon: React.ReactNode;
+  text: string;
+  type?: string;
+  output?: string;
 }
 
-// ─── Step Progress (Manus-style) ───────────────────────
-interface StepInfo {
-  current: number;
-  total: number;
+interface Step {
   label: string;
+  done: boolean;
+  tools: ToolEntry[];
 }
 
-function deriveSteps(events: AgentEvent[], status: string): StepInfo {
-  // Derive a logical step count from event stream
-  // Phases: analyzing -> reading files -> generating code -> applying changes -> validating
-  const hasReads = events.some(e => e.type === "file_read" || (e.type === "tool_call" && e.toolName === "read_file"));
-  const hasEdits = events.some(e => e.type === "file_edit" || (e.type === "tool_call" && e.toolName === "write_file"));
-  const hasCommands = events.some(e => e.type === "command_start" || (e.type === "tool_call" && e.toolName === "run_command"));
-  const hasMessages = events.some(e => e.type === "message");
-  const isDone = status === "completed";
-
-  const steps = ["Analyzing", "Reading files", "Generating code", "Applying changes", "Validating"];
-  let current = 1;
-  let label = steps[0];
-
-  if (hasReads) { current = 2; label = steps[1]; }
-  if (hasEdits) { current = 4; label = steps[3]; }
-  else if (hasMessages && hasReads) { current = 3; label = steps[2]; }
-  if (hasCommands && hasEdits) { current = 5; label = steps[4]; }
-  if (isDone) { current = 5; label = "Complete"; }
-
-  return { current, total: 5, label };
-}
-
-function deriveFileActivities(events: AgentEvent[]): FileActivity[] {
-  const activities: FileActivity[] = [];
-  const now = Date.now();
-  let idx = 0;
-
-  for (const e of events) {
-    // Approximate timestamps by spreading events evenly
-    const approxTime = now - (events.length - idx) * 500;
-    idx++;
-
-    if (e.type === "file_read" || (e.type === "tool_call" && e.toolName === "read_file")) {
-      const path = (e.filePath as string) || (e.input as Record<string, string>)?.path || "unknown";
-      activities.push({ filePath: path, action: "read", timestamp: approxTime });
-    }
-    if (e.type === "file_edit" || (e.type === "tool_call" && e.toolName === "write_file")) {
-      const path = (e.filePath as string) || (e.input as Record<string, string>)?.path || "unknown";
-      activities.push({ filePath: path, action: "edit", timestamp: approxTime });
-    }
-    if (e.type === "file_created") {
-      const path = (e.filePath as string) || "unknown";
-      activities.push({ filePath: path, action: "create", timestamp: approxTime });
-    }
-    if (e.type === "command_start" || (e.type === "tool_call" && e.toolName === "run_command")) {
-      const cmd = (e.command as string) || (e.input as Record<string, string>)?.command || "command";
-      activities.push({ filePath: cmd, action: "command", timestamp: approxTime, detail: cmd });
-    }
-  }
-
-  return activities;
-}
-
-// ─── Step Progress Bar Component ───────────────────────
-function StepProgressBar({ step }: { step: StepInfo }) {
-  const pct = (step.current / step.total) * 100;
-  return (
-    <div className="flex items-center gap-2.5 border-b border-[#333] bg-[#1E1E1E] px-4 py-2">
-      <div className="flex items-center gap-1.5">
-        <Hash className="h-3 w-3 text-violet-400" />
-        <span className="text-[10px] font-semibold text-[#9A9A95]">
-          Step {step.current} of {step.total}
-        </span>
-      </div>
-      <div className="flex-1 h-1.5 rounded-full bg-[#333] overflow-hidden">
-        <div
-          className="h-full rounded-full bg-gradient-to-r from-violet-500 to-blue-400 transition-all duration-700 ease-out"
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-      <span className="text-[10px] text-[#666] min-w-0 truncate max-w-[80px]">{step.label}</span>
-    </div>
-  );
-}
-
-// ─── File Activity Timeline Component ──────────────────
-function FileActivityTimeline({ activities }: { activities: FileActivity[] }) {
-  // Show last 8 entries
-  const recent = activities.slice(-8);
-  if (recent.length === 0) return null;
-
-  const actionConfig = {
-    read: { icon: FileText, color: "text-blue-400", bg: "bg-blue-400", label: "Read" },
-    edit: { icon: Pencil, color: "text-emerald-400", bg: "bg-emerald-400", label: "Edited" },
-    create: { icon: Check, color: "text-amber-400", bg: "bg-amber-400", label: "Created" },
-    command: { icon: Terminal, color: "text-[#9A9A95]", bg: "bg-[#9A9A95]", label: "Ran" },
-  };
-
-  const formatTime = (ts: number) => {
-    const d = new Date(ts);
-    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-  };
-
-  return (
-    <div className="border-b border-[#333] bg-[#1A1A1A]/60 px-4 py-2">
-      <div className="flex items-center gap-1.5 mb-1.5">
-        <Activity className="h-2.5 w-2.5 text-[#555]" />
-        <span className="text-[9px] font-bold uppercase tracking-wider text-[#555]">File Activity</span>
-      </div>
-      <div className="space-y-0.5">
-        {recent.map((a, i) => {
-          const cfg = actionConfig[a.action];
-          const Icon = cfg.icon;
-          const fileName = a.action === "command"
-            ? (a.detail || a.filePath).slice(0, 40)
-            : a.filePath.split("/").pop() || a.filePath;
-          const isLatest = i === recent.length - 1;
-
-          return (
-            <div
-              key={i}
-              className={`flex items-center gap-2 rounded-md px-1.5 py-0.5 transition-all ${
-                isLatest ? "animate-fade-in bg-[#232323]" : ""
-              }`}
-            >
-              {/* Timeline dot */}
-              <div className="relative flex flex-col items-center">
-                <div className={`h-1.5 w-1.5 rounded-full ${cfg.bg} ${isLatest ? "animate-pulse" : "opacity-50"}`} />
-                {i < recent.length - 1 && (
-                  <div className="absolute top-2 h-3 w-px bg-[#333]" />
-                )}
-              </div>
-              <Icon className={`h-2.5 w-2.5 flex-shrink-0 ${cfg.color} ${isLatest ? "" : "opacity-50"}`} />
-              <span className={`flex-1 truncate text-[10px] ${isLatest ? "text-[#9A9A95]" : "text-[#555]"}`}>
-                {cfg.label} <span className="font-medium">{fileName}</span>
-              </span>
-              <span className="text-[8px] text-[#444] tabular-nums flex-shrink-0">{formatTime(a.timestamp)}</span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ─── Completion Summary Card ───────────────────────────
-function CompletionSummaryCard({ stats, elapsed, events, formatDur }: {
-  stats: { filesRead: number; filesEdited: number; filesCreated: number; commandsRun: number };
-  elapsed: number;
-  events: AgentEvent[];
-  formatDur: (ms: number) => string;
-}) {
-  const [expanded, setExpanded] = useState(false);
-
-  // Collect all unique file paths touched
-  const allFiles = useMemo(() => {
-    const files = new Map<string, "read" | "edit" | "create">();
-    for (const e of events) {
-      if (e.type === "file_read" || (e.type === "tool_call" && e.toolName === "read_file")) {
-        const p = (e.filePath as string) || (e.input as Record<string, string>)?.path;
-        if (p && !files.has(p)) files.set(p, "read");
-      }
-      if (e.type === "file_edit" || (e.type === "tool_call" && e.toolName === "write_file")) {
-        const p = (e.filePath as string) || (e.input as Record<string, string>)?.path;
-        if (p) files.set(p, "edit"); // upgrade from read to edit
-      }
-      if (e.type === "file_created") {
-        const p = (e.filePath as string);
-        if (p) files.set(p, "create");
-      }
-    }
-    return files;
-  }, [events]);
-
-  const totalChanged = stats.filesEdited + stats.filesCreated;
-  const totalAny = stats.filesRead + stats.filesEdited + stats.filesCreated + stats.commandsRun;
-  const visibleStats = [
-    { label: "Read", value: stats.filesRead, color: "text-blue-400" },
-    { label: "Edited", value: stats.filesEdited, color: "text-emerald-400" },
-    { label: "Created", value: stats.filesCreated, color: "text-amber-400" },
-    { label: "Commands", value: stats.commandsRun, color: "text-[#9A9A95]" },
-  ].filter((s) => s.value > 0);
-
-  return (
-    <div className="mx-3 mb-3 animate-fade-in overflow-hidden rounded-xl bg-gradient-to-b from-[#2A2A2A] to-[#252525] ring-1 ring-white/[0.08]">
-      {/* Summary header */}
-      <div className="flex items-center gap-3 px-4 py-3">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/15">
-          <Check className="h-4 w-4 text-emerald-400" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-[12px] font-semibold text-[#E8E8E5]">Task completed</p>
-        </div>
-      </div>
-
-      {/* Stats grid — only show if there are any */}
-      {visibleStats.length > 0 && (
-        <div className={`grid gap-px bg-[#333] mx-3 mb-3 rounded-lg overflow-hidden`} style={{ gridTemplateColumns: `repeat(${visibleStats.length}, 1fr)` }}>
-          {visibleStats.map((item) => (
-            <div key={item.label} className="flex flex-col items-center bg-[#1E1E1E] py-2">
-              <span className={`text-[14px] font-bold tabular-nums ${item.color}`}>{item.value}</span>
-              <span className="text-[8px] uppercase tracking-wider text-[#555]">{item.label}</span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Collapsible file list */}
-      {allFiles.size > 0 && (
-        <div className="border-t border-[#333]">
-          <button
-            onClick={() => setExpanded(!expanded)}
-            className="flex w-full items-center gap-2 px-4 py-2 text-left transition-colors hover:bg-[#2E2E2E]"
-          >
-            {expanded ? <ChevronDown className="h-3 w-3 text-[#555]" /> : <ChevronRight className="h-3 w-3 text-[#555]" />}
-            <span className="text-[10px] font-medium text-[#9A9A95]">
-              {allFiles.size} file{allFiles.size !== 1 ? "s" : ""} touched
-            </span>
-          </button>
-          {expanded && (
-            <div className="max-h-[150px] overflow-y-auto px-3 pb-2 space-y-0.5">
-              {Array.from(allFiles.entries()).map(([path, action]) => {
-                const fileName = path.split("/").pop() || path;
-                const dir = path.split("/").slice(0, -1).join("/");
-                const actionColor = action === "edit" ? "text-emerald-400" : action === "create" ? "text-amber-400" : "text-blue-400";
-                return (
-                  <div key={path} className="flex items-center gap-2 rounded-md px-2 py-1 hover:bg-[#2A2A2A] transition-colors">
-                    <FileText className={`h-2.5 w-2.5 flex-shrink-0 ${actionColor}`} />
-                    <span className="text-[10px] text-[#E8E8E5] font-medium truncate">{fileName}</span>
-                    <span className="text-[8px] text-[#444] truncate flex-1 text-right">{dir}</span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
+// ─── Main Export ─────────────────────────────────
 export function AgentActivityFeed({
   onApprove, onReject, onApproveAll, onRejectAll, onCancel,
 }: {
@@ -266,209 +35,406 @@ export function AgentActivityFeed({
 }) {
   const { status, events, pendingEdits, currentThinking, error } = useAgentSessionStore();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [showDetails, setShowDetails] = useState(false);
   const [elapsed, setElapsed] = useState(0);
-  const startTimeRef = useRef(Date.now());
+  const startTimeRef = useRef(0);
 
-  // Timer — only count while running/awaiting_approval
+  // Timer
   useEffect(() => {
     if (status === "running" || status === "awaiting_approval") {
       if (!startTimeRef.current) startTimeRef.current = Date.now();
-      const interval = setInterval(() => setElapsed(Date.now() - startTimeRef.current), 100);
+      const interval = setInterval(() => setElapsed(Date.now() - startTimeRef.current), 1000);
       return () => clearInterval(interval);
     }
-    // Freeze final time on completion/error/cancel
   }, [status]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [events.length, currentThinking]);
 
-  // Statistics
-  const stats = useMemo(() => {
-    let filesRead = 0, filesEdited = 0, filesCreated = 0, commandsRun = 0;
+  // Build steps from events
+  const steps = useMemo(() => {
+    const result: Step[] = [];
+    let cur: Step | null = null;
+
     for (const e of events) {
-      if (e.type === "file_read" || (e.type === "tool_call" && e.toolName === "read_file")) filesRead++;
-      if (e.type === "file_edit" || (e.type === "tool_call" && e.toolName === "write_file")) filesEdited++;
-      if (e.type === "file_created") filesCreated++;
-      if (e.type === "command_start" || (e.type === "tool_call" && e.toolName === "run_command")) commandsRun++;
+      if (e.type === "thinking") {
+        if (cur) { cur.done = true; result.push(cur); }
+        cur = { label: e.content as string, done: false, tools: [] };
+      }
+      if (e.type === "tool_call" && cur) {
+        const name = e.toolName as string;
+        const input = e.input as Record<string, string> | undefined;
+        const { icon, text } = getToolDisplay(name, input);
+        cur.tools.push({ icon, text, type: name });
+      }
+      if (e.type === "command_output" && cur && cur.tools.length > 0) {
+        const last = cur.tools[cur.tools.length - 1];
+        last.output = (last.output || "") + (e.data as string);
+      }
+      if (e.type === "tool_result" && cur && cur.tools.length > 0) {
+        const last = cur.tools[cur.tools.length - 1];
+        if (last.type === "web_search" || last.type === "browse_url") {
+          last.output = e.result as string;
+        }
+      }
+      if (e.type === "devServer" && cur) {
+        cur.tools.push({
+          icon: <MonitorSmartphone className="h-4 w-4 text-[#ccc]" />,
+          text: "프리뷰가 준비되었습니다",
+          type: "devServer",
+          output: e.url as string,
+        });
+      }
     }
-    return { filesRead, filesEdited, filesCreated, commandsRun };
-  }, [events]);
+    if (cur) { cur.done = status !== "running"; result.push(cur); }
+    return result;
+  }, [events, status]);
 
-  // Manus-style step progress
-  const stepInfo = useMemo(() => deriveSteps(events, status), [events, status]);
-
-  // File activity timeline
-  const fileActivities = useMemo(() => deriveFileActivities(events), [events]);
-
-  const formatDur = (ms: number) => {
-    if (ms < 1000) return `${ms}ms`;
-    const s = ms / 1000;
-    return s < 60 ? `${s.toFixed(1)}s` : `${Math.floor(s / 60)}m ${Math.floor(s % 60)}s`;
-  };
-
-  if (status === "idle") {
-    startTimeRef.current = 0;
-    return null;
-  }
-
+  const messages = events.filter(e => e.type === "message");
   const isRunning = status === "running";
   const isDone = status === "completed";
   const isError = status === "error";
-  const isCancelled = status === "cancelled";
   const isAwaiting = status === "awaiting_approval";
-
-  // Find the last message event
   const lastMessage = [...events].reverse().find(e => e.type === "message");
+
+  const formatTime = (ms: number) => {
+    const s = Math.floor(ms / 1000);
+    const m = Math.floor(s / 60);
+    return m > 0 ? `${m}:${String(s % 60).padStart(2, "0")}` : `0:${String(s).padStart(2, "0")}`;
+  };
+
+  // Reset start time when status transitions to idle — handled in an
+  // effect so we don't mutate a ref during render.
+  useEffect(() => {
+    if (status === "idle") startTimeRef.current = 0;
+  }, [status]);
+
+  if (status === "idle") return null;
+
+  // Current active step index
+  const activeStepIdx = steps.findIndex(s => !s.done);
+  const totalSteps = Math.max(steps.length, 1);
+  const currentStepNum = activeStepIdx >= 0 ? activeStepIdx + 1 : totalSteps;
 
   return (
     <div className="flex h-full flex-col">
-      {/* ─── Header ─── */}
-      <div className="border-b border-[#333]">
-        <div className="flex items-center justify-between px-4 py-2.5">
-          <div className="flex items-center gap-2.5">
-            {isRunning && <Loader2 className="h-3 w-3 animate-spin text-[#666]" />}
-            {isDone && <Check className="h-3 w-3 text-[#9A9A95]" />}
-            {isError && <AlertCircle className="h-3 w-3 text-red-400" />}
-            {isAwaiting && <Sparkles className="h-3 w-3 text-amber-400" />}
-            {isCancelled && <X className="h-3 w-3 text-[#666]" />}
-            <span className="text-[11px] text-[#9A9A95]">
-              {isRunning && (stepInfo.label || "Working...")}
-              {isAwaiting && `Review ${pendingEdits.filter(e => e.status === "pending").length} changes`}
-              {isDone && "Done"}
-              {isError && "Error"}
-              {isCancelled && "Cancelled"}
-            </span>
-            {elapsed > 500 && <span className="text-[10px] text-[#555]">{formatDur(elapsed)}</span>}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-1">
+
+        {/* ─── Steps ─── */}
+        {steps.map((step, i) => (
+          <StepCard key={i} step={step} isLast={i === steps.length - 1} isRunning={isRunning} />
+        ))}
+
+        {/* ─── Thinking (no steps yet) ─── */}
+        {isRunning && steps.length === 0 && (
+          <div className="flex items-center gap-3 px-2 py-4">
+            <Spinner />
+            <span className="text-[15px] text-[#999]">생각 중입니다</span>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowDetails(!showDetails)}
-              className={`text-[10px] transition-colors ${
-                showDetails ? "text-[#9A9A95]" : "text-[#555] hover:text-[#9A9A95]"
-              }`}
-            >
-              {showDetails ? "Hide" : "Details"}
-            </button>
-            {(isRunning || isAwaiting) && (
-              <button onClick={onCancel} className="text-[10px] text-[#555] hover:text-red-400 transition-colors">
-                Stop
-              </button>
+        )}
+
+        {/* ─── Messages ─── */}
+        {messages.map((e, i) => (
+          <div key={`msg-${i}`} className="mt-5 px-1">
+            {i === messages.length - 1 && isRunning ? (
+              <TypewriterMessage content={e.content as string} />
+            ) : (
+              <div className="text-[15px] leading-[1.8] text-[#E0E0E0] whitespace-pre-wrap break-words">
+                <MessageRenderer content={e.content as string} />
+              </div>
             )}
           </div>
-        </div>
-        {isRunning && (
-          <div className="h-px bg-[#333]">
-            <div
-              className="h-full bg-[#555] transition-all duration-700 ease-out"
-              style={{ width: `${(stepInfo.current / stepInfo.total) * 100}%` }}
-            />
-          </div>
-        )}
-      </div>
-
-      {/* ─── Main content ─── */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto">
-        {/* Details (event stream) — collapsible */}
-        {showDetails && events.length > 0 && (
-          <div className="border-b border-[#333] bg-[#1A1A1A]">
-            <div className="p-2.5 space-y-0.5 max-h-[200px] overflow-y-auto">
-              {events.map((event, i) => (
-                <EventRow key={i} event={event} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Thinking */}
-        {currentThinking && (
-          <div className="border-b border-[#333] bg-[#1E1E1E] px-4 py-3">
-            <div className="flex items-start gap-2">
-              <Loader2 className="h-3 w-3 mt-0.5 flex-shrink-0 animate-spin text-violet-400" />
-              <p className="text-[12px] text-[#9A9A95] leading-relaxed whitespace-pre-wrap">{currentThinking.slice(-300)}</p>
-            </div>
-          </div>
-        )}
-
-        {/* ─── File Activity Timeline (Manus-style, shown while running) ─── */}
-        {(isRunning || isAwaiting) && fileActivities.length > 0 && (
-          <FileActivityTimeline activities={fileActivities} />
-        )}
-
-
-        {/* Message content — markdown-style rendering */}
-        {lastMessage && (
-          <div className="p-4">
-            <MessageRenderer content={lastMessage.content as string} />
-          </div>
-        )}
-
-        {/* Previous messages (excluding last) */}
-        {events.filter(e => e.type === "message" && e !== lastMessage).length > 0 && !showDetails && (
-          <div className="px-4 pb-2">
-            <button
-              onClick={() => setShowDetails(true)}
-              className="text-[10px] text-[#555] hover:text-[#9A9A95] transition-colors"
-            >
-              + {events.filter(e => e.type === "message" && e !== lastMessage).length} earlier messages
-            </button>
-          </div>
-        )}
+        ))}
 
         {/* Error */}
         {error && (
-          <div className="mx-4 mb-3 rounded-xl bg-red-500/10 px-4 py-3 ring-1 ring-red-500/20">
-            <div className="flex items-center gap-2 mb-1">
-              <AlertCircle className="h-3.5 w-3.5 text-red-400" />
-              <span className="text-[11px] font-semibold text-red-400">Error</span>
-            </div>
-            <p className="text-[12px] text-red-300/80 leading-relaxed">{error}</p>
+          <div className="mt-4 px-1">
+            <p className="text-[15px] text-red-400 leading-relaxed">{error}</p>
           </div>
         )}
 
-        {/* Message bottom action row (on completion/error) */}
-        {(isDone || isError || isCancelled) && (
-          <div className="px-4 pb-3">
-            <MessageActions content={lastMessage?.content as string ?? ""} />
+        {/* Actions */}
+        {(isDone || isError) && lastMessage && (
+          <div className="mt-4 px-1">
+            <MessageActions content={lastMessage.content as string} />
+          </div>
+        )}
+
+        {/* Pending edits */}
+        {isAwaiting && pendingEdits.some(e => e.status === "pending") && (
+          <div className="mt-4 px-1">
+            <div className="space-y-2">
+              {pendingEdits.filter(e => e.status === "pending").map((edit) => (
+                <PendingEditCard key={edit.toolCallId} edit={edit} onApprove={() => onApprove(edit.toolCallId)} onReject={() => onReject(edit.toolCallId)} />
+              ))}
+            </div>
+            {pendingEdits.filter(e => e.status === "pending").length > 1 && (
+              <div className="flex items-center gap-2 pt-3">
+                <button onClick={onApproveAll} className="flex-1 rounded-xl bg-white/10 py-2 text-[13px] font-medium text-[#ccc] transition-colors hover:bg-white/15">Apply All</button>
+                <button onClick={onRejectAll} className="flex-1 rounded-xl bg-white/5 py-2 text-[13px] font-medium text-[#888] transition-colors hover:bg-white/10">Reject All</button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Stop */}
+        {(isRunning || isAwaiting) && (
+          <div className="mt-4 pb-2 px-1">
+            <button onClick={onCancel} className="text-[13px] text-[#666] hover:text-[#999] transition-colors">
+              Stop generating
+            </button>
           </div>
         )}
       </div>
 
-      {/* ─── Pending edits awaiting approval ─── */}
-      {isAwaiting && pendingEdits.some(e => e.status === "pending") && (
-        <div className="border-t border-[#3A3A3A]">
-          <div className="p-3 space-y-2">
-            {pendingEdits.filter(e => e.status === "pending").map((edit) => (
-              <PendingEditCard
-                key={edit.toolCallId}
-                edit={edit}
-                onApprove={() => onApprove(edit.toolCallId)}
-                onReject={() => onReject(edit.toolCallId)}
-              />
-            ))}
+      {/* ─── Bottom Progress Bar (Manus-style) ─── */}
+      {isRunning && steps.length > 0 && (
+        <BottomProgressBar
+          stepLabel={steps[steps.length - 1]?.label || "진행 중"}
+          currentStep={currentStepNum}
+          totalSteps={totalSteps}
+          elapsed={formatTime(elapsed)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Step Card (Manus-style) ────────────────────
+function StepCard({ step, isLast, isRunning }: { step: Step; isLast: boolean; isRunning: boolean }) {
+  const isCurrent = isLast && isRunning && !step.done;
+  // `userToggled` is null until the user clicks; then it overrides the
+  // default expanded-while-current behavior.
+  const [userToggled, setUserToggled] = useState<boolean | null>(null);
+  const expanded = userToggled ?? isCurrent;
+  const setExpanded = (next: boolean) => setUserToggled(next);
+
+  return (
+    <div className="mb-1">
+      {/* Step header */}
+      <button
+        onClick={() => step.tools.length > 0 && setExpanded(!expanded)}
+        className="flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left transition-colors hover:bg-white/[0.03]"
+      >
+        {/* Status circle */}
+        {isCurrent ? (
+          <Spinner />
+        ) : (
+          <div className="flex h-[22px] w-[22px] flex-shrink-0 items-center justify-center rounded-full bg-[#2A2A2A]">
+            <Check className="h-3 w-3 text-[#888]" />
           </div>
-          {pendingEdits.filter(e => e.status === "pending").length > 1 && (
-            <div className="flex items-center gap-2 border-t border-[#3A3A3A] px-3 py-2">
-              <button onClick={onApproveAll} className="flex-1 rounded-lg bg-emerald-500/20 py-1.5 text-[11px] font-semibold text-emerald-400 transition-colors hover:bg-emerald-500/30">
-                Apply All
-              </button>
-              <button onClick={onRejectAll} className="flex-1 rounded-lg bg-[#333] py-1.5 text-[11px] font-semibold text-[#9A9A95] transition-colors hover:bg-[#3A3A3A]">
-                Reject All
-              </button>
-            </div>
-          )}
+        )}
+
+        {/* Label */}
+        <span className={`flex-1 text-[15px] ${isCurrent ? "text-[#E0E0E0]" : "text-[#999]"}`}>
+          {step.label}
+        </span>
+
+        {/* Expand arrow */}
+        {step.tools.length > 0 && (
+          <ChevronUp className={`h-4 w-4 text-[#555] transition-transform duration-200 ${expanded ? "" : "rotate-180"}`} />
+        )}
+      </button>
+
+      {/* Expanded tools */}
+      {expanded && step.tools.length > 0 && (
+        <div className="ml-[34px] mb-2 space-y-1.5">
+          {step.tools.map((tool, j) => (
+            <ToolCard key={j} tool={tool} />
+          ))}
         </div>
       )}
     </div>
   );
 }
 
-// ─── Message bottom actions (retry, copy, like, dislike) ────────
+// ─── Tool Card ──────────────────────────────────
+function ToolCard({ tool }: { tool: ToolEntry }) {
+  const [showOutput, setShowOutput] = useState(false);
+
+  // Dev server ready
+  if (tool.type === "devServer") {
+    return (
+      <div className="rounded-xl bg-[#1E1E1E] border border-[#333] overflow-hidden">
+        <div className="flex items-center gap-3 px-4 py-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#2A2A2A]">
+            {tool.icon}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[14px] font-medium text-[#E0E0E0]">{tool.text}</p>
+            {tool.output && (
+              <p className="text-[12px] text-[#888] truncate mt-0.5">{tool.output}</p>
+            )}
+          </div>
+          {tool.output && (
+            <a
+              href={tool.output}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-lg bg-[#333] px-4 py-1.5 text-[13px] text-[#ccc] transition-colors hover:bg-[#3A3A3A]"
+            >
+              보기
+            </a>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Web search
+  if (tool.type === "web_search") {
+    return (
+      <div>
+        <div className="flex items-center gap-2.5 rounded-xl bg-[#1E1E1E] border border-[#333] px-4 py-2.5">
+          {tool.icon}
+          <span className="text-[13px] text-[#bbb] truncate flex-1">{tool.text}</span>
+          {tool.output && (
+            <button onClick={() => setShowOutput(!showOutput)} className="text-[11px] text-[#666] hover:text-[#999]">
+              {showOutput ? "닫기" : "결과"}
+            </button>
+          )}
+        </div>
+        {showOutput && tool.output && (
+          <div className="mt-1 rounded-xl bg-[#161616] border border-[#2A2A2A] px-4 py-3 text-[12px] text-[#999] leading-relaxed max-h-[150px] overflow-y-auto whitespace-pre-wrap">
+            {tool.output}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Browse URL
+  if (tool.type === "browse_url") {
+    return (
+      <div>
+        <div className="flex items-center gap-2.5 rounded-xl bg-[#1E1E1E] border border-[#333] px-4 py-2.5">
+          {tool.icon}
+          <span className="text-[13px] text-[#bbb] truncate flex-1">{tool.text}</span>
+          {tool.output && (
+            <button onClick={() => setShowOutput(!showOutput)} className="text-[11px] text-[#666] hover:text-[#999]">
+              {showOutput ? "닫기" : "내용"}
+            </button>
+          )}
+        </div>
+        {showOutput && tool.output && (
+          <div className="mt-1 rounded-xl bg-[#161616] border border-[#2A2A2A] px-4 py-3 text-[12px] text-[#999] leading-relaxed max-h-[150px] overflow-y-auto whitespace-pre-wrap">
+            {tool.output}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Default tool (read, write, command, etc.)
+  return (
+    <div>
+      <div className="flex items-center gap-2.5 rounded-xl bg-[#1E1E1E] border border-[#333] px-4 py-2.5">
+        {tool.icon}
+        <span className="text-[13px] text-[#bbb] truncate flex-1">{tool.text}</span>
+        {tool.output && (
+          <button onClick={() => setShowOutput(!showOutput)} className="text-[11px] text-[#666] hover:text-[#999]">
+            {showOutput ? "닫기" : "출력"}
+          </button>
+        )}
+      </div>
+      {showOutput && tool.output && (
+        <div className="mt-1 rounded-xl bg-[#0D0D0D] border border-[#2A2A2A] overflow-hidden">
+          <div className="flex items-center gap-2 px-3 py-1.5 border-b border-[#2A2A2A]">
+            <Terminal className="h-3 w-3 text-[#555]" />
+            <span className="text-[10px] font-mono text-[#555]">output</span>
+          </div>
+          <pre className="px-3 py-2 text-[11px] font-mono text-[#888] leading-relaxed overflow-x-auto max-h-[200px] overflow-y-auto whitespace-pre-wrap break-all">
+            {tool.output.slice(-2000)}
+          </pre>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Bottom Progress Bar (Manus-style sticky bar) ───
+function BottomProgressBar({ stepLabel, currentStep, totalSteps, elapsed }: {
+  stepLabel: string; currentStep: number; totalSteps: number; elapsed: string;
+}) {
+  return (
+    <div className="border-t border-[#2A2A2A] bg-[#1A1A1A] px-4 py-3">
+      <div className="flex items-center gap-3">
+        {/* Blue dot */}
+        <div className="h-2.5 w-2.5 rounded-full bg-blue-500 animate-pulse flex-shrink-0" />
+
+        {/* Step label + time */}
+        <div className="flex-1 min-w-0">
+          <p className="text-[13px] text-[#ccc] truncate">{stepLabel}</p>
+          <p className="text-[11px] text-[#666]">{elapsed}  진행하는 중</p>
+        </div>
+
+        {/* Step counter */}
+        <span className="text-[13px] text-[#666] flex-shrink-0">{currentStep} / {totalSteps}</span>
+      </div>
+    </div>
+  );
+}
+
+// ─── Spinner ────────────────────────────────────
+function Spinner() {
+  return (
+    <div className="relative h-[22px] w-[22px] flex-shrink-0">
+      <div className="absolute inset-0 rounded-full border-2 border-[#333]" />
+      <div className="absolute inset-0 rounded-full border-2 border-t-[#888] animate-spin" />
+    </div>
+  );
+}
+
+// ─── Tool Display Helpers ───────────────────────
+function getToolDisplay(name: string, input?: Record<string, string>): { icon: React.ReactNode; text: string } {
+  switch (name) {
+    case "read_file":
+      return { icon: <FileText className="h-3.5 w-3.5 text-[#888]" />, text: input?.path || "파일 읽기" };
+    case "write_file":
+      return { icon: <Pencil className="h-3.5 w-3.5 text-[#888]" />, text: input?.path || "파일 쓰기" };
+    case "delete_file":
+      return { icon: <Trash2 className="h-3.5 w-3.5 text-[#888]" />, text: input?.path || "파일 삭제" };
+    case "rename_file":
+      return { icon: <ArrowRight className="h-3.5 w-3.5 text-[#888]" />, text: `${input?.from || ""} → ${input?.to || ""}` };
+    case "list_files":
+      return { icon: <FileText className="h-3.5 w-3.5 text-[#888]" />, text: "파일 목록" };
+    case "search_files":
+      return { icon: <Search className="h-3.5 w-3.5 text-[#888]" />, text: `검색: ${input?.query || ""}` };
+    case "run_command":
+      return { icon: <Terminal className="h-3.5 w-3.5 text-[#888]" />, text: input?.command?.slice(0, 60) || "명령어 실행" };
+    case "web_search":
+      return { icon: <Globe className="h-3.5 w-3.5 text-[#888]" />, text: `웹 검색: ${input?.query || ""}` };
+    case "browse_url":
+      return { icon: <Eye className="h-3.5 w-3.5 text-[#888]" />, text: `브라우징: ${input?.url?.slice(0, 50) || ""}` };
+    default:
+      return { icon: <Terminal className="h-3.5 w-3.5 text-[#888]" />, text: name };
+  }
+}
+
+// ─── Pending Edit Card ──────────────────────────
+function PendingEditCard({ edit, onApprove, onReject }: { edit: PendingEdit; onApprove: () => void; onReject: () => void }) {
+  const fileName = edit.filePath.split("/").pop() || edit.filePath;
+  return (
+    <div className="rounded-xl bg-[#1E1E1E] border border-[#333] px-4 py-3">
+      <div className="flex items-center gap-3">
+        <Pencil className="h-4 w-4 text-[#888]" />
+        <div className="flex-1 min-w-0">
+          <p className="text-[13px] font-medium text-[#E0E0E0] truncate">{fileName}</p>
+          <p className="text-[11px] text-[#888] truncate">{edit.explanation}</p>
+        </div>
+        <div className="flex gap-1.5">
+          <button onClick={onApprove} className="rounded-lg bg-white/10 px-3 py-1 text-[12px] text-[#ccc] hover:bg-white/15 transition-colors">적용</button>
+          <button onClick={onReject} className="rounded-lg bg-white/5 px-3 py-1 text-[12px] text-[#888] hover:bg-white/10 transition-colors">거부</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Message Actions ────────────────────────────
 function MessageActions({ content }: { content: string }) {
   const [copied, setCopied] = useState(false);
   const [feedback, setFeedback] = useState<"like" | "dislike" | null>(null);
-  const [showFeedbackMsg, setShowFeedbackMsg] = useState(false);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(content);
@@ -476,50 +442,50 @@ function MessageActions({ content }: { content: string }) {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleFeedback = (type: "like" | "dislike") => {
-    setFeedback(feedback === type ? null : type);
-    setShowFeedbackMsg(true);
-    setTimeout(() => setShowFeedbackMsg(false), 3000);
-  };
-
-  const btnCls = "rounded-md p-1.5 text-[#555] hover:text-[#9A9A95] hover:bg-[#333] transition-colors";
+  const btnCls = "rounded-md p-1.5 text-[#555] hover:text-[#999] hover:bg-[#2A2A2A] transition-colors";
 
   return (
-    <div>
-      <div className="flex items-center gap-0.5">
-        <button className={btnCls} title="Retry">
-          <RefreshCw className="h-3.5 w-3.5" />
-        </button>
-        <button onClick={handleCopy} className={btnCls} title="Copy">
-          {copied ? <CheckCheck className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
-        </button>
-        <button
-          onClick={() => handleFeedback("like")}
-          className={`${btnCls} ${feedback === "like" ? "!text-emerald-400 !bg-emerald-500/10" : ""}`}
-          title="Good response"
-        >
-          <ThumbsUp className="h-3.5 w-3.5" />
-        </button>
-        <button
-          onClick={() => handleFeedback("dislike")}
-          className={`${btnCls} ${feedback === "dislike" ? "!text-amber-400 !bg-amber-500/10" : ""}`}
-          title="Bad response"
-        >
-          <ThumbsDown className="h-3.5 w-3.5" />
-        </button>
-      </div>
-      {showFeedbackMsg && feedback && (
-        <p className={`animate-fade-in mt-1.5 text-[10px] transition-opacity ${
-          feedback === "like" ? "text-emerald-400" : "text-amber-400"
-        }`}>
-          {feedback === "like" ? "Thanks for the feedback!" : "Sorry about that. We'll improve."}
-        </p>
-      )}
+    <div className="flex items-center gap-0.5">
+      <button className={btnCls} title="Retry"><RefreshCw className="h-3.5 w-3.5" /></button>
+      <button onClick={handleCopy} className={btnCls} title="Copy">
+        {copied ? <CheckCheck className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+      </button>
+      <button onClick={() => setFeedback(f => f === "like" ? null : "like")} className={`${btnCls} ${feedback === "like" ? "!text-[#ccc] !bg-white/10" : ""}`} title="Good"><ThumbsUp className="h-3.5 w-3.5" /></button>
+      <button onClick={() => setFeedback(f => f === "dislike" ? null : "dislike")} className={`${btnCls} ${feedback === "dislike" ? "!text-[#ccc] !bg-white/10" : ""}`} title="Bad"><ThumbsDown className="h-3.5 w-3.5" /></button>
     </div>
   );
 }
 
-// ─── Markdown-style message renderer ────────────────────────
+// ─── Typewriter Message ─────────────────────────
+function TypewriterMessage({ content }: { content: string }) {
+  // Changing the key prop forces a fresh mount when content resets, so we
+  // can drop the in-effect reset branch (react-compiler happy).
+  const resetKey = content.slice(0, 20);
+  return <TypewriterMessageInner key={resetKey} content={content} />;
+}
+
+function TypewriterMessageInner({ content }: { content: string }) {
+  const [displayed, setDisplayed] = useState("");
+  const done = displayed.length >= content.length;
+
+  useEffect(() => {
+    if (displayed.length >= content.length) return;
+    const remaining = content.length - displayed.length;
+    const chunkSize = remaining > 100 ? Math.floor(Math.random() * 8) + 4 : Math.floor(Math.random() * 3) + 1;
+    const delay = remaining > 100 ? 15 : 30;
+    const timer = setTimeout(() => setDisplayed(content.slice(0, displayed.length + chunkSize)), delay);
+    return () => clearTimeout(timer);
+  }, [content, displayed]);
+
+  return (
+    <div className="text-[15px] leading-[1.8] text-[#E0E0E0]">
+      <MessageRenderer content={displayed} />
+      {!done && <span className="inline-block w-[2px] h-[15px] bg-[#E0E0E0] ml-0.5 animate-pulse align-middle" />}
+    </div>
+  );
+}
+
+// ─── Markdown Message Renderer ──────────────────
 function MessageRenderer({ content }: { content: string }) {
   const [copied, setCopied] = useState(false);
 
@@ -529,7 +495,6 @@ function MessageRenderer({ content }: { content: string }) {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Simple markdown parsing
   const lines = content.split("\n");
   const elements: React.ReactNode[] = [];
   let inCodeBlock = false;
@@ -540,11 +505,9 @@ function MessageRenderer({ content }: { content: string }) {
     if (line.startsWith("```")) {
       if (inCodeBlock) {
         elements.push(
-          <div key={`code-${i}`} className="my-2 overflow-hidden rounded-lg bg-[#1A1A1A] ring-1 ring-white/[0.06]">
-            {codeLang && <div className="border-b border-[#333] px-3 py-1 text-[9px] font-mono text-[#555]">{codeLang}</div>}
-            <pre className="overflow-x-auto p-3 font-mono text-[11px] leading-relaxed text-[#9A9A95]">
-              {codeLines.join("\n")}
-            </pre>
+          <div key={`code-${i}`} className="my-2 overflow-hidden rounded-lg bg-[#161616] border border-[#2A2A2A]">
+            {codeLang && <div className="px-3 py-1 text-[10px] font-mono text-[#555] border-b border-[#2A2A2A]">{codeLang}</div>}
+            <pre className="overflow-x-auto p-3 font-mono text-[12px] leading-relaxed text-[#999]">{codeLines.join("\n")}</pre>
           </div>
         );
         codeLines = [];
@@ -556,55 +519,31 @@ function MessageRenderer({ content }: { content: string }) {
       }
       return;
     }
+    if (inCodeBlock) { codeLines.push(line); return; }
 
-    if (inCodeBlock) {
-      codeLines.push(line);
-      return;
-    }
-
-    // Heading
-    if (line.startsWith("### ")) {
-      elements.push(<h3 key={i} className="mt-4 mb-1.5 text-[13px] font-bold text-[#E8E8E5]">{line.slice(4)}</h3>);
-    } else if (line.startsWith("## ")) {
-      elements.push(<h2 key={i} className="mt-4 mb-1.5 text-[14px] font-bold text-[#E8E8E5]">{line.slice(3)}</h2>);
-    } else if (line.startsWith("# ")) {
-      elements.push(<h1 key={i} className="mt-4 mb-2 text-[15px] font-bold text-[#E8E8E5]">{line.slice(2)}</h1>);
-    }
-    // List
+    if (line.startsWith("### ")) elements.push(<h3 key={i} className="mt-4 mb-1.5 text-[14px] font-semibold text-[#E0E0E0]">{line.slice(4)}</h3>);
+    else if (line.startsWith("## ")) elements.push(<h2 key={i} className="mt-4 mb-1.5 text-[15px] font-semibold text-[#E0E0E0]">{line.slice(3)}</h2>);
+    else if (line.startsWith("# ")) elements.push(<h1 key={i} className="mt-4 mb-2 text-[16px] font-bold text-[#E0E0E0]">{line.slice(2)}</h1>);
     else if (line.match(/^[-*] /)) {
       elements.push(
-        <div key={i} className="flex items-start gap-2 py-0.5 text-[13px] leading-relaxed text-[#E8E8E5]">
+        <div key={i} className="flex items-start gap-2 py-0.5 text-[14px] leading-relaxed text-[#E0E0E0]">
           <span className="mt-2 h-1 w-1 flex-shrink-0 rounded-full bg-[#666]" />
           <span>{renderInline(line.slice(2))}</span>
         </div>
       );
     }
-    // Numbered list
     else if (line.match(/^\d+\.\s/)) {
       const num = line.match(/^(\d+)\./)?.[1];
       elements.push(
-        <div key={i} className="flex items-start gap-2 py-0.5 text-[13px] leading-relaxed text-[#E8E8E5]">
-          <span className="mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded text-[10px] font-bold text-[#666]">{num}.</span>
+        <div key={i} className="flex items-start gap-2 py-0.5 text-[14px] leading-relaxed text-[#E0E0E0]">
+          <span className="mt-0.5 text-[13px] text-[#666] w-4 text-right flex-shrink-0">{num}.</span>
           <span>{renderInline(line.replace(/^\d+\.\s/, ""))}</span>
         </div>
       );
     }
-    // Horizontal rule
-    else if (line.match(/^---+$/)) {
-      elements.push(<hr key={i} className="my-3 border-[#333]" />);
-    }
-    // Empty line
-    else if (line.trim() === "") {
-      elements.push(<div key={i} className="h-2" />);
-    }
-    // Plain text
-    else {
-      elements.push(
-        <p key={i} className="text-[13px] leading-relaxed text-[#E8E8E5]">
-          {renderInline(line)}
-        </p>
-      );
-    }
+    else if (line.match(/^---+$/)) elements.push(<hr key={i} className="my-3 border-[#2A2A2A]" />);
+    else if (line.trim() === "") elements.push(<div key={i} className="h-2" />);
+    else elements.push(<p key={i} className="text-[14px] leading-relaxed text-[#E0E0E0]">{renderInline(line)}</p>);
   });
 
   return (
@@ -612,7 +551,7 @@ function MessageRenderer({ content }: { content: string }) {
       <div>{elements}</div>
       <button
         onClick={handleCopy}
-        className="absolute top-0 right-0 rounded-md p-1 text-[#444] opacity-0 group-hover:opacity-100 hover:text-[#9A9A95] hover:bg-[#333] transition-all"
+        className="absolute top-0 right-0 rounded-md p-1 text-[#444] opacity-0 group-hover:opacity-100 hover:text-[#999] hover:bg-[#2A2A2A] transition-all"
       >
         {copied ? <CheckCheck className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
       </button>
@@ -620,186 +559,31 @@ function MessageRenderer({ content }: { content: string }) {
   );
 }
 
-// Inline markdown: **bold**, `code`, *italic*
+// Inline markdown
 function renderInline(text: string): React.ReactNode {
   const parts: React.ReactNode[] = [];
   let remaining = text;
   let key = 0;
 
   while (remaining.length > 0) {
-    // Bold
     const boldMatch = remaining.match(/\*\*(.+?)\*\*/);
-    // Code
     const codeMatch = remaining.match(/`([^`]+)`/);
 
     const matches = [
-      boldMatch ? { index: boldMatch.index!, length: boldMatch[0].length, type: "bold", content: boldMatch[1] } : null,
-      codeMatch ? { index: codeMatch.index!, length: codeMatch[0].length, type: "code", content: codeMatch[1] } : null,
+      boldMatch ? { index: boldMatch.index!, length: boldMatch[0].length, type: "bold" as const, content: boldMatch[1] } : null,
+      codeMatch ? { index: codeMatch.index!, length: codeMatch[0].length, type: "code" as const, content: codeMatch[1] } : null,
     ].filter(Boolean).sort((a, b) => a!.index - b!.index);
 
-    if (matches.length === 0) {
-      parts.push(<span key={key++}>{remaining}</span>);
-      break;
-    }
+    if (matches.length === 0) { parts.push(<span key={key++}>{remaining}</span>); break; }
 
     const first = matches[0]!;
-    if (first.index > 0) {
-      parts.push(<span key={key++}>{remaining.slice(0, first.index)}</span>);
-    }
+    if (first.index > 0) parts.push(<span key={key++}>{remaining.slice(0, first.index)}</span>);
 
-    if (first.type === "bold") {
-      parts.push(<strong key={key++} className="font-semibold text-[#E8E8E5]">{first.content}</strong>);
-    } else if (first.type === "code") {
-      parts.push(<code key={key++} className="rounded bg-[#2A2A2A] px-1.5 py-0.5 font-mono text-[11px] text-[#9A9A95]">{first.content}</code>);
-    }
+    if (first.type === "bold") parts.push(<strong key={key++} className="font-semibold text-[#E0E0E0]">{first.content}</strong>);
+    else parts.push(<code key={key++} className="rounded bg-[#2A2A2A] px-1.5 py-0.5 font-mono text-[12px] text-[#999]">{first.content}</code>);
 
     remaining = remaining.slice(first.index + first.length);
   }
 
   return <>{parts}</>;
-}
-
-// ─── Event Row (compact) ──────────────────────────────────
-
-function EventRow({ event }: { event: AgentEvent }) {
-  switch (event.type) {
-    case "tool_call":
-      return (
-        <div className="flex items-center gap-2 rounded-md px-2 py-1 text-[10px] animate-fade-in">
-          <ToolIcon name={event.toolName as string} />
-          <span className="text-[#777] truncate">
-            {event.toolName === "read_file" && `Read ${(event.input as Record<string, string>)?.path?.split("/").pop()}`}
-            {event.toolName === "write_file" && `Edit ${(event.input as Record<string, string>)?.path?.split("/").pop()}`}
-            {event.toolName === "list_files" && `List files`}
-            {event.toolName === "search_files" && `Search: ${(event.input as Record<string, string>)?.query}`}
-            {event.toolName === "run_command" && `$ ${(event.input as Record<string, string>)?.command}`}
-          </span>
-        </div>
-      );
-
-    case "file_read":
-      return (
-        <div className="flex items-center gap-2 rounded-md px-2 py-1 text-[10px] animate-fade-in">
-          <FileText className="h-2.5 w-2.5 text-[#555]" />
-          <span className="text-[#666] truncate">Read {(event.filePath as string)?.split("/").pop()}</span>
-        </div>
-      );
-
-    case "file_created":
-      return (
-        <div className="flex items-center gap-2 rounded-md px-2 py-1 text-[10px] animate-fade-in">
-          <Check className="h-2.5 w-2.5 text-emerald-500" />
-          <span className="text-emerald-400/80 truncate">Created {(event.filePath as string)?.split("/").pop()}</span>
-        </div>
-      );
-
-    case "command_start":
-      return (
-        <div className="flex items-center gap-2 rounded-md bg-[#222] px-2 py-1 text-[10px] font-mono animate-fade-in">
-          <Terminal className="h-2.5 w-2.5 text-[#555]" />
-          <span className="text-[#777] truncate">$ {event.command as string}</span>
-        </div>
-      );
-
-    case "command_output":
-      return (
-        <div className="px-2 py-0.5 text-[9px] font-mono text-[#555] whitespace-pre-wrap break-all leading-relaxed truncate">
-          {(event.data as string)?.slice(0, 200)}
-        </div>
-      );
-
-    case "command_done": {
-      const exitCode = event.exitCode as number;
-      return (
-        <div className={`flex items-center gap-1 px-2 py-0.5 text-[9px] ${exitCode === 0 ? "text-emerald-500/70" : "text-red-400/70"}`}>
-          {exitCode === 0 ? <Check className="h-2 w-2" /> : <X className="h-2 w-2" />}
-          exit {exitCode}
-        </div>
-      );
-    }
-
-    case "message":
-      return null; // Messages are rendered in the main area
-
-    case "done":
-      return null; // Replaced by completion banner
-
-    default:
-      return null;
-  }
-}
-
-// ─── Tool Icon ────────────────────────────────────
-
-function ToolIcon({ name }: { name: string }) {
-  const cls = "h-2.5 w-2.5 text-[#555]";
-  switch (name) {
-    case "read_file": return <FileText className={cls} />;
-    case "write_file": return <Pencil className={cls} />;
-    case "list_files": return <FolderOpen className={cls} />;
-    case "search_files": return <Search className={cls} />;
-    case "run_command": return <Terminal className={cls} />;
-    default: return <Sparkles className={cls} />;
-  }
-}
-
-// ─── Pending Edit Card ────────────────────────────
-
-function PendingEditCard({ edit, onApprove, onReject }: {
-  edit: PendingEdit;
-  onApprove: () => void;
-  onReject: () => void;
-}) {
-  const [expanded, setExpanded] = useState(false);
-  const fileName = edit.filePath.split("/").pop();
-  const isNew = !edit.original;
-
-  const origLines = edit.original ? edit.original.split("\n").length : 0;
-  const modLines = edit.modified.split("\n").length;
-  const added = Math.max(0, modLines - origLines);
-  const removed = Math.max(0, origLines - modLines);
-
-  return (
-    <div className="animate-fade-in overflow-hidden rounded-xl bg-[#2A2A2A] ring-1 ring-white/[0.06]">
-      <div className="flex items-center justify-between px-3 py-2">
-        <button onClick={() => setExpanded(!expanded)} className="flex items-center gap-2 min-w-0">
-          {expanded ? <ChevronDown className="h-3 w-3 text-[#555]" /> : <ChevronRight className="h-3 w-3 text-[#555]" />}
-          <FileText className="h-3.5 w-3.5 text-[#666] flex-shrink-0" />
-          <span className="text-[12px] font-medium text-[#E8E8E5] truncate">{fileName}</span>
-          {isNew && <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-[9px] font-bold text-emerald-400">NEW</span>}
-          {!isNew && added > 0 && <span className="text-[9px] text-emerald-500">+{added}</span>}
-          {!isNew && removed > 0 && <span className="text-[9px] text-red-400">-{removed}</span>}
-        </button>
-        <div className="flex items-center gap-1.5">
-          <button onClick={onReject} className="rounded-md px-2 py-1 text-[10px] font-medium text-[#666] hover:text-[#E8E8E5] hover:bg-[#333] transition-colors">
-            Reject
-          </button>
-          <button onClick={onApprove} className="rounded-md bg-emerald-500/20 px-2.5 py-1 text-[10px] font-semibold text-emerald-400 hover:bg-emerald-500/30 transition-colors">
-            Apply
-          </button>
-        </div>
-      </div>
-
-      {/* Explanation */}
-      <div className="px-3 pb-2">
-        <p className="text-[11px] text-[#9A9A95] leading-relaxed">{edit.explanation}</p>
-      </div>
-
-      {/* Expanded: diff preview */}
-      {expanded && edit.modified && (
-        <div className="border-t border-[#333] bg-[#1A1A1A] max-h-[150px] overflow-auto p-3 font-mono text-[10px] leading-relaxed">
-          {edit.modified.split("\n").slice(0, 20).map((line, i) => (
-            <div key={i} className="text-[#777] whitespace-pre-wrap">{line}</div>
-          ))}
-          {edit.modified.split("\n").length > 20 && (
-            <div className="text-[#555] mt-1">... {edit.modified.split("\n").length - 20} more lines</div>
-          )}
-        </div>
-      )}
-
-      <div className="px-3 pb-2">
-        <p className="text-[9px] font-mono text-[#444]">{edit.filePath}</p>
-      </div>
-    </div>
-  );
 }

@@ -1,6 +1,18 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useSyncExternalStore } from "react";
+
+// Shared hydration-safe mounted flag helpers.
+function subscribeMountFlag(cb: () => void) {
+  const timer = setTimeout(cb, 0);
+  return () => clearTimeout(timer);
+}
+function getMountedFlagClient() {
+  return true;
+}
+function getMountedFlagServer() {
+  return false;
+}
 import { useLangStore } from "@/lib/store/lang-store";
 import { useAuthStore } from "@/lib/store/auth-store";
 import Link from "next/link";
@@ -12,50 +24,68 @@ const PLAN_RANK: Record<string, number> = { free: 0, pro: 1, unlimited: 2 };
 const translations = {
   en: {
     // Hero
-    heroTitle1: "choose your plan",
-    heroTitle2: "design to code",
+    heroTitle1: "Meld",
+    heroTitle2: "Pricing",
+
+    // Billing toggle
+    monthly: "Monthly",
+    yearly: "Yearly",
+    savePercent: "Save 17%",
 
     // Starter
     starterName: "Meld Starter",
     starterPrice: "Free",
-    starterTagline: "get started with Figma to Code",
+    starterTagline: "Basic prototyping",
     starterFeatures: [
-      "3 projects",
-      "50 AI edits / month",
-      "Cloud mode only",
+      "Unlimited projects",
+      "100K tokens / month",
+      "Standard cloud environment",
+      "Basic preview",
       "Community support",
     ],
     starterCta: "get started",
 
     // Pro
     proName: "Meld Pro",
-    proOriginalPrice: "$30",
-    proPrice: "$20",
-    proPer: "/ mo",
-    proDiscount: "33% off",
+    proOriginalPriceMonthly: "$39",
+    proPriceMonthly: "$29",
+    proOriginalPriceYearly: "$468",
+    proPriceYearly: "$290",
+    proPerMonthly: "/ mo",
+    proPerYearly: "/ year",
+    proDiscountMonthly: "26% off",
+    proDiscountYearly: "38% off",
     proFeatures: [
       "Unlimited projects",
-      "Unlimited AI edits",
-      "Cloud + Local + Sandbox mode",
-      "All AI models (Claude, GPT-4o, Gemini)",
-      "Design change tracking",
+      "20M tokens / month",
+      "Fully autonomous agent (50 rounds)",
+      "9 powerful coding tools",
+      "E2B cloud sandbox",
+      "Real-time preview & dev server",
+      "Web search & URL browsing",
+      "Vision AI analysis",
+      "14 MCP server presets",
       "Priority support",
     ],
     proCta: "get Meld Pro",
 
     // Unlimited
     unlimitedName: "Meld Unlimited",
-    unlimitedOriginalPrice: "$69",
-    unlimitedPrice: "$49",
-    unlimitedPer: "/ mo",
-    unlimitedDiscount: "29% off",
+    unlimitedOriginalPriceMonthly: "$129",
+    unlimitedPriceMonthly: "$99",
+    unlimitedOriginalPriceYearly: "$1548",
+    unlimitedPriceYearly: "$990",
+    unlimitedPerMonthly: "/ mo",
+    unlimitedPerYearly: "/ year",
+    unlimitedDiscountMonthly: "23% off",
+    unlimitedDiscountYearly: "36% off",
     unlimitedFeatures: [
       "Everything in Pro",
-      "Team collaboration",
-      "SAML / SSO",
-      "Admin controls & audit logs",
-      "Custom contracts",
-      "Dedicated support & onboarding",
+      "100M tokens / month",
+      "Extended sandbox timeout",
+      "Longer command runtime",
+      "Higher file limits",
+      "Dedicated support",
     ],
     unlimitedCta: "get Unlimited",
 
@@ -68,47 +98,64 @@ const translations = {
     footerTagline: "Design to Code, seamlessly.",
   },
   ko: {
-    heroTitle1: "플랜을 선택하세요",
-    heroTitle2: "디자인을 코드로",
+    heroTitle1: "Meld",
+    heroTitle2: "요금제",
+
+    monthly: "월간",
+    yearly: "연간",
+    savePercent: "17% 할인",
 
     starterName: "Meld Starter",
     starterPrice: "Free",
-    starterTagline: "Figma to Code 시작하기",
+    starterTagline: "기본 프로토타이핑",
     starterFeatures: [
-      "3개 프로젝트",
-      "월 50회 AI 수정",
-      "클라우드 모드만",
+      "무제한 프로젝트",
+      "월 100K 토큰",
+      "표준 클라우드 환경",
+      "기본 프리뷰",
       "커뮤니티 지원",
     ],
     starterCta: "시작하기",
 
     proName: "Meld Pro",
-    proOriginalPrice: "$30",
-    proPrice: "$20",
-    proPer: "/ 월",
-    proDiscount: "33% 할인",
+    proOriginalPriceMonthly: "$39",
+    proPriceMonthly: "$29",
+    proOriginalPriceYearly: "$468",
+    proPriceYearly: "$290",
+    proPerMonthly: "/ 월",
+    proPerYearly: "/ 년",
+    proDiscountMonthly: "26% 할인",
+    proDiscountYearly: "38% 할인",
     proFeatures: [
       "무제한 프로젝트",
-      "무제한 AI 수정",
-      "클라우드 + 로컬 + 샌드박스 모드",
-      "모든 AI 모델 (Claude, GPT-4o, Gemini)",
-      "디자인 변경 추적",
+      "월 20M 토큰",
+      "완전 자율 에이전트 (50 라운드)",
+      "9가지 코딩 도구",
+      "E2B 클라우드 샌드박스",
+      "실시간 프리뷰 & dev server",
+      "웹 검색 & URL 브라우징",
+      "Vision AI 분석",
+      "14개 MCP 서버 프리셋",
       "우선 지원",
     ],
     proCta: "Meld Pro 시작",
 
     unlimitedName: "Meld Unlimited",
-    unlimitedOriginalPrice: "$69",
-    unlimitedPrice: "$49",
-    unlimitedPer: "/ 월",
-    unlimitedDiscount: "29% 할인",
+    unlimitedOriginalPriceMonthly: "$129",
+    unlimitedPriceMonthly: "$99",
+    unlimitedOriginalPriceYearly: "$1548",
+    unlimitedPriceYearly: "$990",
+    unlimitedPerMonthly: "/ 월",
+    unlimitedPerYearly: "/ 년",
+    unlimitedDiscountMonthly: "23% 할인",
+    unlimitedDiscountYearly: "36% 할인",
     unlimitedFeatures: [
       "Pro의 모든 기능",
-      "팀 협업",
-      "SAML / SSO",
-      "관리자 제어 & 감사 로그",
-      "맞춤 계약",
-      "전담 지원 & 온보딩",
+      "월 100M 토큰",
+      "확장된 샌드박스 타임아웃",
+      "더 긴 명령어 런타임",
+      "더 높은 파일 제한",
+      "전담 지원",
     ],
     unlimitedCta: "Unlimited 시작",
 
@@ -120,7 +167,7 @@ const translations = {
   },
 } as const;
 
-function useInView(threshold = 0.15) {
+function useInView(threshold = 0.15): [React.RefObject<HTMLDivElement | null>, boolean] {
   const ref = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState(false);
 
@@ -140,7 +187,7 @@ function useInView(threshold = 0.15) {
     return () => observer.disconnect();
   }, [threshold]);
 
-  return { ref, inView };
+  return [ref, inView];
 }
 
 function PlanButton({
@@ -149,21 +196,25 @@ function PlanButton({
   label,
   t,
   variant,
+  billing,
 }: {
   plan: "free" | "pro" | "unlimited";
   currentPlan: string | null;
   label: string;
   t: { currentPlan: string; upgrade: string; manage: string };
   variant: "starter" | "pro" | "unlimited";
+  billing: "monthly" | "yearly";
 }) {
   const isCurrent = currentPlan === plan;
   const isUpgrade = currentPlan ? (PLAN_RANK[plan] ?? 0) > (PLAN_RANK[currentPlan] ?? 0) : false;
   const isDowngrade = currentPlan ? (PLAN_RANK[plan] ?? 0) < (PLAN_RANK[currentPlan] ?? 0) : false;
 
+  const baseStyles = "flex w-full items-center justify-center rounded-full py-3.5 text-[15px] font-medium transition-all active:scale-[0.98]";
+
   // 현재 플랜
   if (isCurrent) {
     return (
-      <span className="inline-flex items-center rounded-lg border border-[#C5B882]/30 bg-[#C5B882]/10 px-6 py-3 text-[15px] font-medium text-[#C5B882]">
+      <span className={`${baseStyles} border border-[#C5B882]/30 bg-[#C5B882]/10 text-[#C5B882]`}>
         {t.currentPlan}
       </span>
     );
@@ -174,7 +225,7 @@ function PlanButton({
     return (
       <a
         href="/api/portal"
-        className="inline-flex items-center rounded-lg border border-[#E5E5E5] px-6 py-3 text-[15px] font-medium text-[#999] transition-all hover:border-[#CCC] hover:text-[#666]"
+        className={`${baseStyles} border border-[#333] text-[#666] hover:border-[#555] hover:text-[#888]`}
       >
         {t.manage}
       </a>
@@ -182,19 +233,19 @@ function PlanButton({
   }
 
   // 업그레이드 또는 비로그인
-  const href = plan === "free" ? "/dashboard" : `/api/checkout?plan=${plan}`;
+  const href = plan === "free" ? "/project/workspace" : `/api/checkout?plan=${plan}&billing=${billing}`;
   const text = currentPlan && isUpgrade ? t.upgrade : label;
 
   const styles = {
-    starter: "bg-[#1A1A1A] text-white hover:bg-[#333]",
-    pro: "bg-[#C5B882] text-[#1A1A1A] hover:bg-[#B8AB75] font-semibold",
-    unlimited: "bg-[#1A1A1A] text-white hover:bg-[#333]",
+    starter: "bg-[#1A1A1A] text-white border border-[#333] hover:bg-[#252525]",
+    pro: "bg-[#3B82F6] text-white hover:bg-[#2563EB]",
+    unlimited: "bg-[#1A1A1A] text-white border border-[#333] hover:bg-[#252525]",
   };
 
   return (
     <a
       href={href}
-      className={`inline-flex items-center rounded-lg px-6 py-3 text-[15px] font-medium transition-all active:scale-[0.98] ${styles[variant]}`}
+      className={`${baseStyles} ${styles[variant]}`}
     >
       {text}
     </a>
@@ -204,24 +255,33 @@ function PlanButton({
 export default function PricingPage() {
   const { lang, toggleLang } = useLangStore();
   const { user, fetchUser } = useAuthStore();
-  const t = translations[lang];
+  const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
+  // Hydration-safe mounted flag via useSyncExternalStore (no effect).
+  const mounted = useSyncExternalStore(
+    subscribeMountFlag,
+    getMountedFlagClient,
+    getMountedFlagServer,
+  );
+
+  // 서버-클라이언트 hydration 불일치 방지
+  const t = translations[mounted ? lang : "en"];
 
   useEffect(() => {
     fetchUser();
   }, [fetchUser]);
 
   const currentPlan = user?.plan ?? null;
-  const cardsSection = useInView(0.1);
+  const [cardsSectionRef, cardsSectionInView] = useInView(0.1);
 
   return (
-    <div className="min-h-screen bg-white selection:bg-[#1A1A1A] selection:text-white">
+    <div className="min-h-screen bg-[#0A0A0A] selection:bg-white selection:text-[#0A0A0A]">
       {/* 그리드 배경 */}
       <div
         className="pointer-events-none fixed inset-0 z-0"
         style={{
           backgroundImage: `
-            linear-gradient(rgba(0,0,0,0.02) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0,0,0,0.02) 1px, transparent 1px)
+            linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)
           `,
           backgroundSize: "80px 80px",
         }}
@@ -231,119 +291,151 @@ export default function PricingPage() {
       <LandingNav activePath="/pricing" />
 
       {/* 히어로 */}
-      <section className="relative z-10 pt-36 pb-6 lg:pt-44 lg:pb-10">
-        <div className="mx-auto max-w-[1440px] px-6 lg:px-16">
-          <h1 className="animate-fade-in-up text-[40px] font-bold leading-[1.15] tracking-[-0.03em] sm:text-[52px] lg:text-[64px]">
-            <span className="text-[#1A1A1A]">{t.heroTitle1}</span>
-            <br />
-            <span className="text-[#CCC]">{t.heroTitle2}</span>
+      <section className="relative z-10 pt-32 pb-0 lg:pt-40 lg:pb-0">
+        <div className="mx-auto max-w-5xl px-6 lg:px-8 text-center">
+          <h1 className="animate-fade-in-up text-[28px] font-semibold leading-[1.2] tracking-[-0.02em] sm:text-[32px] lg:text-[36px]">
+            <span className="text-white">{t.heroTitle1}</span>
+            {" "}
+            <span className="text-[#555]">{t.heroTitle2}</span>
           </h1>
+
+          {/* 월간/연간 토글 */}
+          <div className="mt-10 flex items-center justify-center gap-4">
+            <div className="inline-flex items-center rounded-full bg-[#1A1A1A] p-1">
+              <button
+                onClick={() => setBilling("monthly")}
+                className={`rounded-full px-5 py-2 text-[14px] font-medium transition-all ${
+                  billing === "monthly"
+                    ? "bg-[#2A2A2A] text-white"
+                    : "text-[#666] hover:text-[#999]"
+                }`}
+              >
+                {t.monthly}
+              </button>
+              <button
+                onClick={() => setBilling("yearly")}
+                className={`rounded-full px-5 py-2 text-[14px] font-medium transition-all ${
+                  billing === "yearly"
+                    ? "bg-[#2A2A2A] text-white"
+                    : "text-[#666] hover:text-[#999]"
+                }`}
+              >
+                {t.yearly}
+              </button>
+            </div>
+            {billing === "yearly" && (
+              <span className="rounded-full bg-[#C5B882]/15 px-3 py-1 text-[12px] font-medium text-[#C5B882]">
+                {t.savePercent}
+              </span>
+            )}
+          </div>
         </div>
       </section>
 
       {/* 가격 카드 */}
-      <section ref={cardsSection.ref} className="relative z-10 mx-auto max-w-[1440px] px-6 lg:px-16 py-16 lg:py-24">
-        <div className="grid gap-px overflow-hidden rounded-2xl border border-[#E5E5E5] sm:grid-cols-3">
+      <section ref={cardsSectionRef} className="relative z-10 pt-6 pb-8 lg:pt-8 lg:pb-12">
+        <div className="mx-auto max-w-5xl px-6 lg:px-8">
+          <div className="grid gap-4 sm:grid-cols-3">
           {/* Starter */}
-          <div className={`flex flex-col bg-white p-10 lg:p-12 transition-all duration-700 ${cardsSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
-            <div className="flex-1">
-              <h3 className="text-[22px] font-medium text-[#1A1A1A]">{t.starterName}</h3>
-              <p className="mt-1.5 text-[32px] font-light text-[#1A1A1A]">{t.starterPrice}</p>
-              <p className="mt-4 text-[14px] text-[#C5B882]">{t.starterTagline}</p>
-
-              <ul className="mt-10 space-y-4">
-                {t.starterFeatures.map((feature) => (
-                  <li key={feature} className="flex items-start gap-3">
-                    <Check className="mt-0.5 h-4.5 w-4.5 flex-shrink-0 text-[#C5B882]" />
-                    <span className="text-[16px] text-[#666]">{feature}</span>
-                  </li>
-                ))}
-              </ul>
+          <div className={`flex flex-col rounded-2xl border border-[#2A2A2A] bg-[#111111] p-8 lg:p-10 transition-all duration-700 ${cardsSectionInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
+            <div className="flex items-center gap-3">
+              <h3 className="text-[20px] font-medium text-white">{t.starterName}</h3>
+            </div>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-[32px] font-light text-white">{t.starterPrice}</span>
             </div>
 
-            <div className="mt-14">
-              <PlanButton plan="free" currentPlan={currentPlan} label={t.starterCta} t={t} variant="starter" />
+            <div className="mt-6">
+              <PlanButton plan="free" currentPlan={currentPlan} label={t.starterCta} t={t} variant="starter" billing={billing} />
             </div>
+
+            <p className="mt-6 text-[14px] text-[#666]">{t.starterTagline}</p>
+
+            <ul className="mt-4 flex-1 space-y-3">
+              {t.starterFeatures.map((feature) => (
+                <li key={feature} className="flex items-start gap-3">
+                  <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#C5B882]" />
+                  <span className="text-[14px] text-[#888]">{feature}</span>
+                </li>
+              ))}
+            </ul>
           </div>
 
           {/* Pro */}
-          <div className={`flex flex-col border-x border-[#E5E5E5] bg-[#FAFAF8] p-10 lg:p-12 transition-all duration-700 delay-150 ${cardsSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
-            <div className="flex-1">
-              <div className="flex items-center gap-3">
-                <h3 className="text-[22px] font-medium text-[#1A1A1A]">{t.proName}</h3>
-                <span className="rounded-full bg-[#C5B882]/15 px-2.5 py-0.5 text-[11px] font-semibold text-[#C5B882]">{t.proDiscount}</span>
-              </div>
-              <div className="mt-1.5 flex items-baseline gap-2.5">
-                <span className="text-[16px] text-[#CCC] line-through">{t.proOriginalPrice}</span>
-                <span className="text-[32px] font-light text-[#1A1A1A]">{t.proPrice}</span>
-                <span className="text-[15px] text-[#CCC]">{t.proPer}</span>
-              </div>
-
-              <ul className="mt-10 space-y-4">
-                {t.proFeatures.map((feature) => (
-                  <li key={feature} className="flex items-start gap-3">
-                    <Check className="mt-0.5 h-4.5 w-4.5 flex-shrink-0 text-[#C5B882]" />
-                    <span className="text-[16px] text-[#666]">{feature}</span>
-                  </li>
-                ))}
-              </ul>
+          <div className={`flex flex-col rounded-2xl border border-[#2A2A2A] bg-[#161616] p-8 lg:p-10 transition-all duration-700 delay-150 ${cardsSectionInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
+            <div className="flex items-center gap-3">
+              <h3 className="text-[20px] font-medium text-white">{t.proName}</h3>
+              <span className="rounded-full bg-[#C5B882]/15 px-2.5 py-0.5 text-[11px] font-semibold text-[#C5B882]">
+                {billing === "monthly" ? t.proDiscountMonthly : t.proDiscountYearly}
+              </span>
+            </div>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-[14px] text-[#555] line-through">
+                {billing === "monthly" ? t.proOriginalPriceMonthly : t.proOriginalPriceYearly}
+              </span>
+              <span className="text-[32px] font-light text-white">
+                {billing === "monthly" ? t.proPriceMonthly : t.proPriceYearly}
+              </span>
+              <span className="text-[14px] text-[#555]">
+                {billing === "monthly" ? t.proPerMonthly : t.proPerYearly}
+              </span>
             </div>
 
-            <div className="mt-14">
-              <PlanButton plan="pro" currentPlan={currentPlan} label={t.proCta} t={t} variant="pro" />
+            <div className="mt-6">
+              <PlanButton plan="pro" currentPlan={currentPlan} label={t.proCta} t={t} variant="pro" billing={billing} />
             </div>
+
+            <ul className="mt-8 flex-1 space-y-3">
+              {t.proFeatures.map((feature) => (
+                <li key={feature} className="flex items-start gap-3">
+                  <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#C5B882]" />
+                  <span className="text-[14px] text-[#888]">{feature}</span>
+                </li>
+              ))}
+            </ul>
           </div>
 
           {/* Unlimited */}
-          <div className={`flex flex-col bg-white p-10 lg:p-12 transition-all duration-700 delay-300 ${cardsSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
-            <div className="flex-1">
-              <div className="flex items-center gap-3">
-                <h3 className="text-[22px] font-medium text-[#1A1A1A]">{t.unlimitedName}</h3>
-                <span className="rounded-full bg-[#C5B882]/15 px-2.5 py-0.5 text-[11px] font-semibold text-[#C5B882]">{t.unlimitedDiscount}</span>
-              </div>
-              <div className="mt-1.5 flex items-baseline gap-2.5">
-                <span className="text-[16px] text-[#CCC] line-through">{t.unlimitedOriginalPrice}</span>
-                <span className="text-[32px] font-light text-[#1A1A1A]">{t.unlimitedPrice}</span>
-                <span className="text-[15px] text-[#CCC]">{t.unlimitedPer}</span>
-              </div>
-
-              <ul className="mt-10 space-y-4">
-                {t.unlimitedFeatures.map((feature) => (
-                  <li key={feature} className="flex items-start gap-3">
-                    <Check className="mt-0.5 h-4.5 w-4.5 flex-shrink-0 text-[#C5B882]" />
-                    <span className="text-[16px] text-[#666]">{feature}</span>
-                  </li>
-                ))}
-              </ul>
+          <div className={`flex flex-col rounded-2xl border border-[#2A2A2A] bg-[#111111] p-8 lg:p-10 transition-all duration-700 delay-300 ${cardsSectionInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
+            <div className="flex items-center gap-3">
+              <h3 className="text-[20px] font-medium text-white">{t.unlimitedName}</h3>
+              <span className="rounded-full bg-[#C5B882]/15 px-2.5 py-0.5 text-[11px] font-semibold text-[#C5B882]">
+                {billing === "monthly" ? t.unlimitedDiscountMonthly : t.unlimitedDiscountYearly}
+              </span>
+            </div>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-[14px] text-[#555] line-through">
+                {billing === "monthly" ? t.unlimitedOriginalPriceMonthly : t.unlimitedOriginalPriceYearly}
+              </span>
+              <span className="text-[32px] font-light text-white">
+                {billing === "monthly" ? t.unlimitedPriceMonthly : t.unlimitedPriceYearly}
+              </span>
+              <span className="text-[14px] text-[#555]">
+                {billing === "monthly" ? t.unlimitedPerMonthly : t.unlimitedPerYearly}
+              </span>
             </div>
 
-            <div className="mt-14">
-              <PlanButton plan="unlimited" currentPlan={currentPlan} label={t.unlimitedCta} t={t} variant="unlimited" />
+            <div className="mt-6">
+              <PlanButton plan="unlimited" currentPlan={currentPlan} label={t.unlimitedCta} t={t} variant="unlimited" billing={billing} />
             </div>
+
+            <ul className="mt-8 flex-1 space-y-3">
+              {t.unlimitedFeatures.map((feature) => (
+                <li key={feature} className="flex items-start gap-3">
+                  <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#C5B882]" />
+                  <span className="text-[14px] text-[#888]">{feature}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
           </div>
         </div>
       </section>
 
-      {/* 푸터 */}
-      <footer className="relative z-10">
-        <div className="mx-auto max-w-[1440px] px-6 lg:px-16 pb-8">
-          <div className="h-px w-full bg-[#E5E5E5]" />
-          <div className="mt-6 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="flex h-5 w-5 items-center justify-center rounded bg-[#1A1A1A]">
-                <Blend className="h-2.5 w-2.5 text-white" />
-              </div>
-              <span className="text-[12px] text-[#999]">Meld</span>
-            </div>
-            <p className="font-mono text-[11px] text-[#999]">{t.footerTagline}</p>
-          </div>
-        </div>
-      </footer>
-
       {/* 언어 토글 */}
       <button
         onClick={toggleLang}
-        className="fixed bottom-6 right-6 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-[#1A1A1A] text-[12px] font-semibold text-white shadow-lg ring-1 ring-black/[0.06] transition-all hover:scale-105 hover:bg-[#333] active:scale-95"
+        className="fixed bottom-6 right-6 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-white text-[12px] font-semibold text-[#0A0A0A] shadow-lg ring-1 ring-white/10 transition-all hover:scale-105 hover:bg-[#EEE] active:scale-95"
       >
         {lang === "en" ? "KO" : "EN"}
       </button>

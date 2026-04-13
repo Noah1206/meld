@@ -207,7 +207,7 @@ export function PreviewFrame({ url, framework, onFixWithAI }: PreviewFrameProps)
       }
       if (e.data?.type === "meld:visual-edit") {
         const { editType, property, value, oldText, newText, element } = e.data.payload;
-        handleVisualEdit({ editType, property, value, oldText, newText, element });
+        handleVisualEditRef.current?.({ editType, property, value, oldText, newText, element });
       }
       if (e.data?.type === "meld:ask-ai") {
         const payload = e.data.payload as InspectedElement;
@@ -254,58 +254,80 @@ export function PreviewFrame({ url, framework, onFixWithAI }: PreviewFrameProps)
     }
   };
 
-  const handleVisualEdit = async (edit: {
+  // --- Visual Edit: 2-stage pipeline (instant preview + background code sync) ---
+  interface VisualEdit {
     editType: string; property?: string; value?: string;
     oldText?: string; newText?: string;
     element: { selector: string; componentName: string | null; className: string; tagName: string };
-  }) => {
-    const targetFile = selectedFilePath;
-    if (!targetFile || !readFileFn || !writeFileFn) return;
+    parentElement?: { selector: string; componentName: string | null; className: string; tagName: string };
+  }
 
-    const currentCode = await readFileFn(targetFile);
-    let command = "";
+  const pendingEditsRef = useRef<VisualEdit[]>([]);
+  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const handleVisualEditRef = useRef<((edit: VisualEdit) => void) | null>(null);
+  const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "synced">("idle");
 
-    // Capture screenshot for visual context
-    const screenshot = await capturePreviewScreenshot();
-
+  const editToCommand = useCallback((edit: VisualEdit): string => {
     const elDesc = edit.element.componentName || edit.element.tagName;
     const elClasses = edit.element.className.split(" ").slice(0, 3).join(" ");
 
     if (edit.editType === "text" && edit.oldText && edit.newText) {
-      command = `Change the text "${edit.oldText}" to "${edit.newText}"`;
+      return `Change the text "${edit.oldText}" to "${edit.newText}"`;
     } else if (edit.editType === "color" && edit.property && edit.value) {
       const propLabel = edit.property === "background-color" ? "background color" : "text color";
-      command = `Change the ${propLabel} of the ${elDesc} (${elClasses}) to ${edit.value}`;
+      return `Change the ${propLabel} of the ${elDesc} (${elClasses}) to ${edit.value}`;
     } else if (edit.editType === "spacing" && edit.property && edit.value) {
-      command = `Change the ${edit.property} of the ${elDesc} (${elClasses}) to ${edit.value}`;
+      return `Change the ${edit.property} of the ${elDesc} (${elClasses}) to ${edit.value}`;
     } else if (edit.editType === "position" && edit.value) {
       const pos = JSON.parse(edit.value);
-      command = `Move the ${elDesc} (${elClasses}) to position left: ${pos.left}, top: ${pos.top}. Use position: ${pos.position} or appropriate positioning. If using Tailwind, use relative positioning classes.`;
+      return `Move the ${elDesc} (${elClasses}) to position left: ${pos.left}, top: ${pos.top}. Use position: ${pos.position} or appropriate positioning. If using Tailwind, use relative positioning classes.`;
     } else if (edit.editType === "resize" && edit.value) {
       const size = JSON.parse(edit.value);
-      command = `Resize the ${elDesc} (${elClasses}) to width: ${size.width}, height: ${size.height}. Use appropriate width/height classes or inline styles.`;
+      return `Resize the ${elDesc} (${elClasses}) to width: ${size.width}, height: ${size.height}. Use appropriate width/height classes or inline styles.`;
     } else if (edit.editType === "borderRadius" && edit.value) {
-      command = `Change the border-radius of the ${elDesc} (${elClasses}) to ${edit.value}. Use Tailwind rounded classes if possible.`;
+      return `Change the border-radius of the ${elDesc} (${elClasses}) to ${edit.value}. Use Tailwind rounded classes if possible.`;
     } else if (edit.editType === "align" && edit.value) {
-      command = `Align the ${elDesc} (${elClasses}) to ${edit.value}. Modify the parent container's flex/grid alignment or text-align as needed. Use Tailwind classes like items-center, justify-center, text-left, etc.`;
+      return `Align the ${elDesc} (${elClasses}) to ${edit.value}. Modify the parent container's flex/grid alignment or text-align as needed. Use Tailwind classes like items-center, justify-center, text-left, etc.`;
+    } else if (edit.editType === "fontSize" && edit.value) {
+      return `Change the font-size of the ${elDesc} (${elClasses}) to ${edit.value}. Use Tailwind text-* classes if possible.`;
+    } else if (edit.editType === "opacity" && edit.value) {
+      return `Change the opacity of the ${elDesc} (${elClasses}) to ${edit.value}.`;
+    } else if (edit.editType === "gap" && edit.value) {
+      return `Change the gap of the ${elDesc} (${elClasses}) to ${edit.value}. Use Tailwind gap-* classes if possible.`;
+    } else if (edit.editType === "shadow" && edit.value) {
+      return `Change the box-shadow of the ${elDesc} (${elClasses}) to ${edit.value}. Use Tailwind shadow-* classes if possible.`;
+    } else if (edit.editType === "style" && edit.property && edit.value) {
+      return `Change the ${edit.property} of the ${elDesc} (${elClasses}) to ${edit.value}.`;
     }
+    return "";
+  }, []);
 
-    if (!command) return;
+  const syncEditsToCode = useCallback(async (edits: VisualEdit[]) => {
+    const targetFile = selectedFilePath;
+    if (!targetFile || !readFileFn || !writeFileFn) return;
+
+    const commands = edits.map(editToCommand).filter(Boolean);
+    if (commands.length === 0) return;
+
+    const combinedCommand = commands.length === 1
+      ? commands[0]
+      : `Apply the following changes to the component:\n${commands.map((c, i) => `${i + 1}. ${c}`).join("\n")}`;
+
+    const currentCode = await readFileFn(targetFile);
 
     try {
       let result: { filePath: string; original: string; modified: string; explanation: string };
 
       if (window.electronAgent?.ai) {
         result = await window.electronAgent.ai.editCode({
-          filePath: targetFile, command, currentCode,
+          filePath: targetFile, command: combinedCommand, currentCode,
           framework: devServerFramework ?? undefined,
-          elementContext: screenshot ? `[Screenshot of current preview attached]` : undefined,
         });
       } else {
         const res = await fetch("/api/ai/edit-code", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ filePath: targetFile, command, currentCode, screenshot }),
+          body: JSON.stringify({ filePath: targetFile, command: combinedCommand, currentCode }),
         });
         const data = await res.json();
         if (!res.ok) return;
@@ -319,9 +341,45 @@ export function PreviewFrame({ url, framework, onFixWithAI }: PreviewFrameProps)
         setLastWrite();
       }
     } catch (err) {
-      console.error("[visual-edit] Failed:", err);
+      console.error("[visual-edit] Code sync failed:", err);
     }
-  };
+  }, [selectedFilePath, readFileFn, writeFileFn, devServerFramework, editToCommand, setLastWrite]);
+
+  const handleVisualEdit = useCallback((edit: VisualEdit) => {
+    // Stage 1: Visual change is ALREADY applied instantly by inspector-script
+    //          (element.style is modified in the iframe before this message arrives)
+
+    // Stage 2: Queue for background code sync with debounce
+    pendingEditsRef.current.push(edit);
+    clearTimeout(syncTimerRef.current);
+    setSyncStatus("idle");
+
+    syncTimerRef.current = setTimeout(async () => {
+      const edits = [...pendingEditsRef.current];
+      pendingEditsRef.current = [];
+      setSyncStatus("syncing");
+      await syncEditsToCode(edits);
+      setSyncStatus("synced");
+      setTimeout(() => setSyncStatus("idle"), 2000);
+    }, 800);
+  }, [syncEditsToCode]);
+
+  // Keep the ref in sync so the earlier message-handler effect can call
+  // the latest callback without a hoisting order mismatch. This is the
+  // standard "useEvent" pattern; react-compiler's immutability rule flags
+  // it but the underlying ref mutation is intentional and cleanup-safe.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/immutability
+    handleVisualEditRef.current = handleVisualEdit;
+  }, [handleVisualEdit]);
+
+  // Apply a style change directly to the selected element in iframe (instant)
+  const applyStyleToIframe = useCallback((property: string, value: string) => {
+    iframeRef.current?.contentWindow?.postMessage(
+      { type: "meld:apply-style", property, value },
+      "*",
+    );
+  }, []);
 
   const handleRefresh = useCallback(async () => {
     setIsLoading(true);
@@ -580,6 +638,22 @@ export function PreviewFrame({ url, framework, onFixWithAI }: PreviewFrameProps)
                   Restart
                 </button>
               </div>
+            </div>
+          )}
+          {/* Code sync status indicator */}
+          {syncStatus !== "idle" && (
+            <div className="animate-pop-in absolute bottom-3 right-3 z-20 flex items-center gap-1.5 rounded-lg bg-black/70 px-3 py-1.5 text-[11px] font-medium text-white backdrop-blur-sm">
+              {syncStatus === "syncing" ? (
+                <>
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <span>Syncing code...</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-emerald-400">✓</span>
+                  <span>Code synced</span>
+                </>
+              )}
             </div>
           )}
           <iframe

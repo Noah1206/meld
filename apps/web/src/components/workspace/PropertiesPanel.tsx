@@ -203,8 +203,8 @@ function SmallPropInput({
   value: string;
   onChange: (v: string) => void;
 }) {
-  const [local, setLocal] = useState(value);
-  useEffect(() => setLocal(value), [value]);
+  const [draft, setDraft] = useState<string | null>(null);
+  const local = draft ?? value;
 
   return (
     <div className="flex items-center gap-1.5">
@@ -214,9 +214,10 @@ function SmallPropInput({
       <input
         type="text"
         value={local}
-        onChange={(e) => setLocal(e.target.value)}
+        onChange={(e) => setDraft(e.target.value)}
         onBlur={() => {
           if (local !== value) onChange(local);
+          setDraft(null);
         }}
         onKeyDown={(e) => {
           if (e.key === "Enter" && local !== value) onChange(local);
@@ -334,6 +335,20 @@ const SHADOW_PRESETS: Record<string, string> = {
 // ---------------------------------------------------------------------------
 
 export default function PropertiesPanel({ element, isDark, onVisualEdit, onApplyStyle }: PropertiesPanelProps) {
+  // Helper: style change → postMessage to iframe or apply via callback.
+  // Declared before the early return so hook order stays stable.
+  const edit = useCallback(
+    (editType: string, property: string, value: string) => {
+      if (!element) return;
+      if (onApplyStyle) {
+        onApplyStyle(property, value);
+      } else if (onVisualEdit) {
+        onVisualEdit({ editType, property, value, element });
+      }
+    },
+    [onVisualEdit, onApplyStyle, element],
+  );
+
   if (!element) {
     return (
       <div className="flex h-full flex-col items-center justify-center bg-[#232323] text-white/30 text-xs select-none p-4 text-center">
@@ -347,18 +362,6 @@ export default function PropertiesPanel({ element, isDark, onVisualEdit, onApply
   }
 
   const cs = element.computedStyle ?? {};
-
-  // Helper: style change → postMessage to iframe or apply via callback
-  const edit = useCallback(
-    (editType: string, property: string, value: string) => {
-      if (onApplyStyle) {
-        onApplyStyle(property, value);
-      } else if (onVisualEdit) {
-        onVisualEdit({ editType, property, value, element });
-      }
-    },
-    [onVisualEdit, onApplyStyle, element],
-  );
 
   // CSS property -> kebab-case
   const kebab = (key: string) =>

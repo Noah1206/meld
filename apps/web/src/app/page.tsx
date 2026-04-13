@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { useLangStore } from "@/lib/store/lang-store";
 import Link from "next/link";
 import { LandingNav } from "@/components/layout/LandingNav";
+import { LoginModal } from "@/components/auth/LoginModal";
 import {
   ArrowRight,
   Blend,
@@ -24,6 +26,7 @@ import {
   RefreshCw,
   Download,
   Copy,
+  FolderOpen,
 } from "lucide-react";
 
 const APP_VERSION = "0.1.1";
@@ -53,7 +56,7 @@ function CopyCommand({ command, copiedLabel }: { command: string; copiedLabel: s
   return (
     <button
       onClick={handleCopy}
-      className="group flex w-full items-center gap-2.5 rounded-lg border border-black/[0.08] px-4 py-2.5 text-left font-mono text-[13px] transition-all hover:border-black/[0.15] active:scale-[0.99]"
+      className="group flex w-full items-center gap-2.5 rounded-lg border border-white/[0.08] px-4 py-2.5 text-left font-mono text-[13px] transition-all hover:border-black/[0.15] active:scale-[0.99]"
     >
       <Terminal className="h-3.5 w-3.5 text-[#CCC] transition-colors group-hover:text-[#999]" />
       <span className="flex-1 text-[#999]">{command}</span>
@@ -66,6 +69,255 @@ function CopyCommand({ command, copiedLabel }: { command: string; copiedLabel: s
         <Copy className="h-3.5 w-3.5 text-[#CCC] transition-colors group-hover:text-[#999]" />
       )}
     </button>
+  );
+}
+
+function AuthModal({ onClose, onSuccess, redirectUrl }: { onClose: () => void; onSuccess: () => void; redirectUrl: string }) {
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={onClose} />
+
+      {/* Modal */}
+      <div
+        className="relative w-full max-w-[440px] rounded-3xl bg-[#0F0F0F] p-10 shadow-[0_32px_64px_rgba(0,0,0,0.2)] ring-1 ring-white/[0.06]"
+        style={{ animation: "scaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1)" }}
+      >
+        {/* Close */}
+        <button
+          onClick={onClose}
+          className="absolute top-6 right-6 rounded-full p-2 text-[#CCC] transition-colors hover:bg-white/[0.06] hover:text-[#E8E8E5]"
+        >
+          <svg className="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4l8 8M12 4L4 12" strokeLinecap="round"/></svg>
+        </button>
+
+        {/* Logo */}
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1A1A1A]">
+          <Blend className="h-6 w-6 text-white" />
+        </div>
+
+        {/* Header */}
+        <div className="mt-7">
+          <p className="text-[24px] font-light text-[#CCC]">Start building.</p>
+          <h2 className="mt-0.5 text-[30px] font-bold tracking-[-0.02em] text-[#E8E8E5]">Create free account</h2>
+        </div>
+
+        {/* OAuth Buttons */}
+        <div className="mt-9 space-y-3">
+          <a
+            href={`/api/auth/github?redirect_to=${encodeURIComponent(redirectUrl)}`}
+            className="flex w-full items-center rounded-2xl border border-[#E0E0DC] px-6 py-4 text-[16px] font-medium text-[#E8E8E5] transition-all hover:bg-[#111111] hover:border-[#CCC] active:scale-[0.99]"
+          >
+            <svg className="mr-5 h-6 w-6" viewBox="0 0 24 24" fill="#1A1A1A"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+            Continue with GitHub
+          </a>
+        </div>
+
+        {/* Divider */}
+        <div className="my-7 flex items-center gap-4">
+          <div className="h-px flex-1 bg-[#E8E8E5]" />
+          <span className="text-[13px] font-medium text-[#CCC]">OR</span>
+          <div className="h-px flex-1 bg-[#E8E8E5]" />
+        </div>
+
+        {/* Email (placeholder — future) */}
+        <button
+          disabled
+          className="w-full rounded-2xl border border-[#E0E0DC] px-6 py-4 text-[16px] font-medium text-[#CCC] cursor-not-allowed"
+        >
+          Continue with email (coming soon)
+        </button>
+
+        {/* Terms */}
+        <p className="mt-8 text-[12px] leading-relaxed text-[#CCC]">
+          By continuing, you agree to the{" "}
+          <span className="underline decoration-[#E0E0DC] hover:decoration-[#999] cursor-pointer">Terms of Service</span> and{" "}
+          <span className="underline decoration-[#E0E0DC] hover:decoration-[#999] cursor-pointer">Privacy Policy</span>.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+const PLACEHOLDER_TEXTS = [
+  "A portfolio website with dark mode and animated sections...",
+  "Build a SaaS dashboard with auth and billing...",
+  "Create a landing page like Stripe...",
+  "An e-commerce store with cart and checkout...",
+  "A blog with MDX support and dark mode...",
+];
+
+function useTypingPlaceholder(texts: string[], typeSpeed = 40, pauseMs = 2000, deleteSpeed = 20) {
+  // Start with first text to match SSR
+  const [display, setDisplay] = useState(texts[0]);
+  const [textIndex, setTextIndex] = useState(0);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    let i = texts[textIndex].length; // Start full (first render shows full text)
+    let deleting = textIndex === 0; // First text: start deleting after pause
+    let timeout: ReturnType<typeof setTimeout>;
+    const text = texts[textIndex];
+
+    if (textIndex === 0 && deleting) {
+      // First text already displayed — pause then start deleting
+      timeout = setTimeout(() => {
+        const deleteTick = () => {
+          i--;
+          setDisplay(text.slice(0, i));
+          if (i <= 0) {
+            setTextIndex(1);
+            return;
+          }
+          timeout = setTimeout(deleteTick, deleteSpeed);
+        };
+        deleteTick();
+      }, pauseMs);
+      return () => clearTimeout(timeout);
+    }
+
+    i = 0;
+    const tick = () => {
+      if (!deleting) {
+        i++;
+        setDisplay(text.slice(0, i));
+        if (i >= text.length) {
+          timeout = setTimeout(() => { deleting = true; tick(); }, pauseMs);
+          return;
+        }
+        timeout = setTimeout(tick, typeSpeed + Math.random() * 30);
+      } else {
+        i--;
+        setDisplay(text.slice(0, i));
+        if (i <= 0) {
+          deleting = false;
+          setTextIndex((prev) => (prev + 1) % texts.length);
+          return;
+        }
+        timeout = setTimeout(tick, deleteSpeed);
+      }
+    };
+
+    timeout = setTimeout(tick, 300);
+    return () => clearTimeout(timeout);
+  }, [textIndex, mounted, texts, typeSpeed, pauseMs, deleteSpeed]);
+
+  return display;
+}
+
+function HeroInput({ onSubmit }: { onSubmit: (prompt: string, category: string) => void }) {
+  const [prompt, setPrompt] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<"website" | "app" | "service" | "tool">("website");
+  const [showDropdown, setShowDropdown] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const animatedPlaceholder = useTypingPlaceholder(PLACEHOLDER_TEXTS);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 200) + "px";
+    }
+  }, [prompt]);
+
+  const categories = [
+    { id: "website" as const, label: "Website", icon: <Globe className="h-4 w-4" /> },
+    { id: "app" as const, label: "App", icon: <Monitor className="h-4 w-4" /> },
+    { id: "service" as const, label: "Server", icon: <Cpu className="h-4 w-4" /> },
+    { id: "tool" as const, label: "Automation", icon: <Zap className="h-4 w-4" /> },
+  ];
+  const current = categories.find(c => c.id === selectedCategory) || categories[0];
+
+  const handleSubmit = () => {
+    if (!prompt.trim()) return;
+    onSubmit(prompt.trim(), selectedCategory);
+  };
+
+  return (
+    <div>
+      <div className="relative rounded-2xl border border-white/[0.1] bg-[#151515]/90 backdrop-blur-sm transition-all focus-within:border-white/[0.2]">
+        <textarea
+          ref={textareaRef}
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSubmit(); }
+          }}
+          placeholder={prompt ? "" : (animatedPlaceholder || PLACEHOLDER_TEXTS[0])}
+          className="w-full resize-none rounded-t-2xl bg-transparent px-6 pt-6 pb-4 text-[16px] leading-relaxed text-white outline-none placeholder:text-[#555]"
+          rows={3}
+          style={{ minHeight: "120px" }}
+        />
+
+        <div className="flex items-center justify-between px-5 py-3.5">
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setShowDropdown(!showDropdown)}
+              className="flex items-center gap-2 rounded-xl bg-transparent px-4 py-2.5 text-[14px] font-medium text-[#ccc] transition-colors hover:bg-white/[0.06]"
+            >
+              {current.icon}
+              <span>{current.label}</span>
+              <svg className={`h-3.5 w-3.5 text-[#666] transition-transform ${showDropdown ? "rotate-180" : ""}`} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 6l4 4 4-4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </button>
+
+            {showDropdown && (
+              <div className="absolute bottom-full left-0 mb-2 w-48 rounded-xl border border-white/[0.1] bg-[#1A1A1A] shadow-2xl z-[100] overflow-hidden">
+                {categories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => { setSelectedCategory(cat.id); setShowDropdown(false); }}
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-white/[0.06] text-[#ccc] ${selectedCategory === cat.id ? "bg-white/[0.06]" : ""}`}
+                  >
+                    <span className="text-[#888]">{cat.icon}</span>
+                    <span className="text-[14px] font-medium">{cat.label}</span>
+                    {selectedCategory === cat.id && <Check className="h-4 w-4 ml-auto text-purple-400" />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {prompt.trim() && (
+            <button
+              onClick={handleSubmit}
+              className="flex items-center justify-center h-9 w-9 rounded-full bg-[#0F0F0F] text-[#0A0A0A] hover:bg-[#E8E8E5] active:scale-[0.95] transition-all"
+            >
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-5 flex items-center justify-center gap-2.5">
+        {[
+          { icon: <FolderOpen className="h-4 w-4" />, label: "Open folder" },
+          { icon: <GitBranch className="h-4 w-4" />, label: "GitHub" },
+          { icon: <Zap className="h-4 w-4" />, label: "Connectors" },
+          { icon: <Eye className="h-4 w-4" />, label: "Web search" },
+        ].map((chip) => (
+          <button
+            key={chip.label}
+            className="no-hover-fill flex items-center gap-2.5 whitespace-nowrap rounded-xl px-4 py-2.5 text-[14px] text-[#777] ring-1 ring-white/[0.06] transition-all duration-200 hover:bg-white/[0.06] hover:text-[#E8E8E5] hover:ring-white/[0.12]"
+          >
+            {chip.icon} {chip.label}
+          </button>
+        ))}
+      </div>
+
+    </div>
   );
 }
 
@@ -246,7 +498,7 @@ const translations = {
 
 type Lang = keyof typeof translations;
 
-function useInView(threshold = 0.15) {
+function useInView(threshold = 0.15): [React.RefObject<HTMLDivElement | null>, boolean] {
   const ref = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState(false);
 
@@ -261,7 +513,7 @@ function useInView(threshold = 0.15) {
     return () => observer.disconnect();
   }, [threshold]);
 
-  return { ref, inView };
+  return [ref, inView];
 }
 
 function useCountUp(end: number, duration = 1500, start = false) {
@@ -306,12 +558,22 @@ function useTypewriter(text: string, speed = 40) {
 }
 
 export default function HomePage() {
+  const router = useRouter();
   const { lang, toggleLang } = useLangStore();
   const t = translations[lang];
-  const [detectedPlatform, setDetectedPlatform] = useState<Platform>("mac");
+  // Lazy init reads platform once on client mount.
+  const [detectedPlatform] = useState<Platform>(() =>
+    typeof window === "undefined" ? "mac" : detectPlatform()
+  );
+  const [authModal, setAuthModal] = useState<{ prompt: string; category: string } | null>(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
 
   useEffect(() => {
-    setDetectedPlatform(detectPlatform());
+    // Check if already logged in
+    fetch("/api/auth/me").then(res => {
+      if (res.ok) setLoggedIn(true);
+    }).catch(() => {});
   }, []);
 
   const platformNames: Record<Platform, string> = { mac: "macOS", windows: "Windows", linux: "Linux" };
@@ -321,14 +583,15 @@ export default function HomePage() {
   const { displayed: title2 } = useTypewriter(title1Done ? t.heroTitle2 : "", 50);
 
   // 스크롤 기반 애니메이션 트리거
-  const logoStrip = useInView();
-  const howSection = useInView();
-  const modesSection = useInView();
-  const diffSection = useInView();
-  const statsSection = useInView(0.3);
-  const bottomCta = useInView();
+  const [logoStripRef, logoStripInView] = useInView();
+  const [howSectionRef, howSectionInView] = useInView();
+  const [modesSectionRef, modesSectionInView] = useInView();
+  const [diffSectionRef, diffSectionInView] = useInView();
+  const [statsSectionRef, statsSectionInView] = useInView(0.3);
+  const [bottomCtaRef, bottomCtaInView] = useInView();
 
-  const featuresSection = statsSection;
+  const featuresSectionRef = statsSectionRef;
+  const featuresSectionInView = statsSectionInView;
 
   // 목업 채팅 메시지 순차 표시
   const [chatStep, setChatStep] = useState(0);
@@ -342,96 +605,55 @@ export default function HomePage() {
   }, [lang]);
 
   return (
-    <div className="min-h-screen bg-white selection:bg-[#1A1A1A] selection:text-white">
-      {/* ===== 그리드 배경 ===== */}
-      <div
-        className="pointer-events-none fixed inset-0 z-0"
-        style={{
-          backgroundImage: `
-            linear-gradient(rgba(0,0,0,0.02) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0,0,0,0.02) 1px, transparent 1px)
-          `,
-          backgroundSize: "80px 80px",
-        }}
-      />
+    <div className="min-h-screen bg-[#0A0A0A] selection:bg-[#0F0F0F] selection:text-black">
+      {/* ===== 블랙홀 배경 ===== */}
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        {/* Star field */}
+        <div className="absolute inset-0" style={{
+          backgroundImage: `radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,0.1) 0%, transparent 100%),
+            radial-gradient(1px 1px at 30% 65%, rgba(255,255,255,0.06) 0%, transparent 100%),
+            radial-gradient(1px 1px at 55% 15%, rgba(255,255,255,0.08) 0%, transparent 100%),
+            radial-gradient(1px 1px at 70% 45%, rgba(255,255,255,0.05) 0%, transparent 100%),
+            radial-gradient(1px 1px at 85% 75%, rgba(255,255,255,0.07) 0%, transparent 100%),
+            radial-gradient(1.5px 1.5px at 15% 45%, rgba(255,255,255,0.09) 0%, transparent 100%),
+            radial-gradient(1px 1px at 90% 10%, rgba(255,255,255,0.06) 0%, transparent 100%)`
+        }} />
+        {/* Blackhole image */}
+        <div className="absolute left-1/2 top-[45%] -translate-x-1/2 -translate-y-1/2 w-[1400px] max-w-[140vw] opacity-50">
+          <img src="/blackhole.png" alt="" className="w-full h-auto select-none" draggable={false} style={{ filter: "blur(2px)" }} />
+        </div>
+        {/* Fade edges */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-transparent to-[#0A0A0A]" style={{ opacity: 0.7 }} />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0A0A0A] via-transparent to-[#0A0A0A]" style={{ opacity: 0.5 }} />
+      </div>
 
       {/* ===== 네비게이션 ===== */}
-      <LandingNav activePath="/" />
+      <LandingNav activePath="/" onLogin={() => setShowLoginModal(true)} />
 
       {/* ===== 히어로 ===== */}
-      <section className="relative z-10 pt-36 pb-6 lg:pt-48 lg:pb-12">
-        <div className="mx-auto max-w-[1440px] px-6 lg:px-16">
-          <h1 className="text-[36px] font-bold leading-[1.05] tracking-[-0.04em] text-[#1A1A1A] sm:text-[48px] lg:text-[60px] xl:text-[68px]">
-            {title1}
-            {!title1Done && <span className="inline-block w-[3px] h-[0.9em] bg-[#1A1A1A] align-middle ml-1 animate-blink" />}
-            {title1Done && (
-              <>
-                <br />
-                <span className="text-[#CCC]">
-                  {title2}
-                  {title2 !== t.heroTitle2 && <span className="inline-block w-[3px] h-[0.9em] bg-[#CCC] align-middle ml-1 animate-blink" />}
-                </span>
-              </>
-            )}
+      <section className="relative z-10 pt-44 pb-6 lg:pt-56 lg:pb-12">
+        <div className="mx-auto max-w-3xl px-6 text-center">
+          <h1 className="animate-fade-in-up text-[36px] font-bold leading-[1.05] tracking-[-0.04em] text-white sm:text-[48px] lg:text-[60px] xl:text-[68px]">
+            {t.heroTitle1}
+            <br />
+            <span className="text-[#999]">{t.heroTitle2}</span>
           </h1>
 
-          <p className="animate-fade-in-up animation-delay-150 mt-6 max-w-lg text-[17px] leading-[1.7] text-[#999]">
-            {t.heroDesc1}
-            <br />
-            {t.heroDesc2}
-            <br />
-            {t.heroDesc3}
+          <p className="animate-fade-in-up animation-delay-150 mx-auto mt-5 text-[17px] text-[#AAA]">
+            {lang === "ko"
+              ? "아이디어를 설명하세요 — Meld AI가 계획, 구현, 검증까지 완료합니다"
+              : "Just describe it — Meld AI plans, builds, and delivers working code"}
           </p>
 
-          {/* OS 탭 + 다운로드 카드 */}
-          <div className="animate-fade-in-up animation-delay-300 mt-10">
-            {/* OS 선택 탭 */}
-            <div className="inline-flex items-center gap-0 rounded-t-2xl bg-[#F5F5F4] p-1.5">
-              {(["mac", "windows"] as Platform[]).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setDetectedPlatform(p)}
-                  className={`rounded-xl px-6 py-2.5 text-[14px] font-medium transition-all ${
-                    p === detectedPlatform
-                      ? "bg-white text-[#1A1A1A] shadow-sm"
-                      : "text-[#999] hover:text-[#666]"
-                  }`}
-                >
-                  {platformNames[p]}
-                </button>
-              ))}
-            </div>
-
-            {/* 다운로드 카드 */}
-            <div className="max-w-2xl rounded-3xl rounded-tl-none border border-black/[0.08] p-8 lg:p-10">
-              <div className="flex flex-wrap items-center gap-5">
-                <a
-                  href={getDownloadUrl(detectedPlatform)}
-                  className="group inline-flex items-center gap-3 rounded-2xl bg-[#1A1A1A] px-10 py-5 text-[17px] font-semibold text-white transition-all hover:bg-[#333] active:scale-[0.98]"
-                >
-                  <Download className="h-5 w-5 transition-transform group-hover:-translate-y-0.5" />
-                  {t.heroDownload}
-                </a>
-                <Link
-                  href="/dashboard"
-                  className="group inline-flex items-center gap-2 rounded-2xl border border-black/[0.08] px-10 py-5 text-[17px] font-semibold text-[#1A1A1A] transition-all hover:border-black/[0.15] hover:bg-[#FAFAFA] active:scale-[0.98]"
-                >
-                  {t.heroCta}
-                  <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
-                </Link>
-              </div>
-              <span className="mt-4 inline-block font-mono text-[13px] text-[#CCC]">v{APP_VERSION} · {PLATFORMS[detectedPlatform].ext} · {PLATFORMS[detectedPlatform].size}</span>
-
-              {/* macOS: 필수 설치 단계 */}
-              {detectedPlatform === "mac" && (
-                <div className="mt-6">
-                  <p className="mb-3 text-[15px] font-medium text-[#999]">
-                    {lang === "ko" ? "설치 후 터미널에서 실행하세요" : "After installing, run in Terminal"}
-                  </p>
-                  <CopyCommand command="xattr -cr /Applications/Meld.app" copiedLabel={t.copied} />
-                </div>
-              )}
-            </div>
+          {/* 인풋란 — workspace 스타일 */}
+          <div className="animate-fade-in-up animation-delay-300 mx-auto mt-10 max-w-3xl" style={{ animationDelay: "0.3s" }}>
+            <HeroInput onSubmit={(prompt, category) => {
+              if (loggedIn) {
+                router.push(`/projects?prompt=${encodeURIComponent(prompt)}&category=${encodeURIComponent(category)}`);
+              } else {
+                setAuthModal({ prompt, category });
+              }
+            }} />
           </div>
 
           <div className="mt-6" />
@@ -440,53 +662,53 @@ export default function HomePage() {
 
       {/* ===== 프로덕트 목업 ===== */}
       <section className="animate-fade-in-up animation-delay-600 relative z-10 mx-auto max-w-[1440px] px-6 lg:px-16 pt-10 pb-24 lg:pb-32">
-        <div className="overflow-hidden rounded-xl ring-1 ring-black/[0.08]">
+        <div className="overflow-hidden rounded-xl ring-1 ring-white/[0.08]">
           {/* 브라우저 바 */}
-          <div className="flex items-center bg-[#FAFAFA] px-4 py-2.5">
+          <div className="flex items-center bg-[#111111] px-4 py-2.5">
             <div className="flex gap-1.5">
-              <div className="h-2.5 w-2.5 rounded-full bg-[#E0E0E0]" />
-              <div className="h-2.5 w-2.5 rounded-full bg-[#E0E0E0]" />
-              <div className="h-2.5 w-2.5 rounded-full bg-[#E0E0E0]" />
+              <div className="h-2.5 w-2.5 rounded-full bg-white/[0.1]" />
+              <div className="h-2.5 w-2.5 rounded-full bg-white/[0.1]" />
+              <div className="h-2.5 w-2.5 rounded-full bg-white/[0.1]" />
             </div>
             <div className="mx-auto text-[11px] text-[#CCC]">meld.dev</div>
           </div>
 
           {/* 3-패널 앱 목업 */}
-          <div className="flex h-[400px] bg-white sm:h-[460px] lg:h-[540px]">
+          <div className="flex h-[400px] bg-[#0F0F0F] sm:h-[460px] lg:h-[540px]">
             {/* 좌: Figma 뷰어 */}
             <div className="flex flex-1 flex-col">
-              <div className="flex items-center gap-2 bg-[#FAFAFA] px-4 py-2">
+              <div className="flex items-center gap-2 bg-[#111111] px-4 py-2">
                 <Figma className="h-3.5 w-3.5 text-[#999]" />
                 <span className="text-[11px] font-medium text-[#999]">Figma Viewer</span>
               </div>
-              <div className="relative flex-1 bg-[#FAFAFA] p-4">
-                <div className="h-full rounded-lg bg-white p-4 ring-1 ring-black/[0.04]">
+              <div className="relative flex-1 bg-[#111111] p-4">
+                <div className="h-full rounded-lg bg-white/[0.08] p-4 ring-1 ring-white/[0.06]">
                   <div className="space-y-2.5">
                     {/* 네비게이션 바 목업 */}
-                    <div className="flex items-center justify-between rounded-md bg-[#FAFAFA] p-2.5">
-                      <div className="h-2.5 w-14 rounded-full bg-[#E0E0E0]" />
+                    <div className="flex items-center justify-between rounded-md bg-[#111111] p-2.5">
+                      <div className="h-2.5 w-14 rounded-full bg-white/[0.1]" />
                       <div className="flex gap-2">
-                        <div className="h-2.5 w-10 rounded-full bg-[#E8E8E8]" />
-                        <div className="h-2.5 w-10 rounded-full bg-[#E8E8E8]" />
+                        <div className="h-2.5 w-10 rounded-full bg-white/[0.08]" />
+                        <div className="h-2.5 w-10 rounded-full bg-white/[0.08]" />
                         <div className="h-6 w-16 rounded-full bg-[#1A1A1A]" />
                       </div>
                     </div>
                     {/* 히어로 목업 */}
-                    <div className="space-y-2 rounded-md bg-[#FAFAFA] p-4">
-                      <div className="h-4 w-56 rounded bg-[#D4D4D4]" />
-                      <div className="h-3 w-72 rounded bg-[#E8E8E8]" />
-                      <div className="h-3 w-48 rounded bg-[#E8E8E8]" />
+                    <div className="space-y-2 rounded-md bg-[#111111] p-4">
+                      <div className="h-4 w-56 rounded bg-white/[0.12]" />
+                      <div className="h-3 w-72 rounded bg-white/[0.08]" />
+                      <div className="h-3 w-48 rounded bg-white/[0.08]" />
                       <div className="mt-3 flex gap-2">
                         <div className="h-7 w-24 rounded-full bg-[#1A1A1A]" />
-                        <div className="h-7 w-20 rounded-full bg-[#F0F0F0] ring-1 ring-black/[0.06]" />
+                        <div className="h-7 w-20 rounded-full bg-[#F0F0F0] ring-1 ring-white/[0.06]" />
                       </div>
                     </div>
                     {/* 카드 그리드 목업 */}
                     <div className="grid grid-cols-3 gap-2">
                       {[1, 2, 3].map((n) => (
-                        <div key={n} className="space-y-1.5 rounded-md bg-[#FAFAFA] p-2.5">
+                        <div key={n} className="space-y-1.5 rounded-md bg-[#111111] p-2.5">
                           <div className="h-12 rounded bg-[#F0F0F0]" />
-                          <div className="h-2 w-full rounded-full bg-[#E8E8E8]" />
+                          <div className="h-2 w-full rounded-full bg-white/[0.08]" />
                           <div className="h-2 w-2/3 rounded-full bg-[#F0F0F0]" />
                         </div>
                       ))}
@@ -513,7 +735,7 @@ export default function HomePage() {
 
             {/* 우: AI 채팅 */}
             <div className="hidden w-[300px] flex-col sm:flex lg:w-[360px]">
-              <div className="flex items-center gap-2 bg-[#FAFAFA] px-4 py-2">
+              <div className="flex items-center gap-2 bg-[#111111] px-4 py-2">
                 <MessageSquare className="h-3.5 w-3.5 text-[#999]" />
                 <span className="text-[11px] font-medium text-[#999]">AI Chat</span>
               </div>
@@ -527,7 +749,7 @@ export default function HomePage() {
                   </div>
                   {/* AI */}
                   <div className={`flex justify-start transition-all duration-500 ${chatStep >= 2 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}>
-                    <div className="max-w-[220px] space-y-2 rounded-2xl rounded-bl-sm bg-[#FAFAFA] px-3 py-2.5 text-[11px] leading-relaxed text-[#666] ring-1 ring-black/[0.04]">
+                    <div className="max-w-[220px] space-y-2 rounded-2xl rounded-bl-sm bg-[#111111] px-3 py-2.5 text-[11px] leading-relaxed text-[#666] ring-1 ring-white/[0.06]">
                       <p>{t.mockupChat2}</p>
                       {/* 코드 diff */}
                       <div className="overflow-hidden rounded-md bg-[#1A1A1A] font-mono text-[10px]">
@@ -549,7 +771,7 @@ export default function HomePage() {
                   </div>
                 </div>
                 {/* 인풋 */}
-                <div className="mt-2 flex items-center gap-2 rounded-xl bg-[#FAFAFA] px-3 py-2 ring-1 ring-black/[0.04]">
+                <div className="mt-2 flex items-center gap-2 rounded-xl bg-[#111111] px-3 py-2 ring-1 ring-white/[0.06]">
                   <span className="flex-1 text-[11px] text-[#CCC]">{t.mockupInput}</span>
                   <div className="flex h-5 w-5 items-center justify-center rounded-md bg-[#1A1A1A]">
                     <ArrowRight className="h-2.5 w-2.5 text-white" />
@@ -562,14 +784,14 @@ export default function HomePage() {
       </section>
 
       {/* ===== 호환성 로고 스트립 ===== */}
-      <section ref={logoStrip.ref} className="relative z-10 border-y border-black/[0.04] bg-[#FAFAFA] overflow-hidden">
+      <section ref={logoStripRef} className="relative z-10 border-y border-white/[0.06] bg-[#111111] overflow-hidden">
         <div className="mx-auto max-w-[1440px] px-6 lg:px-16 py-14 lg:py-20">
-          <p className={`mb-10 text-center text-[13px] text-[#B4B4B0] transition-all duration-700 ${logoStrip.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
+          <p className={`mb-10 text-center text-[13px] text-[#B4B4B0] transition-all duration-700 ${logoStripInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
             {t.logoSubtitle}
           </p>
 
           {/* 로고 마키 */}
-          <div className={`transition-all duration-700 delay-300 ${logoStrip.inView ? "opacity-100" : "opacity-0"}`}>
+          <div className={`transition-all duration-700 delay-300 ${logoStripInView ? "opacity-100" : "opacity-0"}`}>
             <div className="flex animate-marquee items-center gap-x-10 sm:gap-x-14 lg:gap-x-20 whitespace-nowrap">
               {[...Array(2)].flatMap((_, setIdx) =>
                 [
@@ -583,7 +805,7 @@ export default function HomePage() {
                 ].map((item) => (
                   <span
                     key={`${setIdx}-${item.name}`}
-                    className={`text-[18px] text-[#C0C0C0] transition-colors hover:text-[#1A1A1A] sm:text-[20px] px-5 ${item.style}`}
+                    className={`text-[18px] text-[#C0C0C0] transition-colors hover:text-[#E8E8E5] sm:text-[20px] px-5 ${item.style}`}
                   >
                     {item.name}
                   </span>
@@ -595,10 +817,10 @@ export default function HomePage() {
       </section>
 
       {/* ===== "이렇게 동작합니다" ===== */}
-      <section ref={howSection.ref} className="relative z-10 bg-[#FAFAFA]">
+      <section ref={howSectionRef} className="relative z-10 bg-[#111111]">
         <div className="mx-auto max-w-[1440px] px-6 lg:px-16 py-24 lg:py-32">
-          <p className={`mb-2 font-mono text-[12px] tracking-wider text-[#CCC] transition-all duration-500 ${howSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>{t.howLabel}</p>
-          <h2 className={`text-[32px] font-bold tracking-[-0.03em] text-[#1A1A1A] sm:text-[40px] lg:text-[48px] transition-all duration-700 delay-100 ${howSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
+          <p className={`mb-2 font-mono text-[12px] tracking-wider text-[#CCC] transition-all duration-500 ${howSectionInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>{t.howLabel}</p>
+          <h2 className={`text-[32px] font-bold tracking-[-0.03em] text-[#E8E8E5] sm:text-[40px] lg:text-[48px] transition-all duration-700 delay-100 ${howSectionInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
             {t.howTitle}
           </h2>
 
@@ -629,16 +851,16 @@ export default function HomePage() {
                 delay: "delay-[600ms]",
               },
             ].map((item) => (
-              <div key={item.step} className={`group transition-all duration-700 ${item.delay} ${howSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
+              <div key={item.step} className={`group transition-all duration-700 ${item.delay} ${howSectionInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
                 <div className="mb-4 flex items-center gap-3">
-                  <span className="font-mono text-[32px] font-bold text-[#E8E8E8] transition-colors group-hover:text-[#1A1A1A]">
+                  <span className="font-mono text-[32px] font-bold text-[#E8E8E8] transition-colors group-hover:text-[#E8E8E5]">
                     {item.step}
                   </span>
-                  <div className={`flex h-8 w-8 items-center justify-center rounded-lg bg-white ring-1 ring-black/[0.06] transition-transform duration-500 ${howSection.inView ? "rotate-0 scale-100" : "rotate-12 scale-75"}`}>
+                  <div className={`flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.08] ring-1 ring-white/[0.06] transition-transform duration-500 ${howSectionInView ? "rotate-0 scale-100" : "rotate-12 scale-75"}`}>
                     <item.icon className="h-4 w-4 text-[#999]" />
                   </div>
                 </div>
-                <h3 className="text-[16px] font-semibold text-[#1A1A1A]">{item.title}</h3>
+                <h3 className="text-[16px] font-semibold text-[#E8E8E5]">{item.title}</h3>
                 <p className="mt-2 text-[13px] leading-relaxed text-[#999]">{item.desc}</p>
                 <p className="mt-3 font-mono text-[11px] text-[#CCC]">{item.detail}</p>
               </div>
@@ -648,29 +870,29 @@ export default function HomePage() {
       </section>
 
       {/* ===== 3가지 모드 ===== */}
-      <section ref={modesSection.ref} className="relative z-10">
+      <section ref={modesSectionRef} className="relative z-10">
         <div className="mx-auto max-w-[1440px] px-6 lg:px-16 py-24 lg:py-32">
-          <p className={`mb-2 font-mono text-[12px] tracking-wider text-[#CCC] transition-all duration-500 ${modesSection.inView ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-6"}`}>{t.modesLabel}</p>
-          <h2 className={`text-[32px] font-bold tracking-[-0.03em] text-[#1A1A1A] sm:text-[40px] lg:text-[48px] transition-all duration-700 delay-100 ${modesSection.inView ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-8"}`}>
+          <p className={`mb-2 font-mono text-[12px] tracking-wider text-[#CCC] transition-all duration-500 ${modesSectionInView ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-6"}`}>{t.modesLabel}</p>
+          <h2 className={`text-[32px] font-bold tracking-[-0.03em] text-[#E8E8E5] sm:text-[40px] lg:text-[48px] transition-all duration-700 delay-100 ${modesSectionInView ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-8"}`}>
             {t.modesTitle}
           </h2>
-          <p className={`mt-3 max-w-md text-[15px] text-[#999] transition-all duration-700 delay-200 ${modesSection.inView ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-6"}`}>
+          <p className={`mt-3 max-w-md text-[15px] text-[#999] transition-all duration-700 delay-200 ${modesSectionInView ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-6"}`}>
             {t.modesSubtitle}
           </p>
 
           <div className="mt-14 grid gap-4 sm:grid-cols-3">
             {/* Cloud */}
-            <div className={`flex flex-col rounded-xl bg-[#FAFAFA] p-6 ring-1 ring-black/[0.04] transition-all duration-700 delay-300 hover:ring-black/[0.08] hover:shadow-lg hover:-translate-y-1 ${modesSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}>
-              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-white ring-1 ring-black/[0.06]">
-                <Globe className="h-5 w-5 text-[#1A1A1A]" />
+            <div className={`flex flex-col rounded-xl bg-[#111111] p-6 ring-1 ring-white/[0.06] transition-all duration-700 delay-300 hover:ring-white/[0.08] hover:shadow-lg hover:-translate-y-1 ${modesSectionInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}>
+              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-white/[0.08] ring-1 ring-white/[0.06]">
+                <Globe className="h-5 w-5 text-[#E8E8E5]" />
               </div>
-              <h3 className="text-[15px] font-semibold text-[#1A1A1A]">{t.cloudTitle}</h3>
+              <h3 className="text-[15px] font-semibold text-[#E8E8E5]">{t.cloudTitle}</h3>
               <p className="mt-1.5 flex-1 text-[13px] leading-relaxed text-[#999]">
                 {t.cloudDesc}
               </p>
               <div className="mt-4 flex flex-wrap gap-1.5">
                 {t.cloudTags.map((tag) => (
-                  <span key={tag} className="rounded-full bg-white px-2 py-0.5 text-[10px] text-[#999] ring-1 ring-black/[0.04]">
+                  <span key={tag} className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] text-[#999] ring-1 ring-white/[0.06]">
                     {tag}
                   </span>
                 ))}
@@ -678,11 +900,11 @@ export default function HomePage() {
             </div>
 
             {/* Local */}
-            <div className={`flex flex-col rounded-xl bg-[#FAFAFA] p-6 ring-1 ring-black/[0.04] transition-all duration-700 delay-[450ms] hover:ring-black/[0.08] hover:shadow-lg hover:-translate-y-1 ${modesSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}>
-              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-white ring-1 ring-black/[0.06]">
-                <Terminal className="h-5 w-5 text-[#1A1A1A]" />
+            <div className={`flex flex-col rounded-xl bg-[#111111] p-6 ring-1 ring-white/[0.06] transition-all duration-700 delay-[450ms] hover:ring-white/[0.08] hover:shadow-lg hover:-translate-y-1 ${modesSectionInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}>
+              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-white/[0.08] ring-1 ring-white/[0.06]">
+                <Terminal className="h-5 w-5 text-[#E8E8E5]" />
               </div>
-              <h3 className="text-[15px] font-semibold text-[#1A1A1A]">{t.localTitle}</h3>
+              <h3 className="text-[15px] font-semibold text-[#E8E8E5]">{t.localTitle}</h3>
               <p className="mt-1.5 flex-1 text-[13px] leading-relaxed text-[#999]">
                 {t.localDesc}
               </p>
@@ -693,17 +915,17 @@ export default function HomePage() {
             </div>
 
             {/* Sandbox */}
-            <div className={`flex flex-col rounded-xl bg-[#FAFAFA] p-6 ring-1 ring-black/[0.04] transition-all duration-700 delay-[600ms] hover:ring-black/[0.08] hover:shadow-lg hover:-translate-y-1 ${modesSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}>
-              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-white ring-1 ring-black/[0.06]">
-                <Monitor className="h-5 w-5 text-[#1A1A1A]" />
+            <div className={`flex flex-col rounded-xl bg-[#111111] p-6 ring-1 ring-white/[0.06] transition-all duration-700 delay-[600ms] hover:ring-white/[0.08] hover:shadow-lg hover:-translate-y-1 ${modesSectionInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}>
+              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-white/[0.08] ring-1 ring-white/[0.06]">
+                <Monitor className="h-5 w-5 text-[#E8E8E5]" />
               </div>
-              <h3 className="text-[15px] font-semibold text-[#1A1A1A]">{t.sandboxTitle}</h3>
+              <h3 className="text-[15px] font-semibold text-[#E8E8E5]">{t.sandboxTitle}</h3>
               <p className="mt-1.5 flex-1 text-[13px] leading-relaxed text-[#999]">
                 {t.sandboxDesc}
               </p>
               <div className="mt-4 flex flex-wrap gap-1.5">
                 {t.sandboxTags.map((tag) => (
-                  <span key={tag} className="rounded-full bg-white px-2 py-0.5 text-[10px] text-[#999] ring-1 ring-black/[0.04]">
+                  <span key={tag} className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] text-[#999] ring-1 ring-white/[0.06]">
                     {tag}
                   </span>
                 ))}
@@ -714,12 +936,12 @@ export default function HomePage() {
       </section>
 
       {/* ===== 코드 디프 예시 ===== */}
-      <section ref={diffSection.ref} className="relative z-10 bg-[#FAFAFA]">
+      <section ref={diffSectionRef} className="relative z-10 bg-[#111111]">
         <div className="mx-auto max-w-[1440px] px-6 lg:px-16 py-24 lg:py-32">
           <div className="grid items-center gap-12 sm:grid-cols-2 lg:gap-20">
-            <div className={`transition-all duration-700 ${diffSection.inView ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-12"}`}>
+            <div className={`transition-all duration-700 ${diffSectionInView ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-12"}`}>
               <p className="mb-2 font-mono text-[12px] tracking-wider text-[#CCC]">{t.diffLabel}</p>
-              <h2 className="text-[32px] font-bold tracking-[-0.03em] text-[#1A1A1A] sm:text-[36px] lg:text-[44px]">
+              <h2 className="text-[32px] font-bold tracking-[-0.03em] text-[#E8E8E5] sm:text-[36px] lg:text-[44px]">
                 {t.diffTitle}
               </h2>
               <p className="mt-3 text-[15px] leading-relaxed text-[#999]">
@@ -727,8 +949,8 @@ export default function HomePage() {
               </p>
               <div className="mt-6 space-y-3 text-[13px] text-[#999]">
                 {[t.diffCheck1, t.diffCheck2, t.diffCheck3].map((item, i) => (
-                  <div key={item} className={`flex items-center gap-2 transition-all duration-500 ${diffSection.inView ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"}`} style={{ transitionDelay: `${400 + i * 150}ms` }}>
-                    <Check className="h-3.5 w-3.5 text-[#1A1A1A]" />
+                  <div key={item} className={`flex items-center gap-2 transition-all duration-500 ${diffSectionInView ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"}`} style={{ transitionDelay: `${400 + i * 150}ms` }}>
+                    <Check className="h-3.5 w-3.5 text-[#E8E8E5]" />
                     {item}
                   </div>
                 ))}
@@ -736,7 +958,7 @@ export default function HomePage() {
             </div>
 
             {/* 코드 블록 */}
-            <div className={`overflow-hidden rounded-xl bg-[#1A1A1A] ring-1 ring-black/[0.1] transition-all duration-700 delay-200 ${diffSection.inView ? "opacity-100 translate-x-0" : "opacity-0 translate-x-12"}`}>
+            <div className={`overflow-hidden rounded-xl bg-[#1A1A1A] ring-1 ring-black/[0.1] transition-all duration-700 delay-200 ${diffSectionInView ? "opacity-100 translate-x-0" : "opacity-0 translate-x-12"}`}>
               <div className="flex items-center justify-between px-4 py-2.5">
                 <span className="font-mono text-[11px] text-[#555]">HeroSection.tsx</span>
                 <span className="rounded bg-[#333] px-2 py-0.5 text-[10px] text-[#888]">modified</span>
@@ -777,10 +999,10 @@ export default function HomePage() {
       </section>
 
       {/* ===== 4대 핵심 기능 ===== */}
-      <section ref={featuresSection.ref} className="relative z-10 bg-[#0B0E11] overflow-hidden">
+      <section ref={featuresSectionRef} className="relative z-10 bg-[#0B0E11] overflow-hidden">
         <div className="mx-auto max-w-[1440px] px-6 lg:px-16 py-24 lg:py-32">
           {/* 섹션 헤더 */}
-          <div className={`mb-20 transition-all duration-700 ease-out ${featuresSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
+          <div className={`mb-20 transition-all duration-700 ease-out ${featuresSectionInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
             <span className="text-[12px] font-semibold tracking-[0.15em] text-[#555]">{t.featuresLabel}</span>
             <h2 className="mt-2 text-[32px] font-bold leading-[1.15] tracking-[-0.03em] text-white sm:text-[40px]">
               {t.featuresTitle}
@@ -788,7 +1010,7 @@ export default function HomePage() {
           </div>
 
           {/* ── 기능 1: 디자인-코드 매핑 ── */}
-          <div className={`mb-24 grid items-center gap-12 lg:grid-cols-2 transition-all duration-700 ease-out ${featuresSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`} style={{ transitionDelay: "200ms" }}>
+          <div className={`mb-24 grid items-center gap-12 lg:grid-cols-2 transition-all duration-700 ease-out ${featuresSectionInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`} style={{ transitionDelay: "200ms" }}>
             <div>
               <span className="text-[11px] font-semibold tracking-[0.12em] text-[#10B981]">{t.feat1Label}</span>
               <h3 className="mt-2 text-[24px] font-bold leading-tight tracking-[-0.02em] text-white sm:text-[28px]">{t.feat1Title}</h3>
@@ -798,7 +1020,7 @@ export default function HomePage() {
             <div className="rounded-2xl border border-[#1E2228] bg-[#131619] p-6">
               <div className="flex items-center justify-between gap-4">
                 {/* Figma 요소 */}
-                <div className={`flex-1 rounded-xl border border-[#1E2228] bg-[#0B0E11] p-4 transition-all duration-500 ${featuresSection.inView ? "opacity-100 scale-100" : "opacity-0 scale-95"}`} style={{ transitionDelay: "500ms" }}>
+                <div className={`flex-1 rounded-xl border border-[#1E2228] bg-[#0B0E11] p-4 transition-all duration-500 ${featuresSectionInView ? "opacity-100 scale-100" : "opacity-0 scale-95"}`} style={{ transitionDelay: "500ms" }}>
                   <div className="mb-3 flex items-center gap-2">
                     <Figma className="h-3.5 w-3.5 text-[#A78BFA]" />
                     <span className="text-[11px] font-semibold text-[#888]">Figma</span>
@@ -811,12 +1033,12 @@ export default function HomePage() {
                   </div>
                 </div>
                 {/* 화살표 */}
-                <div className={`flex flex-col items-center gap-1 transition-all duration-500 ${featuresSection.inView ? "opacity-100" : "opacity-0"}`} style={{ transitionDelay: "800ms" }}>
+                <div className={`flex flex-col items-center gap-1 transition-all duration-500 ${featuresSectionInView ? "opacity-100" : "opacity-0"}`} style={{ transitionDelay: "800ms" }}>
                   <ArrowRight className="h-4 w-4 text-[#10B981]" />
                   <span className="text-[9px] text-[#555]">AI</span>
                 </div>
                 {/* 코드 파일 */}
-                <div className={`flex-1 rounded-xl border border-[#1E2228] bg-[#0B0E11] p-4 transition-all duration-500 ${featuresSection.inView ? "opacity-100 scale-100" : "opacity-0 scale-95"}`} style={{ transitionDelay: "1100ms" }}>
+                <div className={`flex-1 rounded-xl border border-[#1E2228] bg-[#0B0E11] p-4 transition-all duration-500 ${featuresSectionInView ? "opacity-100 scale-100" : "opacity-0 scale-95"}`} style={{ transitionDelay: "1100ms" }}>
                   <div className="mb-3 flex items-center gap-2">
                     <Eye className="h-3.5 w-3.5 text-[#10B981]" />
                     <span className="text-[11px] font-semibold text-[#888]">Code</span>
@@ -826,7 +1048,7 @@ export default function HomePage() {
                   </div>
                 </div>
               </div>
-              <div className={`mt-4 flex items-center justify-center gap-1.5 transition-all duration-500 ${featuresSection.inView ? "opacity-100" : "opacity-0"}`} style={{ transitionDelay: "1400ms" }}>
+              <div className={`mt-4 flex items-center justify-center gap-1.5 transition-all duration-500 ${featuresSectionInView ? "opacity-100" : "opacity-0"}`} style={{ transitionDelay: "1400ms" }}>
                 <Check className="h-3 w-3 text-[#10B981]" />
                 <span className="text-[11px] font-medium text-[#10B981]">{t.feat1Visual3}</span>
               </div>
@@ -834,7 +1056,7 @@ export default function HomePage() {
           </div>
 
           {/* ── 기능 2: 실시간 프리뷰 루프 ── */}
-          <div className={`mb-24 grid items-center gap-12 lg:grid-cols-2 transition-all duration-700 ease-out ${featuresSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`} style={{ transitionDelay: "400ms" }}>
+          <div className={`mb-24 grid items-center gap-12 lg:grid-cols-2 transition-all duration-700 ease-out ${featuresSectionInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`} style={{ transitionDelay: "400ms" }}>
             {/* 비주얼: 3-step 루프 */}
             <div className="order-2 lg:order-1 rounded-2xl border border-[#1E2228] bg-[#131619] p-6">
               <div className="space-y-3">
@@ -845,7 +1067,7 @@ export default function HomePage() {
                 ].map((step, i) => (
                   <div
                     key={i}
-                    className={`flex items-center gap-3 rounded-xl ${step.bg} ring-1 ${step.ring} px-4 py-3 transition-all duration-500 ${featuresSection.inView ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-6"}`}
+                    className={`flex items-center gap-3 rounded-xl ${step.bg} ring-1 ${step.ring} px-4 py-3 transition-all duration-500 ${featuresSectionInView ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-6"}`}
                     style={{ transitionDelay: `${600 + i * 200}ms` }}
                   >
                     <step.icon className={`h-4 w-4 flex-shrink-0 ${step.color}`} />
@@ -855,7 +1077,7 @@ export default function HomePage() {
                   </div>
                 ))}
               </div>
-              <div className={`mt-4 flex items-center justify-center gap-4 text-[10px] text-[#555] transition-all duration-500 ${featuresSection.inView ? "opacity-100" : "opacity-0"}`} style={{ transitionDelay: "1300ms" }}>
+              <div className={`mt-4 flex items-center justify-center gap-4 text-[10px] text-[#555] transition-all duration-500 ${featuresSectionInView ? "opacity-100" : "opacity-0"}`} style={{ transitionDelay: "1300ms" }}>
                 <span>{"< 2s"}</span>
                 <div className="h-px flex-1 bg-[#1E2228]" />
                 <span>loop</span>
@@ -869,7 +1091,7 @@ export default function HomePage() {
           </div>
 
           {/* ── 기능 3: 프레임워크 인식 코드 생성 ── */}
-          <div className={`mb-24 grid items-center gap-12 lg:grid-cols-2 transition-all duration-700 ease-out ${featuresSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`} style={{ transitionDelay: "600ms" }}>
+          <div className={`mb-24 grid items-center gap-12 lg:grid-cols-2 transition-all duration-700 ease-out ${featuresSectionInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`} style={{ transitionDelay: "600ms" }}>
             <div>
               <span className="text-[11px] font-semibold tracking-[0.12em] text-[#A78BFA]">{t.feat3Label}</span>
               <h3 className="mt-2 text-[24px] font-bold leading-tight tracking-[-0.02em] text-white sm:text-[28px]">{t.feat3Title}</h3>
@@ -877,12 +1099,12 @@ export default function HomePage() {
             </div>
             {/* 비주얼: 프레임워크 감지 + 코드 스타일 */}
             <div className="rounded-2xl border border-[#1E2228] bg-[#131619] p-6">
-              <div className={`mb-4 flex flex-wrap gap-2 transition-all duration-500 ${featuresSection.inView ? "opacity-100" : "opacity-0"}`} style={{ transitionDelay: "800ms" }}>
+              <div className={`mb-4 flex flex-wrap gap-2 transition-all duration-500 ${featuresSectionInView ? "opacity-100" : "opacity-0"}`} style={{ transitionDelay: "800ms" }}>
                 {["Next.js", "React", "Vue", "Angular", "Svelte"].map((fw, i) => (
                   <span key={fw} className={`rounded-lg px-3 py-1.5 text-[11px] font-medium ${i === 0 ? "bg-[#1A2A4A] text-[#93C5FD] ring-1 ring-[#3B82F6]/30" : "bg-[#1A1F25] text-[#666]"}`}>{fw}</span>
                 ))}
               </div>
-              <div className={`rounded-xl border border-[#1E2228] bg-[#0B0E11] font-mono text-[11px] overflow-hidden transition-all duration-500 ${featuresSection.inView ? "opacity-100" : "opacity-0"}`} style={{ transitionDelay: "1000ms" }}>
+              <div className={`rounded-xl border border-[#1E2228] bg-[#0B0E11] font-mono text-[11px] overflow-hidden transition-all duration-500 ${featuresSectionInView ? "opacity-100" : "opacity-0"}`} style={{ transitionDelay: "1000ms" }}>
                 <div className="border-b border-[#1E2228] px-3 py-1.5 text-[10px] text-[#555]">
                   your-project/src/components/Hero.tsx
                 </div>
@@ -899,17 +1121,17 @@ export default function HomePage() {
                   </div>
                 ))}
               </div>
-              <p className={`mt-3 text-center text-[10px] text-[#555] transition-all duration-500 ${featuresSection.inView ? "opacity-100" : "opacity-0"}`} style={{ transitionDelay: "1200ms" }}>
+              <p className={`mt-3 text-center text-[10px] text-[#555] transition-all duration-500 ${featuresSectionInView ? "opacity-100" : "opacity-0"}`} style={{ transitionDelay: "1200ms" }}>
                 AI follows your existing patterns
               </p>
             </div>
           </div>
 
           {/* ── 기능 4: 디자인 변경 추적 ── */}
-          <div className={`grid items-center gap-12 lg:grid-cols-2 transition-all duration-700 ease-out ${featuresSection.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`} style={{ transitionDelay: "800ms" }}>
+          <div className={`grid items-center gap-12 lg:grid-cols-2 transition-all duration-700 ease-out ${featuresSectionInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`} style={{ transitionDelay: "800ms" }}>
             {/* 비주얼: 알림 카드 */}
             <div className="order-2 lg:order-1 rounded-2xl border border-[#1E2228] bg-[#131619] p-6">
-              <div className={`rounded-xl border border-[#1E2228] bg-[#0B0E11] p-5 transition-all duration-700 ${featuresSection.inView ? "opacity-100 scale-100" : "opacity-0 scale-95"}`} style={{ transitionDelay: "1000ms" }}>
+              <div className={`rounded-xl border border-[#1E2228] bg-[#0B0E11] p-5 transition-all duration-700 ${featuresSectionInView ? "opacity-100 scale-100" : "opacity-0 scale-95"}`} style={{ transitionDelay: "1000ms" }}>
                 {/* 알림 헤더 */}
                 <div className="flex items-start gap-3">
                   <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-[#2A2410]">
@@ -924,14 +1146,14 @@ export default function HomePage() {
                 {/* 변경된 요소 리스트 */}
                 <div className="mt-4 space-y-2">
                   {["CTAButton — color changed", "Heading — font-size 36→40px"].map((item, i) => (
-                    <div key={i} className={`flex items-center gap-2 rounded-lg bg-[#131619] px-3 py-2 text-[11px] text-[#888] transition-all duration-500 ${featuresSection.inView ? "opacity-100" : "opacity-0"}`} style={{ transitionDelay: `${1200 + i * 150}ms` }}>
+                    <div key={i} className={`flex items-center gap-2 rounded-lg bg-[#131619] px-3 py-2 text-[11px] text-[#888] transition-all duration-500 ${featuresSectionInView ? "opacity-100" : "opacity-0"}`} style={{ transitionDelay: `${1200 + i * 150}ms` }}>
                       <span className="h-1.5 w-1.5 rounded-full bg-[#FBBF24]" />
                       {item}
                     </div>
                   ))}
                 </div>
                 {/* CTA 버튼 */}
-                <button className={`mt-4 w-full rounded-lg bg-[#10B981] py-2.5 text-[12px] font-semibold text-white transition-all duration-500 hover:bg-[#059669] ${featuresSection.inView ? "opacity-100" : "opacity-0"}`} style={{ transitionDelay: "1500ms" }}>
+                <button className={`mt-4 w-full rounded-lg bg-[#10B981] py-2.5 text-[12px] font-semibold text-white transition-all duration-500 hover:bg-[#059669] ${featuresSectionInView ? "opacity-100" : "opacity-0"}`} style={{ transitionDelay: "1500ms" }}>
                   {t.feat4Visual3}
                 </button>
               </div>
@@ -946,30 +1168,30 @@ export default function HomePage() {
       </section>
 
       {/* ===== 하단 CTA ===== */}
-      <section ref={bottomCta.ref} className="relative z-10 bg-[#1A1A1A] overflow-hidden">
+      <section ref={bottomCtaRef} className="relative z-10 bg-[#1A1A1A] overflow-hidden">
         <div className="mx-auto max-w-[1440px] px-6 lg:px-16 py-24 lg:py-32">
           <h2
-            className={`text-[36px] font-bold leading-[1.1] tracking-[-0.03em] text-white sm:text-[48px] lg:text-[56px] transition-all duration-700 ease-out ${bottomCta.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
+            className={`text-[36px] font-bold leading-[1.1] tracking-[-0.03em] text-white sm:text-[48px] lg:text-[56px] transition-all duration-700 ease-out ${bottomCtaInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
           >
             {t.bottomTitle}
           </h2>
           <p
-            className={`mt-3 text-[16px] text-[#666] transition-all duration-700 delay-200 ease-out ${bottomCta.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
+            className={`mt-3 text-[16px] text-[#666] transition-all duration-700 delay-200 ease-out ${bottomCtaInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
           >
             {t.bottomDesc}
           </p>
           <div
-            className={`mt-10 flex items-center gap-6 transition-all duration-700 delay-[400ms] ease-out ${bottomCta.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
+            className={`mt-10 flex items-center gap-6 transition-all duration-700 delay-[400ms] ease-out ${bottomCtaInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
           >
             <Link
               href="/download"
-              className="group inline-flex items-center gap-2.5 rounded-xl bg-white px-7 py-3.5 text-[15px] font-semibold text-[#1A1A1A] transition-all hover:bg-[#F5F0E8] hover:shadow-lg hover:shadow-white/10 active:scale-[0.98]"
+              className="group inline-flex items-center gap-2.5 rounded-xl bg-white px-7 py-3.5 text-[15px] font-semibold text-[#0A0A0A] transition-all hover:bg-[#E8E8E5] hover:shadow-lg hover:shadow-white/10 active:scale-[0.98]"
             >
               <Download className="h-4 w-4 transition-transform group-hover:-translate-y-0.5" />
               {t.bottomDownload}
             </Link>
             <Link
-              href="/dashboard"
+              href="/project/workspace"
               className="group inline-flex items-center gap-1.5 text-[15px] text-[#666] transition-colors hover:text-white"
             >
               {t.bottomCta}
@@ -985,8 +1207,8 @@ export default function HomePage() {
           <div className="h-px w-full bg-white/[0.06]" />
           <div className="mt-6 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="flex h-5 w-5 items-center justify-center rounded bg-white">
-                <Blend className="h-2.5 w-2.5 text-[#1A1A1A]" />
+              <div className="flex h-5 w-5 items-center justify-center rounded bg-white/[0.1]">
+                <Blend className="h-2.5 w-2.5 text-[#E8E8E5]" />
               </div>
               <span className="text-[12px] text-[#555]">Meld</span>
             </div>
@@ -1010,10 +1232,28 @@ export default function HomePage() {
       {/* ===== 언어 토글 (고정) ===== */}
       <button
         onClick={toggleLang}
-        className="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-white text-[14px] font-semibold text-[#1A1A1A] shadow-lg ring-1 ring-black/[0.08] transition-all hover:scale-105 hover:shadow-xl active:scale-95"
+        className="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-[#1A1A1A] text-[14px] font-semibold text-[#E8E8E5] shadow-lg ring-1 ring-white/[0.08] transition-all hover:scale-105 hover:shadow-xl active:scale-95"
       >
         {lang === "en" ? "KO" : "EN"}
       </button>
+
+      {/* ===== Login Modal (from prompt) ===== */}
+      {authModal && (
+        <LoginModal
+          isOpen={true}
+          onClose={() => setAuthModal(null)}
+          redirectTo={`/projects?prompt=${encodeURIComponent(authModal.prompt)}&category=${authModal.category}`}
+        />
+      )}
+
+      {/* ===== Login Modal (from nav) ===== */}
+      {showLoginModal && !authModal && (
+        <LoginModal
+          isOpen={true}
+          onClose={() => setShowLoginModal(false)}
+          redirectTo="/projects"
+        />
+      )}
     </div>
   );
 }
