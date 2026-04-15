@@ -34,3 +34,6 @@ pnpm-debug.log*
 
 # Claude Code session artifacts (auto-memory, skills, shell snapshots)
 .claude/
+
+# Supabase CLI local cache (version stamps, pooler URLs, project ref)
+supabase/.temp/

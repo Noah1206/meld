@@ -1,0 +1,12 @@
+{
+  "codeConnect": {
+    "parser": "react",
+    "include": ["src/components/ui/**/*.{tsx,ts}"],
+    "exclude": ["**/*.test.{ts,tsx}", "**/*.stories.{ts,tsx}"],
+    "importPaths": {
+      "src/components/ui/*": "@/components/ui/*"
+    },
+    "label": "Meld",
+    "note": "Scaffolding only. When @figma/code-connect CLI is adopted, this file becomes the CLI's source of truth. Until then, manual mappings live in src/lib/figma/code-connect.ts."
+  }
+}

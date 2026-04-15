@@ -1,7 +1,12 @@
 "use client";
 
 import { useRef, useCallback, useEffect } from "react";
-import Editor, { OnMount, BeforeMount, Monaco } from "@monaco-editor/react";
+import Editor, {
+  DiffEditor,
+  OnMount,
+  BeforeMount,
+  Monaco,
+} from "@monaco-editor/react";
 import type { editor } from "monaco-editor";
 
 interface MonacoEditorProps {
@@ -11,6 +16,14 @@ interface MonacoEditorProps {
   onSave: () => void;
   isDark: boolean;
   readOnly?: boolean;
+  /**
+   * When provided, the component renders a side-by-side DiffEditor
+   * with `diffAgainst` on the LEFT (original/previous content) and
+   * the current `value` on the RIGHT. Used by the workspace file
+   * rollback flow to show the snapshot-vs-now delta before the user
+   * decides whether to revert.
+   */
+  diffAgainst?: string;
 }
 
 // File extension to Monaco language mapping
@@ -175,6 +188,7 @@ export function MonacoEditor({
   onSave,
   isDark,
   readOnly = false,
+  diffAgainst,
 }: MonacoEditorProps) {
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
@@ -256,6 +270,51 @@ export function MonacoEditor({
       }
     }
   }, [filePath]);
+
+  if (diffAgainst != null) {
+    return (
+      <DiffEditor
+        height="100%"
+        language={getLanguage(filePath)}
+        original={diffAgainst}
+        modified={value}
+        theme={isDark ? "meld-dark" : "meld-light"}
+        beforeMount={handleBeforeMount}
+        options={{
+          readOnly: true,
+          renderSideBySide: true,
+          fontSize: 13,
+          fontFamily: "'SF Mono', Menlo, Monaco, 'Courier New', monospace",
+          fontLigatures: true,
+          lineHeight: 20,
+          minimap: { enabled: false },
+          scrollBeyondLastLine: false,
+          automaticLayout: true,
+          wordWrap: "off",
+          lineNumbers: "on",
+          glyphMargin: false,
+          folding: true,
+          renderWhitespace: "selection",
+          padding: { top: 16, bottom: 16 },
+          scrollbar: {
+            verticalScrollbarSize: 10,
+            horizontalScrollbarSize: 10,
+            useShadows: false,
+          },
+          overviewRulerBorder: false,
+        }}
+        loading={
+          <div className="flex h-full items-center justify-center">
+            <div
+              className={`h-5 w-5 animate-spin rounded-full border-2 border-t-transparent ${
+                isDark ? "border-[#555]" : "border-[#B4B4B0]"
+              }`}
+            />
+          </div>
+        }
+      />
+    );
+  }
 
   return (
     <Editor

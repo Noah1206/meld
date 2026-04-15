@@ -110,10 +110,20 @@ export function AgentSessionsSidebar({
               const isEditing = editingId === session.id;
               return (
                 <li key={session.id}>
-                  <button
-                    type="button"
+                  {/* div + role=button because the row contains a nested
+                      SessionMenu button, and <button> cannot contain <button>
+                      in HTML. */}
+                  <div
+                    role="button"
+                    tabIndex={0}
                     onClick={() => handleSelect(session.id)}
-                    className={`group relative w-full rounded-md px-2.5 py-2 text-left transition ${
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        handleSelect(session.id);
+                      }
+                    }}
+                    className={`group relative w-full cursor-pointer rounded-md px-2.5 py-2 text-left transition ${
                       isActive
                         ? "bg-white/[0.08] ring-1 ring-white/[0.12]"
                         : "hover:bg-white/[0.04]"
@@ -165,7 +175,7 @@ export function AgentSessionsSidebar({
                         </div>
                       )}
                     </div>
-                  </button>
+                  </div>
                 </li>
               );
             })}

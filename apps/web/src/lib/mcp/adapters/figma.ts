@@ -4,6 +4,12 @@
 
 import { BaseMCPAdapter } from "./base";
 import { FigmaClient } from "@/lib/figma/client";
+import {
+  listCodeConnectMappings,
+  resolveComponent,
+  generateImportSnippet,
+  generateUsageSnippet,
+} from "@/lib/figma/code-connect";
 import type { FigmaNodeData } from "@figma-code-bridge/shared";
 import type { MCPTool, MCPToolResult, MCPAuth, MCPContextFragment } from "../types";
 
@@ -85,6 +91,28 @@ export class FigmaMCPAdapter extends BaseMCPAdapter {
           required: ["file_key"],
         },
       },
+      {
+        name: "figma_resolve_component",
+        description: "Look up the real code component mapped to a Figma node via Code Connect. Returns import path, component name, and prop mapping hints. Use BEFORE re-creating a component from scratch — if a mapping exists, import and reuse the existing code.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            node_id: { type: "string", description: "Figma node ID (e.g. \"123:456\")" },
+            component_key: { type: "string", description: "Figma shared component key" },
+            name: { type: "string", description: "Component name fallback (loose match)" },
+          },
+          required: [],
+        },
+      },
+      {
+        name: "figma_list_code_connect",
+        description: "List all Figma → code component mappings registered in this workspace. Use to discover which Figma components are already wired to real code.",
+        inputSchema: {
+          type: "object",
+          properties: {},
+          required: [],
+        },
+      },
     ];
   }
 
@@ -120,6 +148,44 @@ export class FigmaMCPAdapter extends BaseMCPAdapter {
       const format = (args.format as "png" | "svg" | "jpg") ?? "png";
       const images = await client.getImages(args.file_key as string, args.node_ids as string[], format);
       return this.textResult(images);
+    },
+
+    figma_resolve_component: async (args) => {
+      const mapping = resolveComponent({
+        nodeId: args.node_id as string | undefined,
+        componentKey: args.component_key as string | undefined,
+        name: args.name as string | undefined,
+      });
+      if (!mapping) {
+        return this.textResult({
+          resolved: false,
+          message: "No Code Connect mapping found. Build the component from scratch or register a mapping in src/lib/figma/code-connect.ts.",
+        });
+      }
+      return this.textResult({
+        resolved: true,
+        figmaName: mapping.figmaName,
+        importPath: mapping.importPath,
+        component: mapping.component,
+        importSnippet: generateImportSnippet(mapping),
+        usageSnippet: generateUsageSnippet(mapping),
+        props: mapping.props ?? {},
+        notes: mapping.notes ?? "",
+      });
+    },
+
+    figma_list_code_connect: async () => {
+      const mappings = listCodeConnectMappings();
+      return this.textResult({
+        count: mappings.length,
+        mappings: mappings.map(m => ({
+          figmaName: m.figmaName,
+          figmaNodeId: m.figmaNodeId,
+          figmaComponentKey: m.figmaComponentKey,
+          importPath: m.importPath,
+          component: m.component,
+        })),
+      });
     },
 
     figma_extract_tokens: async (args, auth) => {

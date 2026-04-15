@@ -1,636 +1,696 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
-import Image from "next/image";
+// /agents — Harness dashboard
+//
+// Layout mirrors /projects: 260px left sidebar + rounded-2xl main content
+// panel. Same app shell so moving between /projects and /agents feels
+// seamless. The conversational "New agent" drawer opens as a z-50 overlay.
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
-  Bot, Wrench, Clock, Box, GitBranch, Plus, ChevronRight,
-  Sun, Moon, ArrowLeft, Sparkles, Layers, Settings,
-  Play, MoreHorizontal, Search, X, Send, MessageSquare,
-  Paperclip, Mic, StopCircle, Trash2, Edit3, Copy,
+  Bot,
+  Wrench,
+  Clock,
+  Box,
+  GitBranch,
+  Plus,
+  Play,
+  Trash2,
 } from "lucide-react";
+import { useThemePref } from "@/lib/hooks/useThemePref";
+import { AgentsSidebar } from "./_components/AgentsSidebar";
+import { NewAgentDrawer } from "./_components/NewAgentDrawer";
+import { BrowseTemplates } from "./_components/BrowseTemplates";
+import { TemplateDetail } from "./_components/TemplateDetail";
+import { RunChatDrawer } from "./_components/RunChatDrawer";
+import { AgentRunPanel } from "./_components/AgentRunPanel";
+import type { AgentTemplate } from "./_components/agent-templates";
 
-// Theme hook — shared implementation
-import { useThemePref as useTheme } from "@/lib/hooks/useThemePref";
-
-// MCP server icons mapping
-const MCP_ICONS: Record<string, string> = {
-  github: "/mcp-icons/github.svg",
-  figma: "/mcp-icons/figma.svg",
-  vercel: "/mcp-icons/vercel.svg",
-  supabase: "/mcp-icons/supabase.svg",
-  sentry: "/mcp-icons/sentry.svg",
-  filesystem: "/mcp-icons/filesystem.svg",
-  slack: "/mcp-icons/slack.svg",
-  notion: "/mcp-icons/notion.svg",
-};
-
-// Component cards for the harness architecture
-const HARNESS_COMPONENTS = [
+// ─── Harness axes ─────────────────────────────────────
+const HARNESS_AXES = [
   {
     id: "tools",
     title: "Tools & MCP",
-    description: "도구와 MCP 서버를 관리합니다. 에이전트가 사용할 수 있는 기능을 정의합니다.",
+    description: "에이전트가 호출할 수 있는 도구 + MCP 서버. 내장 9개 + 연결된 MCP.",
     icon: Wrench,
     href: "/agents/tools",
-    emoji: "🔧",
-    stats: { label: "연결됨", value: 14 },
-  },
-  {
-    id: "sessions",
-    title: "Sessions",
-    description: "세션 템플릿을 관리합니다. 대화 컨텍스트와 상태를 정의합니다.",
-    icon: Clock,
-    href: "/agents/sessions",
-    emoji: "⏱",
-    stats: { label: "템플릿", value: 3 },
   },
   {
     id: "sandboxes",
-    title: "Sandboxes",
-    description: "실행 환경을 관리합니다. 코드 실행과 격리된 환경을 제공합니다.",
+    title: "Sandbox",
+    description: "E2B 클라우드 샌드박스에서 코드가 격리되어 실행됩니다.",
     icon: Box,
     href: "/agents/sandboxes",
-    emoji: "📦",
-    stats: { label: "환경", value: 2 },
+  },
+  {
+    id: "sessions",
+    title: "Session",
+    description: "대화 히스토리와 상태를 Supabase에 저장하고 체크포인트로 resume 합니다.",
+    icon: Clock,
+    href: "/agents/sessions",
   },
   {
     id: "workflows",
     title: "Orchestration",
-    description: "워크플로우를 정의합니다. 에이전트 간 협업과 실행 순서를 관리합니다.",
+    description: "Single loop 또는 Planner → Generator → Evaluator 파이프라인.",
     icon: GitBranch,
     href: "/agents/workflows",
-    emoji: "🔀",
-    stats: { label: "워크플로우", value: 1 },
   },
 ];
 
-// Sample agents (user-created)
-const SAMPLE_AGENTS = [
-  {
-    id: "1",
-    name: "Full Stack Builder",
-    description: "풀스택 앱을 자율적으로 개발하는 에이전트",
-    tools: ["read_file", "write_file", "run_command", "web_search"],
-    mcpServers: ["github", "vercel", "supabase"],
-    session: "persistent",
-    sandbox: "e2b-meld-agent",
-    workflow: "plan-code-test",
-    status: "active",
-    lastRun: "2분 전",
-  },
-  {
-    id: "2",
-    name: "Code Reviewer",
-    description: "코드 리뷰 및 개선 제안을 수행하는 에이전트",
-    tools: ["read_file", "search_files", "browse_url"],
-    mcpServers: ["github", "sentry"],
-    session: "stateless",
-    sandbox: "none",
-    workflow: "analyze-suggest",
-    status: "idle",
-    lastRun: "1시간 전",
-  },
-];
-
-interface ChatMessage {
+// ─── Types ─────────────────────────────────────────────
+interface AgentSummary {
   id: string;
-  role: "user" | "assistant";
-  content: string;
-  timestamp: Date;
-  agentId?: string;
+  name: string;
+  description: string;
+  pipeline: "single-loop" | "three-agent";
+  modelId: string;
+  builtinToolIds: string[];
+  mcpServerIds: string[];
+  createdAt: string;
+  updatedAt: string;
 }
 
-export default function AgentsPage() {
-  const router = useRouter();
-  const { isDark, toggle: toggleTheme, mounted } = useTheme();
-  const [agents, setAgents] = useState(SAMPLE_AGENTS);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isChatOpen, setIsChatOpen] = useState(false);
-  const [selectedAgent, setSelectedAgent] = useState<typeof SAMPLE_AGENTS[0] | null>(null);
-  const [chatInput, setChatInput] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const chatEndRef = useRef<HTMLDivElement>(null);
+// ─── Page ──────────────────────────────────────────────
+export default function AgentsDashboardPage() {
+  const { isDark, mounted } = useThemePref();
+  const [agents, setAgents] = useState<AgentSummary[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<AgentTemplate | null>(null);
+  // When set, the right panel switches into "run" mode for this agent.
+  const [runningAgent, setRunningAgent] = useState<AgentSummary | null>(null);
+  // When the user lands in "run" mode via a fresh agent generation, this
+  // holds that agent's id so the drawer can trigger its auto-pilot tutorial
+  // exactly once. Cleared on drawer close.
+  const [tutorialAgentId, setTutorialAgentId] = useState<string | null>(null);
+  // Agent currently in the delete-confirm modal.
+  const [confirmDeleteAgent, setConfirmDeleteAgent] = useState<AgentSummary | null>(null);
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    void fetchAgents();
+  }, []);
 
-  const handleSendMessage = () => {
-    if (!chatInput.trim() || isProcessing) return;
-
-    const userMessage: ChatMessage = {
-      id: crypto.randomUUID(),
-      role: "user",
-      content: chatInput,
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    setChatInput("");
-    setIsProcessing(true);
-
-    // Simulate agent response
-    setTimeout(() => {
-      const agentResponse: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: getAgentResponse(chatInput, selectedAgent),
-        timestamp: new Date(),
-        agentId: selectedAgent?.id,
-      };
-      setMessages((prev) => [...prev, agentResponse]);
-      setIsProcessing(false);
-    }, 1500);
-  };
-
-  const getAgentResponse = (input: string, agent: typeof SAMPLE_AGENTS[0] | null): string => {
-    const lowerInput = input.toLowerCase();
-
-    if (lowerInput.includes("에이전트") && lowerInput.includes("목록")) {
-      return `현재 ${agents.length}개의 에이전트가 등록되어 있습니다:\n\n${agents.map((a, i) => `${i + 1}. **${a.name}** - ${a.description}`).join("\n")}`;
+  // Respond to ?new=1 / ?run={id} URL params so the sidebar on other pages
+  // (e.g. /projects) can link back here and auto-open the drawer.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("new") === "1") {
+      setDrawerOpen(true);
+      setSelectedTemplate(null);
+      setRunningAgent(null);
     }
+  }, []);
 
-    if (lowerInput.includes("새") && (lowerInput.includes("에이전트") || lowerInput.includes("만들"))) {
-      return "새 에이전트를 만들려면 우측 상단의 'New Agent' 버튼을 클릭하거나, 여기서 직접 설정을 도와드릴 수 있습니다.\n\n어떤 용도의 에이전트를 만들고 싶으신가요?";
-    }
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!agents) return;
+    const params = new URLSearchParams(window.location.search);
+    const runId = params.get("run");
+    if (!runId) return;
+    const found = agents.find(a => a.id === runId);
+    if (!found) return;
+    setRunningAgent(found);
+    setSelectedTemplate(null);
+    setDrawerOpen(true);
+  }, [agents]);
 
-    if (agent) {
-      if (lowerInput.includes("실행") || lowerInput.includes("시작")) {
-        return `**${agent.name}**를 실행합니다...\n\n🔧 도구 ${agent.tools.length}개 로드됨\n📦 샌드박스: ${agent.sandbox}\n⏱ 세션: ${agent.session}\n\n에이전트가 준비되었습니다. 어떤 작업을 수행할까요?`;
+  async function fetchAgents() {
+    try {
+      const res = await fetch("/api/harness/agents");
+      if (res.status === 401) {
+        setError("로그인이 필요합니다.");
+        setAgents([]);
+        return;
       }
-
-      if (lowerInput.includes("설정") || lowerInput.includes("수정")) {
-        return `**${agent.name}** 설정:\n\n- 🔧 도구: ${agent.tools.join(", ")}\n- 🔌 MCP: ${agent.mcpServers.join(", ")}\n- 📦 샌드박스: ${agent.sandbox}\n- ⏱ 세션: ${agent.session}\n- 🔀 워크플로우: ${agent.workflow}\n\n어떤 설정을 변경하시겠습니까?`;
-      }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "failed");
+      setAgents(data.agents as AgentSummary[]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "unknown");
+      setAgents([]);
     }
+  }
 
-    return "무엇을 도와드릴까요? 에이전트 생성, 실행, 설정 변경 등을 요청하실 수 있습니다.";
-  };
-
-  const openChatWithAgent = (agent: typeof SAMPLE_AGENTS[0]) => {
-    setSelectedAgent(agent);
-    setIsChatOpen(true);
-    setMessages([{
-      id: "welcome",
-      role: "assistant",
-      content: `**${agent.name}**와 대화를 시작합니다.\n\n이 에이전트는 ${agent.description.toLowerCase()}. 사용 가능한 도구: ${agent.tools.length}개, MCP 서버: ${agent.mcpServers.length}개\n\n무엇을 도와드릴까요?`,
-      timestamp: new Date(),
-      agentId: agent.id,
-    }]);
-  };
-
-  const openGeneralChat = () => {
-    setSelectedAgent(null);
-    setIsChatOpen(true);
-    setMessages([{
-      id: "welcome",
-      role: "assistant",
-      content: "Agent Platform에 오신 것을 환영합니다.\n\n에이전트 생성, 관리, 실행을 도와드릴 수 있습니다. 무엇을 도와드릴까요?",
-      timestamp: new Date(),
-    }]);
-  };
+  async function handleDelete(agentId: string) {
+    setDeleting(agentId);
+    try {
+      const res = await fetch(`/api/harness/agents/${agentId}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "delete failed");
+      }
+      setAgents(prev => prev?.filter(a => a.id !== agentId) ?? null);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "unknown");
+    } finally {
+      setDeleting(null);
+    }
+  }
 
   if (!mounted) return null;
 
+  const rootBg = isDark ? "bg-[#1C1C1C]" : "bg-white";
+  const mainBg = isDark ? "bg-[#1C1C1C]" : "bg-white";
+  // ring-inset draws the border on the inside of the box so it isn't clipped
+  // by the parent wrapper's overflow-hidden.
+  const mainRing = isDark
+    ? "ring-1 ring-inset ring-white/[0.1]"
+    : "ring-1 ring-inset ring-black/[0.08]";
+  const fg = isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]";
+
   return (
-    <div className={`min-h-screen flex ${isDark ? "bg-[#0D0D0D]" : "bg-[#FAFAFA]"}`}>
-      {/* Main Content */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
-        className={`flex-1 transition-all duration-300 ${isChatOpen ? "mr-[480px]" : ""}`}
-      >
-        {/* Header */}
-        <header className={`sticky top-0 z-40 backdrop-blur-xl ${isDark ? "bg-[#0D0D0D]/80 border-b border-white/[0.06]" : "bg-[#FAFAFA]/80 border-b border-black/[0.06]"}`}>
-          <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => router.push("/projects")}
-                className={`flex items-center gap-2 text-[13px] font-medium transition-colors ${isDark ? "text-[#666] hover:text-[#999]" : "text-[#999] hover:text-[#666]"}`}
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Back
-              </button>
-              <div className={`h-4 w-px ${isDark ? "bg-white/[0.08]" : "bg-black/[0.08]"}`} />
-              <div className="flex items-center gap-2.5">
-                <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${isDark ? "bg-white/[0.06]" : "bg-black/[0.04]"}`}>
-                  <Bot className={`h-4 w-4 ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`} />
-                </div>
-                <h1 className={`text-[15px] font-bold ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`}>
-                  Agent Platform
-                </h1>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={openGeneralChat}
-                className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-[13px] font-medium transition-all ${isDark ? "bg-white/[0.06] text-[#E8E8E5] hover:bg-white/[0.1]" : "bg-black/[0.04] text-[#1A1A1A] hover:bg-black/[0.08]"}`}
-              >
-                <MessageSquare className="h-3.5 w-3.5" />
-                Chat
-              </button>
-              <button
-                onClick={toggleTheme}
-                className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all ${isDark ? "text-[#555] hover:text-[#999] hover:bg-white/[0.04]" : "text-[#999] hover:text-[#1A1A1A] hover:bg-black/[0.03]"}`}
-              >
-                {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              </button>
-            </div>
+    <div className={`flex h-screen ${rootBg} ${fg}`}>
+      <AgentsSidebar
+        onNewAgent={() => setDrawerOpen(true)}
+        recentAgents={agents?.slice(0, 8).map(a => ({
+          id: a.id,
+          name: a.name,
+          updatedAt: a.updatedAt,
+        })) ?? []}
+        onRunAgent={agentId => {
+          const found = agents?.find(a => a.id === agentId);
+          if (!found) return;
+          setRunningAgent(found);
+          setSelectedTemplate(null);
+          setDrawerOpen(true);
+        }}
+        activeAgentId={drawerOpen ? runningAgent?.id ?? null : null}
+      />
+
+      <div className="relative m-3 ml-0 flex flex-1 overflow-hidden">
+        {/* ── Dashboard (always mounted, fades out when drawer is open) ── */}
+        <main
+          className={`flex flex-1 flex-col overflow-hidden rounded-2xl transition-all duration-500 ease-out ${mainBg} ${mainRing} ${
+            drawerOpen ? "scale-[0.98] opacity-30" : "scale-100 opacity-100"
+          }`}
+          aria-hidden={drawerOpen}
+        >
+        <div className="flex-1 overflow-y-auto px-10 py-12 lg:px-16 lg:py-16">
+          {/* ─── Hero ─── */}
+          <div className="mb-14 max-w-3xl">
+            <p
+              className={`mb-4 font-mono text-[11px] uppercase tracking-[0.15em] ${
+                isDark ? "text-[#666]" : "text-[#999]"
+              }`}
+            >
+              Harness engineering
+            </p>
+            <h1
+              className={`mb-5 text-[36px] font-bold leading-[1.1] tracking-[-0.03em] sm:text-[44px] lg:text-[52px] ${
+                isDark ? "text-white" : "text-[#1A1A1A]"
+              }`}
+            >
+              에이전트를
+              <br />
+              <span className={isDark ? "text-[#555]" : "text-[#AAA]"}>직접 만듭니다.</span>
+            </h1>
+            <p
+              className={`max-w-2xl text-[15px] leading-relaxed ${
+                isDark ? "text-[#888]" : "text-[#787774]"
+              }`}
+            >
+              Anthropic 식 하네스 아키텍처 — Tools, Sandbox, Session, Orchestration 네 축을
+              조합해 Planner · Generator · Evaluator 파이프라인을 구성합니다.
+            </p>
+            <button
+              onClick={() => setDrawerOpen(true)}
+              className={`mt-6 inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-[14px] font-semibold transition-all active:scale-[0.97] ${
+                isDark
+                  ? "bg-white text-[#0A0A0A] hover:bg-[#E8E8E5]"
+                  : "bg-[#1A1A1A] text-white hover:bg-[#333]"
+              }`}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              New agent
+            </button>
           </div>
-        </header>
 
-        <main className="max-w-7xl mx-auto px-6 py-8">
-          {/* Hero section */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="mb-12"
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <h2 className={`text-[32px] font-bold tracking-[-0.02em] ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`}>
-                  Create Your Agents
-                </h2>
-                <p className={`mt-2 text-[15px] max-w-xl ${isDark ? "text-[#888]" : "text-[#666]"}`}>
-                  독립적인 컴포넌트들을 조합하여 나만의 AI 에이전트를 만드세요.
-                  Anthropic Harness 아키텍처를 기반으로 설계되었습니다.
-                </p>
-              </div>
-              <button
-                onClick={() => router.push("/agents/create")}
-                className={`flex items-center gap-2 rounded-xl px-5 py-3 text-[14px] font-semibold transition-all active:scale-[0.97] ${isDark ? "bg-white text-[#1A1A1A] hover:bg-[#E8E8E5]" : "bg-[#1A1A1A] text-white hover:bg-[#333]"}`}
+          {/* ─── Harness axes ─── */}
+          <section className="mb-16">
+            <div className="mb-6 flex items-baseline justify-between">
+              <h2
+                className={`font-mono text-[11px] uppercase tracking-[0.15em] ${
+                  isDark ? "text-[#666]" : "text-[#999]"
+                }`}
               >
-                <Plus className="h-4 w-4" />
-                New Agent
-              </button>
-            </div>
-          </motion.div>
-
-          {/* Harness Architecture Diagram */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="mb-12"
-          >
-            <div className="flex items-center gap-2 mb-4">
-              <Layers className={`h-4 w-4 ${isDark ? "text-[#666]" : "text-[#999]"}`} />
-              <h3 className={`text-[13px] font-semibold uppercase tracking-wider ${isDark ? "text-[#666]" : "text-[#999]"}`}>
-                Harness Components
-              </h3>
-            </div>
-
-            <div className="grid grid-cols-4 gap-4">
-              {HARNESS_COMPONENTS.map((component, index) => (
-                <motion.button
-                  key={component.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: 0.1 + index * 0.05 }}
-                  onClick={() => router.push(component.href)}
-                  className={`group relative flex flex-col rounded-2xl p-6 text-left transition-all duration-200 hover:-translate-y-1 ${isDark ? "bg-[#151515] ring-1 ring-white/[0.06] hover:ring-white/[0.12]" : "bg-white ring-1 ring-black/[0.04] hover:ring-black/[0.08] hover:shadow-lg"}`}
-                >
-                  <div className="relative">
-                    <div className={`flex h-12 w-12 items-center justify-center rounded-xl mb-4 ${isDark ? "bg-white/[0.06]" : "bg-black/[0.04]"}`}>
-                      <span className="text-[24px] grayscale">{component.emoji}</span>
-                    </div>
-                    <h4 className={`text-[16px] font-bold mb-1 ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`}>
-                      {component.title}
-                    </h4>
-                    <p className={`text-[13px] leading-relaxed mb-4 ${isDark ? "text-[#888]" : "text-[#666]"}`}>
-                      {component.description}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <span className={`text-[12px] ${isDark ? "text-[#555]" : "text-[#999]"}`}>
-                        {component.stats.value} {component.stats.label}
-                      </span>
-                      <ChevronRight className={`h-4 w-4 transition-transform group-hover:translate-x-1 ${isDark ? "text-[#555]" : "text-[#999]"}`} />
-                    </div>
-                  </div>
-                </motion.button>
-              ))}
-            </div>
-
-            {/* Center Harness connector */}
-            <div className="relative mt-6">
-              <div className={`absolute left-1/2 -translate-x-1/2 -top-3 h-6 w-px ${isDark ? "bg-gradient-to-b from-white/[0.1] to-transparent" : "bg-gradient-to-b from-black/[0.1] to-transparent"}`} />
-              <div className={`flex items-center justify-center gap-3 rounded-2xl py-4 px-6 mx-auto w-fit ${isDark ? "bg-[#1A1A1A] ring-1 ring-white/[0.08]" : "bg-[#F5F5F5] ring-1 ring-black/[0.06]"}`}>
-                <Sparkles className={`h-5 w-5 ${isDark ? "text-[#888]" : "text-[#666]"}`} />
-                <span className={`text-[14px] font-semibold ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`}>
-                  Harness
-                </span>
-                <span className={`text-[13px] ${isDark ? "text-[#666]" : "text-[#999]"}`}>
-                  — 컴포넌트들을 조합하여 에이전트 생성
-                </span>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* My Agents */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Bot className={`h-4 w-4 ${isDark ? "text-[#666]" : "text-[#999]"}`} />
-                <h3 className={`text-[13px] font-semibold uppercase tracking-wider ${isDark ? "text-[#666]" : "text-[#999]"}`}>
-                  My Agents
-                </h3>
-              </div>
-              <div className={`flex items-center gap-2 rounded-lg px-3 py-1.5 ${isDark ? "bg-white/[0.04]" : "bg-black/[0.02]"}`}>
-                <Search className={`h-3.5 w-3.5 ${isDark ? "text-[#555]" : "text-[#999]"}`} />
-                <input
-                  type="text"
-                  placeholder="Search agents..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className={`bg-transparent text-[13px] outline-none w-32 ${isDark ? "text-[#E8E8E5] placeholder:text-[#555]" : "text-[#1A1A1A] placeholder:text-[#999]"}`}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              {agents.filter(a => a.name.toLowerCase().includes(searchQuery.toLowerCase())).map((agent) => (
-                <motion.div
-                  key={agent.id}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className={`group flex items-center gap-4 rounded-xl p-4 transition-all cursor-pointer ${isDark ? "bg-[#151515] ring-1 ring-white/[0.06] hover:ring-white/[0.1]" : "bg-white ring-1 ring-black/[0.04] hover:ring-black/[0.08]"}`}
-                  onClick={() => openChatWithAgent(agent)}
-                >
-                  {/* MCP Icons Stack */}
-                  <div className="relative h-12 w-12">
-                    <div className={`absolute inset-0 flex items-center justify-center rounded-xl ${isDark ? "bg-[#1A1A1A]" : "bg-[#F0F0F0]"}`}>
-                      {agent.mcpServers.slice(0, 3).map((mcp, idx) => (
-                        <div
-                          key={mcp}
-                          className={`absolute h-6 w-6 rounded-full flex items-center justify-center ${isDark ? "bg-[#252525] ring-1 ring-white/[0.08]" : "bg-white ring-1 ring-black/[0.06]"}`}
-                          style={{
-                            transform: `translateX(${(idx - 1) * 10}px)`,
-                            zIndex: 3 - idx,
-                          }}
-                        >
-                          {MCP_ICONS[mcp] ? (
-                            <Image
-                              src={MCP_ICONS[mcp]}
-                              alt={mcp}
-                              width={14}
-                              height={14}
-                              className="grayscale"
-                            />
-                          ) : (
-                            <span className="text-[10px] font-bold text-[#888]">{mcp[0].toUpperCase()}</span>
-                          )}
-                        </div>
-                      ))}
-                      {agent.mcpServers.length > 3 && (
-                        <div
-                          className={`absolute h-6 w-6 rounded-full flex items-center justify-center text-[9px] font-bold ${isDark ? "bg-[#252525] ring-1 ring-white/[0.08] text-[#888]" : "bg-white ring-1 ring-black/[0.06] text-[#666]"}`}
-                          style={{
-                            transform: `translateX(${2 * 10}px)`,
-                            zIndex: 0,
-                          }}
-                        >
-                          +{agent.mcpServers.length - 3}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h4 className={`text-[15px] font-semibold ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`}>
-                        {agent.name}
-                      </h4>
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                        agent.status === "active"
-                          ? "bg-emerald-500/20 text-emerald-400"
-                          : isDark ? "bg-white/[0.06] text-[#888]" : "bg-black/[0.04] text-[#999]"
-                      }`}>
-                        {agent.status === "active" ? "ACTIVE" : "IDLE"}
-                      </span>
-                    </div>
-                    <p className={`text-[13px] mt-0.5 truncate ${isDark ? "text-[#888]" : "text-[#666]"}`}>
-                      {agent.description}
-                    </p>
-                    <div className={`flex items-center gap-3 mt-2 text-[11px] ${isDark ? "text-[#555]" : "text-[#999]"}`}>
-                      <span>{agent.tools.length} tools</span>
-                      <span>•</span>
-                      <span>{agent.mcpServers.length} MCP</span>
-                      <span>•</span>
-                      <span>{agent.sandbox}</span>
-                      <span>•</span>
-                      <span>Last run {agent.lastRun}</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); }}
-                      className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${isDark ? "hover:bg-white/[0.06] text-[#888]" : "hover:bg-black/[0.04] text-[#666]"}`}
-                    >
-                      <Play className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); }}
-                      className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${isDark ? "hover:bg-white/[0.06] text-[#888]" : "hover:bg-black/[0.04] text-[#666]"}`}
-                    >
-                      <Settings className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); }}
-                      className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${isDark ? "hover:bg-white/[0.06] text-[#888]" : "hover:bg-black/[0.04] text-[#666]"}`}
-                    >
-                      <MoreHorizontal className="h-4 w-4" />
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
-
-              {/* Create new agent card */}
-              <button
-                onClick={() => router.push("/agents/create")}
-                className={`flex items-center justify-center gap-3 rounded-xl p-6 w-full border-2 border-dashed transition-all ${isDark ? "border-white/[0.08] hover:border-white/[0.15] text-[#555] hover:text-[#888]" : "border-black/[0.06] hover:border-black/[0.12] text-[#999] hover:text-[#666]"}`}
+                Harness 구성 요소
+              </h2>
+              <span
+                className={`font-mono text-[11px] ${
+                  isDark ? "text-[#444]" : "text-[#B4B4B0]"
+                }`}
               >
-                <Plus className="h-5 w-5" />
-                <span className="text-[14px] font-medium">Create New Agent</span>
-              </button>
+                04 / 04
+              </span>
             </div>
-          </motion.div>
-        </main>
-      </motion.div>
-
-      {/* Chat Panel - Full Height Slide */}
-      <AnimatePresence>
-        {isChatOpen && (
-          <motion.div
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={{ type: "spring", damping: 30, stiffness: 300 }}
-            className={`fixed right-0 top-0 bottom-0 w-[480px] z-50 flex flex-col ${isDark ? "bg-[#0D0D0D] border-l border-white/[0.06]" : "bg-white border-l border-black/[0.06]"}`}
-          >
-            {/* Chat Header */}
-            <div className={`flex items-center justify-between px-5 py-4 border-b ${isDark ? "border-white/[0.06]" : "border-black/[0.06]"}`}>
-              <div className="flex items-center gap-3">
-                {selectedAgent ? (
-                  <>
-                    <div className="relative h-9 w-9">
-                      <div className={`absolute inset-0 flex items-center justify-center rounded-lg ${isDark ? "bg-[#1A1A1A]" : "bg-[#F0F0F0]"}`}>
-                        {selectedAgent.mcpServers.slice(0, 2).map((mcp, idx) => (
-                          <div
-                            key={mcp}
-                            className={`absolute h-5 w-5 rounded-full flex items-center justify-center ${isDark ? "bg-[#252525] ring-1 ring-white/[0.08]" : "bg-white ring-1 ring-black/[0.06]"}`}
-                            style={{
-                              transform: `translateX(${(idx - 0.5) * 8}px)`,
-                              zIndex: 2 - idx,
-                            }}
-                          >
-                            {MCP_ICONS[mcp] ? (
-                              <Image
-                                src={MCP_ICONS[mcp]}
-                                alt={mcp}
-                                width={12}
-                                height={12}
-                                className="grayscale"
-                              />
-                            ) : (
-                              <span className="text-[8px] font-bold text-[#888]">{mcp[0].toUpperCase()}</span>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <h3 className={`text-[14px] font-semibold ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`}>
-                        {selectedAgent.name}
-                      </h3>
-                      <p className={`text-[11px] ${isDark ? "text-[#666]" : "text-[#999]"}`}>
-                        {selectedAgent.mcpServers.join(" • ")}
-                      </p>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${isDark ? "bg-white/[0.06]" : "bg-black/[0.04]"}`}>
-                      <Bot className={`h-4 w-4 ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`} />
-                    </div>
-                    <div>
-                      <h3 className={`text-[14px] font-semibold ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`}>
-                        Agent Platform
-                      </h3>
-                      <p className={`text-[11px] ${isDark ? "text-[#666]" : "text-[#999]"}`}>
-                        에이전트 관리 어시스턴트
-                      </p>
-                    </div>
-                  </>
-                )}
-              </div>
-              <button
-                onClick={() => setIsChatOpen(false)}
-                className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${isDark ? "hover:bg-white/[0.06] text-[#666]" : "hover:bg-black/[0.04] text-[#999]"}`}
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            {/* Chat Messages */}
-            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
-                >
-                  <div
-                    className={`max-w-[85%] rounded-2xl px-4 py-3 ${
-                      message.role === "user"
-                        ? isDark
-                          ? "bg-white text-[#1A1A1A]"
-                          : "bg-[#1A1A1A] text-white"
-                        : isDark
-                        ? "bg-[#1A1A1A] text-[#E8E8E5]"
-                        : "bg-[#F5F5F5] text-[#1A1A1A]"
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {HARNESS_AXES.map(axis => {
+                const Icon = axis.icon;
+                return (
+                  <Link
+                    key={axis.id}
+                    href={axis.href}
+                    className={`group flex flex-col rounded-xl p-6 transition-all hover:-translate-y-0.5 ${
+                      isDark
+                        ? "bg-[#1A1A1A] ring-1 ring-white/[0.06] hover:ring-white/[0.12]"
+                        : "bg-[#FAFAFA] ring-1 ring-black/[0.06] hover:ring-black/[0.12]"
                     }`}
                   >
-                    <p className="text-[14px] leading-relaxed whitespace-pre-wrap">
-                      {message.content}
-                    </p>
-                    <p className={`text-[10px] mt-2 ${
-                      message.role === "user"
-                        ? isDark ? "text-[#666]" : "text-[#999]"
-                        : isDark ? "text-[#555]" : "text-[#999]"
-                    }`}>
-                      {message.timestamp.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}
-                    </p>
-                  </div>
-                </div>
-              ))}
-
-              {isProcessing && (
-                <div className="flex justify-start">
-                  <div className={`rounded-2xl px-4 py-3 ${isDark ? "bg-[#1A1A1A]" : "bg-[#F5F5F5]"}`}>
-                    <div className="flex items-center gap-1">
-                      <div className={`h-2 w-2 rounded-full animate-bounce ${isDark ? "bg-[#555]" : "bg-[#999]"}`} style={{ animationDelay: "0ms" }} />
-                      <div className={`h-2 w-2 rounded-full animate-bounce ${isDark ? "bg-[#555]" : "bg-[#999]"}`} style={{ animationDelay: "150ms" }} />
-                      <div className={`h-2 w-2 rounded-full animate-bounce ${isDark ? "bg-[#555]" : "bg-[#999]"}`} style={{ animationDelay: "300ms" }} />
+                    <div
+                      className={`mb-5 flex h-10 w-10 items-center justify-center rounded-lg ring-1 ${
+                        isDark
+                          ? "bg-white/[0.08] ring-white/[0.06]"
+                          : "bg-black/[0.04] ring-black/[0.06]"
+                      }`}
+                    >
+                      <Icon
+                        className={`h-4 w-4 ${isDark ? "text-white" : "text-[#1A1A1A]"}`}
+                      />
                     </div>
-                  </div>
-                </div>
-              )}
-
-              <div ref={chatEndRef} />
+                    <h3
+                      className={`mb-2 text-[16px] font-semibold tracking-[-0.01em] ${
+                        isDark ? "text-white" : "text-[#1A1A1A]"
+                      }`}
+                    >
+                      {axis.title}
+                    </h3>
+                    <p
+                      className={`text-[13px] leading-relaxed ${
+                        isDark ? "text-[#888]" : "text-[#787774]"
+                      }`}
+                    >
+                      {axis.description}
+                    </p>
+                  </Link>
+                );
+              })}
             </div>
+          </section>
 
-            {/* Chat Input */}
-            <div className={`px-5 py-4 border-t ${isDark ? "border-white/[0.06]" : "border-black/[0.06]"}`}>
-              <div className={`flex items-end gap-3 rounded-2xl p-3 ${isDark ? "bg-[#151515] ring-1 ring-white/[0.06]" : "bg-[#F5F5F5] ring-1 ring-black/[0.04]"}`}>
-                <button className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${isDark ? "hover:bg-white/[0.06] text-[#555]" : "hover:bg-black/[0.04] text-[#999]"}`}>
-                  <Paperclip className="h-4 w-4" />
-                </button>
-                <textarea
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSendMessage();
-                    }
-                  }}
-                  placeholder="메시지를 입력하세요..."
-                  rows={1}
-                  className={`flex-1 resize-none bg-transparent text-[14px] outline-none max-h-32 ${isDark ? "text-[#E8E8E5] placeholder:text-[#555]" : "text-[#1A1A1A] placeholder:text-[#999]"}`}
-                  style={{ minHeight: "24px" }}
-                />
-                <button
-                  onClick={handleSendMessage}
-                  disabled={!chatInput.trim() || isProcessing}
-                  className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all ${
-                    chatInput.trim() && !isProcessing
-                      ? isDark
-                        ? "bg-white text-[#1A1A1A] hover:bg-[#E8E8E5]"
-                        : "bg-[#1A1A1A] text-white hover:bg-[#333]"
-                      : isDark
-                      ? "bg-white/[0.06] text-[#555]"
-                      : "bg-black/[0.04] text-[#999]"
+          {/* ─── User agents ─── */}
+          <section>
+            <div className="mb-6 flex items-baseline justify-between">
+              <h2
+                className={`font-mono text-[11px] uppercase tracking-[0.15em] ${
+                  isDark ? "text-[#666]" : "text-[#999]"
+                }`}
+              >
+                내 에이전트
+              </h2>
+              {agents && (
+                <span
+                  className={`font-mono text-[11px] ${
+                    isDark ? "text-[#444]" : "text-[#B4B4B0]"
                   }`}
                 >
-                  <Send className="h-4 w-4" />
-                </button>
-              </div>
-              <p className={`text-[11px] mt-2 text-center ${isDark ? "text-[#444]" : "text-[#BBB]"}`}>
-                에이전트 실행, 설정 변경, 새 에이전트 생성 등을 요청하세요
-              </p>
+                  {String(agents.length).padStart(2, "0")} total
+                </span>
+              )}
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
+            {agents === null ? (
+              <AgentsLoadingGrid isDark={isDark} />
+            ) : error ? (
+              <ErrorCard message={error} isDark={isDark} />
+            ) : agents.length === 0 ? (
+              <EmptyState isDark={isDark} onCreate={() => setDrawerOpen(true)} />
+            ) : (
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {agents.map(agent => (
+                  <AgentCard
+                    key={agent.id}
+                    agent={agent}
+                    isDark={isDark}
+                    deleting={deleting === agent.id}
+                    onDelete={() => setConfirmDeleteAgent(agent)}
+                    onRun={() => {
+                      setRunningAgent(agent);
+                      setSelectedTemplate(null);
+                      setDrawerOpen(true);
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
+        </main>
+
+        {/* ── Slide-in overlay: drawer (left) + templates (right) ── */}
+        {/*
+          The overlay sits on top of the dashboard with z-10. It's always
+          mounted; the two children slide in/out via translate-x. When the
+          drawer is closed, each child is translated fully off-screen so
+          they can't capture pointer events.
+        */}
+        <div
+          className={`absolute inset-0 z-10 flex ${
+            drawerOpen ? "" : "pointer-events-none"
+          }`}
+        >
+          {/* Chat drawer — slides in from the left */}
+          <div
+            className={`pointer-events-auto flex w-[380px] flex-shrink-0 transition-transform duration-500 ease-out xl:w-[420px] ${
+              drawerOpen ? "translate-x-0" : "-translate-x-[calc(100%+24px)]"
+            }`}
+          >
+            {runningAgent ? (
+              <RunChatDrawer
+                open={drawerOpen}
+                onClose={() => {
+                  setDrawerOpen(false);
+                  setRunningAgent(null);
+                  setTutorialAgentId(null);
+                }}
+                agent={runningAgent}
+                tutorial={runningAgent.id === tutorialAgentId}
+              />
+            ) : (
+              <NewAgentDrawer
+                open={drawerOpen}
+                onClose={() => {
+                  setDrawerOpen(false);
+                  setSelectedTemplate(null);
+                }}
+                onCreated={() => void fetchAgents()}
+                initialTemplate={selectedTemplate}
+                onClearTemplate={() => setSelectedTemplate(null)}
+              />
+            )}
+          </div>
+
+          {/* Right panel — slides in from the right. Shows either the
+              template browser/detail or the running-agent info. */}
+          <div
+            className={`pointer-events-auto mr-3 flex min-w-0 flex-1 transition-transform duration-500 ease-out ${
+              drawerOpen ? "translate-x-0" : "translate-x-[calc(100%+24px)]"
+            }`}
+          >
+            <div
+              className={`flex min-w-0 w-full flex-col overflow-hidden rounded-2xl rounded-l-none border border-l-0 ${mainBg} ${
+                isDark ? "border-white/[0.1]" : "border-black/[0.08]"
+              }`}
+            >
+              {runningAgent ? (
+                <AgentRunPanel agent={runningAgent} isDark={isDark} />
+              ) : selectedTemplate ? (
+                <TemplateDetail
+                  template={selectedTemplate}
+                  isDark={isDark}
+                  onBack={() => setSelectedTemplate(null)}
+                  onGenerate={async template => {
+                    try {
+                      const res = await fetch("/api/harness/agents", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(template.draft),
+                      });
+                      if (!res.ok) {
+                        const data = await res.json().catch(() => ({}));
+                        alert(
+                          `Generate failed: ${data.error ?? res.statusText}`
+                        );
+                        return;
+                      }
+                      // Pull the freshly-created agent out of the response
+                      // and immediately switch the drawer into "run" mode
+                      // so the user sees the welcome guide for THAT agent
+                      // without an extra click.
+                      const data = (await res.json()) as { agent?: AgentSummary | null };
+                      const created = data.agent;
+                      setSelectedTemplate(null);
+                      void fetchAgents();
+                      if (created) {
+                        setRunningAgent(created);
+                        // Mark this agent for auto-pilot tutorial on first
+                        // view. RunChatDrawer also gates on localStorage so
+                        // re-generating the same id won't re-trigger it.
+                        setTutorialAgentId(created.id);
+                        // drawerOpen stays true — drawer just swaps
+                        // NewAgentDrawer → RunChatDrawer for `created`.
+                      } else {
+                        setDrawerOpen(false);
+                      }
+                    } catch (e) {
+                      alert(
+                        `Generate failed: ${
+                          e instanceof Error ? e.message : "unknown"
+                        }`
+                      );
+                    }
+                  }}
+                />
+              ) : (
+                <BrowseTemplates
+                  isDark={isDark}
+                  onSelect={template => setSelectedTemplate(template)}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Delete confirm modal ── */}
+      {confirmDeleteAgent && (
+        <DeleteConfirmModal
+          agentName={confirmDeleteAgent.name}
+          isDark={isDark}
+          deleting={deleting === confirmDeleteAgent.id}
+          onCancel={() => setConfirmDeleteAgent(null)}
+          onConfirm={async () => {
+            const id = confirmDeleteAgent.id;
+            await handleDelete(id);
+            setConfirmDeleteAgent(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Delete confirm modal ────────────────────────────
+function DeleteConfirmModal({
+  agentName,
+  isDark,
+  deleting,
+  onCancel,
+  onConfirm,
+}: {
+  agentName: string;
+  isDark: boolean;
+  deleting: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      onClick={onCancel}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        className={`w-full max-w-[420px] rounded-2xl p-6 shadow-2xl ${
+          isDark
+            ? "border border-white/[0.1] bg-[#1C1C1C]"
+            : "border border-black/[0.08] bg-white"
+        }`}
+      >
+        <h3
+          className={`text-[16px] font-semibold ${
+            isDark ? "text-white" : "text-[#1A1A1A]"
+          }`}
+        >
+          Delete agent?
+        </h3>
+        <p
+          className={`mt-2 text-[13px] leading-relaxed ${
+            isDark ? "text-[#888]" : "text-[#787774]"
+          }`}
+        >
+          <span className={isDark ? "text-white" : "text-[#1A1A1A]"}>
+            {agentName}
+          </span>
+          {"  "}을(를) 삭제합니다. 되돌릴 수 없습니다.
+        </p>
+        <div className="mt-6 flex items-center justify-end gap-2">
+          <button
+            onClick={onCancel}
+            disabled={deleting}
+            className={`rounded-lg px-4 py-2 text-[13px] font-semibold transition-all active:scale-[0.97] disabled:opacity-50 ${
+              isDark
+                ? "border border-white/[0.12] text-white hover:bg-white/[0.06]"
+                : "border border-black/[0.1] text-[#1A1A1A] hover:bg-black/[0.05]"
+            }`}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={deleting}
+            className="rounded-lg bg-red-500 px-4 py-2 text-[13px] font-semibold text-white transition-all hover:bg-red-600 active:scale-[0.97] disabled:opacity-60"
+          >
+            {deleting ? "Deleting..." : "Delete"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── AgentCard ────────────────────────────────────────
+function AgentCard({
+  agent,
+  isDark,
+  onDelete,
+  onRun,
+}: {
+  agent: AgentSummary;
+  isDark: boolean;
+  deleting: boolean;
+  onDelete: () => void;
+  onRun: () => void;
+}) {
+  const cardBg = isDark ? "bg-[#1A1A1A]" : "bg-[#FAFAFA]";
+  const cardRing = isDark
+    ? "ring-1 ring-white/[0.06] hover:ring-white/[0.12]"
+    : "ring-1 ring-black/[0.06] hover:ring-black/[0.12]";
+  const title = isDark ? "text-white" : "text-[#1A1A1A]";
+  const muted = isDark ? "text-[#888]" : "text-[#787774]";
+
+  return (
+    <div
+      className={`group relative flex flex-col rounded-xl p-6 transition-all hover:-translate-y-0.5 ${cardBg} ${cardRing}`}
+    >
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <h3
+          className={`min-w-0 flex-1 truncate text-[16px] font-semibold tracking-[-0.01em] ${title}`}
+        >
+          {agent.name}
+        </h3>
+        <button
+          onClick={e => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg transition-colors ${
+            isDark
+              ? "text-[#666] hover:bg-white/[0.06] hover:text-white"
+              : "text-[#999] hover:bg-black/[0.05] hover:text-[#1A1A1A]"
+          }`}
+          aria-label="Delete agent"
+          title="Delete agent"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      </div>
+      <p className={`mb-5 line-clamp-2 min-h-[36px] text-[13px] leading-relaxed ${muted}`}>
+        {agent.description || "—"}
+      </p>
+
+      <div className="mt-auto flex items-center justify-between">
+        <span
+          className={`font-mono text-[10px] ${isDark ? "text-[#555]" : "text-[#B4B4B0]"}`}
+        >
+          {new Date(agent.updatedAt).toLocaleDateString()}
+        </span>
+        <button
+          onClick={onRun}
+          className={`flex h-7 items-center gap-1 rounded-lg px-3 text-[12px] font-semibold transition-all active:scale-[0.97] ${
+            isDark
+              ? "bg-white text-[#0A0A0A] hover:bg-[#E8E8E5]"
+              : "bg-[#1A1A1A] text-white hover:bg-[#333]"
+          }`}
+        >
+          <Play className="h-3 w-3" />
+          Run
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Loading skeleton ────────────────────────────────
+function AgentsLoadingGrid({ isDark }: { isDark: boolean }) {
+  return (
+    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+      {[0, 1, 2].map(i => (
+        <div
+          key={i}
+          className={`h-[180px] animate-pulse rounded-xl ${
+            isDark
+              ? "bg-[#1A1A1A] ring-1 ring-white/[0.06]"
+              : "bg-[#FAFAFA] ring-1 ring-black/[0.06]"
+          }`}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ─── Error card ──────────────────────────────────────
+function ErrorCard({ message, isDark }: { message: string; isDark: boolean }) {
+  return (
+    <div
+      className={`rounded-xl px-8 py-10 text-center ${
+        isDark ? "bg-[#1A1A1A]" : "bg-[#FAFAFA]"
+      } ring-1 ring-red-500/20`}
+    >
+      <p className="text-[14px] text-red-400">{message}</p>
+    </div>
+  );
+}
+
+// ─── Empty state ─────────────────────────────────────
+function EmptyState({
+  isDark,
+  onCreate,
+}: {
+  isDark: boolean;
+  onCreate: () => void;
+}) {
+  return (
+    <div
+      className={`flex flex-col items-center justify-center rounded-xl px-8 py-20 text-center ${
+        isDark
+          ? "bg-[#1A1A1A] ring-1 ring-white/[0.06]"
+          : "bg-[#FAFAFA] ring-1 ring-black/[0.06]"
+      }`}
+    >
+      <div
+        className={`mb-5 flex h-12 w-12 items-center justify-center rounded-xl ring-1 ${
+          isDark
+            ? "bg-white/[0.04] ring-white/[0.06]"
+            : "bg-black/[0.03] ring-black/[0.06]"
+        }`}
+      >
+        <Bot className={`h-5 w-5 ${isDark ? "text-[#888]" : "text-[#787774]"}`} />
+      </div>
+      <h3
+        className={`mb-2 text-[18px] font-semibold tracking-[-0.01em] ${
+          isDark ? "text-white" : "text-[#1A1A1A]"
+        }`}
+      >
+        아직 에이전트가 없습니다
+      </h3>
+      <p className={`mb-6 text-[13px] ${isDark ? "text-[#888]" : "text-[#787774]"}`}>
+        첫 번째 하네스 에이전트를 만들어보세요.
+      </p>
+      <button
+        onClick={onCreate}
+        className={`inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-[14px] font-semibold transition-all active:scale-[0.97] ${
+          isDark
+            ? "bg-white text-[#0A0A0A] hover:bg-[#E8E8E5]"
+            : "bg-[#1A1A1A] text-white hover:bg-[#333]"
+        }`}
+      >
+        <Plus className="h-3.5 w-3.5" />
+        New agent
+      </button>
     </div>
   );
 }

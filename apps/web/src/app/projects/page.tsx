@@ -125,6 +125,7 @@ import {
 
 // ─── Theme — shared implementation ──────────────────────
 import { useThemePref as useTheme } from "@/lib/hooks/useThemePref";
+import { AgentsSidebar } from "@/app/agents/_components/AgentsSidebar";
 
 // ─── Recent Projects ──────────────────────
 interface RecentProject {
@@ -858,8 +859,8 @@ function ProjectsContent() {
       transition={{ duration: 0.3 }}
       className={`flex h-screen ${isDark ? "bg-[#1A1A1A]" : "bg-white"}`}
     >
-      {/* Sidebar */}
-      <Sidebar isDark={isDark} toggleTheme={toggleTheme} activeTab={activeTab} onTabChange={setActiveTab} recentProjects={projects} username={username} plan={plan} dailyUsage={dailyUsage} dailyLimit={dailyLimit} onNavigate={(path) => router.push(path)} />
+      {/* Sidebar — shared across /agents and /projects */}
+      <AgentsSidebar />
 
       {/* Main content */}
       <motion.div

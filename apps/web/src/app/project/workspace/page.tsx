@@ -10,12 +10,15 @@ const chatRequestPromiseKey: string | null = null;
 const chatRequestCounter = 0;
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   Loader2, Figma, FolderOpen, Github, X, Check, Plus, ArrowLeft, Blend,
   Link as LinkIcon, Terminal, Eye, Zap, Command, Sparkles,
   PanelLeftClose, PanelLeftOpen, ChevronDown, ChevronRight, ArrowRight, Play, Square, Clock,
   Sun, Moon, RefreshCw, ExternalLink, MessageSquare, CheckSquare, Package, Settings, Search, Palette, FileCode, ChevronUp,
-  Globe, Code, Layout, Blocks, Send, MousePointerClick, Smartphone, Server, Copy, Monitor, Trash2,
+  Globe, Code, Layout, Blocks, Send, MousePointerClick, Smartphone, Server, Copy, CheckCheck, Monitor, Trash2,
+  ThumbsUp, ThumbsDown, Share, MoreHorizontal, FileText,
 } from "lucide-react";
 
 // ─── Theme System ─────────────────────────────────────
@@ -93,12 +96,15 @@ import { FileTreeBrowser } from "@/components/workspace/FileTreeBrowser";
 import { DesignSystemDashboard } from "@/components/design-system/DesignSystemDashboard";
 import { FigmaClient } from "@/lib/figma/client";
 import { trpc } from "@/lib/trpc/client";
+import { MCP_PRESETS, MCP_LOGO_MAP, type MCPPreset } from "@/lib/mcp/presets-client";
+import { formatMCPError } from "@/lib/mcp/error";
+import { useMCPConnect } from "@/lib/mcp/useMCPConnect";
 import { useAgentSessionStore } from "@/lib/store/agent-session-store";
 import { useAgentSessionsStore } from "@/lib/store/agent-sessions-store";
 import { useAgentSessionsSync } from "@/lib/hooks/useAgentSessionsSync";
 import { useBackgroundSessionPolling } from "@/lib/hooks/useBackgroundSessionPolling";
 import { AgentActivityFeed } from "@/components/agent/AgentActivityFeed";
-import { AgentSessionsSidebar } from "@/components/agent/AgentSessionsSidebar";
+import { AgentsSidebar } from "@/app/agents/_components/AgentsSidebar";
 import nextDynamic from "next/dynamic";
 
 // Monaco Editor (dynamic import for SSR compatibility)
@@ -713,104 +719,10 @@ function MCPConnectedModal({ serverName, logo, toolCount, onClose }: {
   );
 }
 
-// ─── MCP Presets (synced with registry) ───────────────
-interface MCPPreset {
-  id: string; name: string; icon: string; logo: string; category: string; hint: string;
-  auth: "oauth" | "token" | "none";   // Authentication method
-  authUrl?: string;                   // OAuth redirect URL (auth === "oauth")
-  permissions: string[];              // Permission descriptions shown to the user
-  requiresLogin: boolean;             // Whether separate login is required (GitHub is already logged in)
-}
-
-const MCP_PRESETS: MCPPreset[] = [
-  {
-    id: "figma", name: "Figma", icon: "figma", logo: "/mcp-icons/figma.svg", category: "design",
-    hint: "Design files, node trees, styles, image rendering",
-    auth: "oauth", authUrl: "/api/auth/figma", requiresLogin: true,
-    permissions: ["Read design files and components", "Render frames as images", "Extract design tokens and styles"],
-  },
-  {
-    id: "github", name: "GitHub", icon: "github", logo: "/mcp-icons/github.svg", category: "code",
-    hint: "Repos, file browsing, code search, framework detection",
-    auth: "oauth", requiresLogin: false,  // Permissions already granted at GitHub login
-    permissions: ["Browse repositories and files", "Search code across repos", "Detect frameworks and dependencies", "Read and write file contents"],
-  },
-  {
-    id: "vercel", name: "Vercel", icon: "triangle", logo: "/mcp-icons/vercel.svg", category: "deploy",
-    hint: "Deployments, preview URLs, environment variables",
-    auth: "oauth", authUrl: "/api/auth/mcp?service=vercel", requiresLogin: true,
-    permissions: ["List and manage deployments", "Get preview URLs", "Read environment variables", "Check build logs"],
-  },
-  {
-    id: "supabase", name: "Supabase", icon: "database", logo: "/mcp-icons/supabase.svg", category: "data",
-    hint: "Database schema, tables, auth users, storage",
-    auth: "token", requiresLogin: true,
-    permissions: ["Read database schema and tables", "Query table data", "Manage auth users", "Access storage buckets"],
-  },
-  {
-    id: "sentry", name: "Sentry", icon: "bug", logo: "/mcp-icons/sentry.svg", category: "monitoring",
-    hint: "Error tracking, stack traces, performance issues",
-    auth: "oauth", authUrl: "/api/auth/mcp?service=sentry", requiresLogin: true,
-    permissions: ["List recent errors and exceptions", "Read stack traces", "View performance data"],
-  },
-  {
-    id: "linear", name: "Linear", icon: "list-checks", logo: "/mcp-icons/linear.svg", category: "project",
-    hint: "Issues, projects, cycles, team workflows",
-    auth: "oauth", authUrl: "/api/auth/mcp?service=linear", requiresLogin: true,
-    permissions: ["List issues and their status", "Get project details", "Search team workflows"],
-  },
-  {
-    id: "notion", name: "Notion", icon: "book-open", logo: "/mcp-icons/notion.svg", category: "docs",
-    hint: "Pages, databases, docs, knowledge base",
-    auth: "oauth", authUrl: "/api/auth/mcp?service=notion", requiresLogin: true,
-    permissions: ["Search pages and databases", "Read page content", "Access workspace structure"],
-  },
-  {
-    id: "slack", name: "Slack", icon: "message-square", logo: "/mcp-icons/slack.svg", category: "communication",
-    hint: "Channels, messages, notifications",
-    auth: "oauth", authUrl: "/api/auth/mcp?service=slack", requiresLogin: true,
-    permissions: ["List channels and conversations", "Read message history", "Search messages"],
-  },
-  {
-    id: "gmail", name: "Gmail", icon: "mail", logo: "/mcp-icons/gmail.svg", category: "communication",
-    hint: "Read, draft, and send emails",
-    auth: "oauth", authUrl: "/api/auth/mcp?service=gmail", requiresLogin: true,
-    permissions: ["Read email threads", "Draft and send emails", "Search inbox"],
-  },
-  {
-    id: "canva", name: "Canva", icon: "palette", logo: "/mcp-icons/canva.svg", category: "design",
-    hint: "Create, edit, and export designs",
-    auth: "oauth", authUrl: "/api/auth/mcp?service=canva", requiresLogin: true,
-    permissions: ["Search designs", "Create and edit designs", "Export as images"],
-  },
-  // ── Local/System ──
-  {
-    id: "filesystem", name: "Filesystem", icon: "folder", logo: "/mcp-icons/filesystem.svg", category: "system",
-    hint: "Read and write files on local filesystem",
-    auth: "none", requiresLogin: false,
-    permissions: ["Read files and directories", "Write and modify files", "Watch file changes"],
-  },
-  {
-    id: "windows-mcp", name: "Windows MCP", icon: "monitor", logo: "/mcp-icons/windows.svg", category: "system",
-    hint: "Windows OS integration and system control",
-    auth: "none", requiresLogin: false,
-    permissions: ["Manage files and folders", "Control system processes", "Access Windows settings"],
-  },
-  {
-    id: "pdf-viewer", name: "PDF Viewer", icon: "file-text", logo: "/mcp-icons/pdf.svg", category: "docs",
-    hint: "Read, search, and extract text from PDFs",
-    auth: "none", requiresLogin: false,
-    permissions: ["Read PDF documents", "Search text content", "Extract pages and images"],
-  },
-  {
-    id: "agent-bridge", name: "Agent Bridge", icon: "plug", logo: "/mcp-icons/meld.svg", category: "integration",
-    hint: "External AI agent integration (Cursor, Copilot)",
-    auth: "token", requiresLogin: false,
-    permissions: ["Receive commands from external agents", "Execute Meld operations", "Return results to agents"],
-  },
-];
-
-const MCP_LOGO_MAP = Object.fromEntries(MCP_PRESETS.map((p) => [p.id, p.logo]));
+// MCP presets + logo map live in @/lib/mcp/presets-client and are
+// imported at the top of this file. The `MCPPreset` type and
+// `MCP_PRESETS` / `MCP_LOGO_MAP` constants are shared with the
+// settings → Integrations tab.
 
 // Per-service brand colors (for logo background — light/dark)
 const MCP_COLOR_MAP: Record<string, { light: { bg: string; hover: string }; dark: { bg: string; hover: string } }> = {
@@ -3505,31 +3417,7 @@ function formatAiError(err: unknown): string {
   return clean.length > 120 ? clean.slice(0, 120) + "..." : clean || "Something went wrong. Please try again.";
 }
 
-function formatMCPError(err: unknown, adapterId: string): string {
-  const raw = err instanceof Error ? err.message : String(err);
-  const serviceName = adapterId.charAt(0).toUpperCase() + adapterId.slice(1);
-  if (raw === "TOKEN_REQUIRED" || raw.includes("TOKEN_REQUIRED")) {
-    return `API key required for ${serviceName}. Click to configure.`;
-  }
-  if (raw.startsWith("LOGIN_REQUIRED:")) {
-    const service = raw.split(":")[1] || serviceName;
-    return `Sign in to ${service} first.`;
-  }
-  if (raw.includes("ECONNREFUSED") || raw.includes("fetch") || raw.includes("network") || raw.includes("Failed to fetch")) {
-    return `Could not reach ${serviceName}. Check your connection.`;
-  }
-  if (raw.includes("401") || raw.includes("403") || raw.includes("Unauthorized")) {
-    return `${serviceName} credentials expired. Please reconnect.`;
-  }
-  if (raw.includes("timeout") || raw.includes("ETIMEDOUT")) {
-    return `${serviceName} is not responding. Try again later.`;
-  }
-  if (raw.includes("404") || raw.includes("Not Found")) {
-    return `${serviceName} service not found. Check your configuration.`;
-  }
-  const clean = raw.replace(/Error invoking remote method '[^']+': /, "").trim();
-  return clean.length > 100 ? clean.slice(0, 100) + "..." : clean || `Could not connect to ${serviceName}.`;
-}
+// formatMCPError moved to @/lib/mcp/error (shared with settings).
 
 // ─── Floating Chat Bar ────────────────────────────────
 // ─── Skills Submenu (search + toggle + recommendations) ──────
@@ -3903,13 +3791,418 @@ function FloatingChatBar({ projectId, mode, githubOwner, githubRepo, messages, s
   );
 }
 
+// ─── Browser Activity Feed ────────────────────────────
+// Manus-style cards shown in the chat panel when the agent performs web
+// searches or visits URLs. One card per activity; the same entry updates
+// in place as its status transitions running → done.
+function BrowserActivityFeed() {
+  const browserActivity = useAgentStore(s => s.browserActivity);
+  if (browserActivity.length === 0) return null;
+
+  return (
+    <div className="mb-5 space-y-2">
+      {browserActivity.map((entry, i) => {
+        if (entry.kind === "search") {
+          const isRunning = entry.status === "running";
+          const isError = entry.status === "error";
+          return (
+            <div
+              key={`search-${i}-${entry.query}`}
+              className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3.5"
+            >
+              <div className="mb-2 flex items-center gap-2.5">
+                <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md bg-blue-500/15 ring-1 ring-blue-500/25">
+                  {isRunning ? (
+                    <Loader2 className="h-3 w-3 animate-spin text-blue-400" />
+                  ) : isError ? (
+                    <X className="h-3 w-3 text-red-400" />
+                  ) : (
+                    <Search className="h-3 w-3 text-blue-400" />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-mono text-[9px] uppercase tracking-[0.15em] text-[#666]">
+                    {isRunning ? "Searching" : isError ? "Search failed" : "Web search"}
+                  </p>
+                  <p className="truncate text-[13px] font-medium text-[#E8E8E5]">
+                    {entry.query}
+                  </p>
+                </div>
+              </div>
+              {entry.results && entry.results.length > 0 && (
+                <ul className="mt-2 space-y-1.5 border-t border-white/[0.05] pt-2.5">
+                  {entry.results.slice(0, 5).map((r, j) => (
+                    <li key={j}>
+                      <a
+                        href={r.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="group flex items-start gap-2 rounded-lg px-1 py-1 transition-colors hover:bg-white/[0.03]"
+                      >
+                        <span className="mt-[3px] inline-block h-1 w-1 flex-shrink-0 rounded-full bg-[#444] group-hover:bg-blue-400" />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[12px] font-medium text-[#ccc] group-hover:text-white">
+                            {r.title}
+                          </p>
+                          <p className="truncate text-[10px] text-[#555]">{r.url}</p>
+                        </div>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          );
+        }
+        // Browse entry
+        const isRunning = entry.status === "running";
+        const isError = entry.status === "error";
+        let host = entry.url;
+        try {
+          host = new URL(entry.url).host;
+        } catch {}
+        return (
+          <div
+            key={`browse-${i}-${entry.url}`}
+            className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3.5"
+          >
+            <div className="mb-2 flex items-center gap-2.5">
+              <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md bg-indigo-500/15 ring-1 ring-indigo-500/25">
+                {isRunning ? (
+                  <Loader2 className="h-3 w-3 animate-spin text-indigo-400" />
+                ) : isError ? (
+                  <X className="h-3 w-3 text-red-400" />
+                ) : (
+                  <Globe className="h-3 w-3 text-indigo-400" />
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="font-mono text-[9px] uppercase tracking-[0.15em] text-[#666]">
+                  {isRunning ? "Visiting" : isError ? "Visit failed" : "Page visited"}
+                </p>
+                <p className="truncate text-[13px] font-medium text-[#E8E8E5]">
+                  {entry.title || host}
+                </p>
+              </div>
+              <a
+                href={entry.url}
+                target="_blank"
+                rel="noreferrer"
+                className="flex-shrink-0 rounded-md p-1 text-[#666] transition-colors hover:bg-white/[0.06] hover:text-white"
+                aria-label="Open"
+              >
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+            {entry.screenshotUrl && (
+              <div className="mt-2 overflow-hidden rounded-lg ring-1 ring-white/[0.06]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={entry.screenshotUrl}
+                  alt={entry.title || entry.url}
+                  className="block h-auto w-full"
+                />
+              </div>
+            )}
+            {entry.description && (
+              <p className="mt-2 line-clamp-2 text-[11px] leading-relaxed text-[#888]">
+                {entry.description}
+              </p>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Message Action Bar ──────────────────────────────
+// 6-button row shown under every assistant reply (workspace only).
+// Matches Manus / ChatGPT layout: copy · like · dislike · share · retry · more.
+// ─── Markdown Renderer ───────────────────────────────
+// Pretty markdown for assistant replies in the workspace chat. Supports
+// GitHub-flavored markdown (tables, strikethrough, task lists) plus our
+// own dark theme styling for headings, bold, code, blockquotes, lists.
+function MeldMarkdown({ content }: { content: string }) {
+  return (
+    <div className="meld-md text-[16px] leading-[1.7] text-[#D4D4D0]">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          // Headings
+          h1: ({ children }) => (
+            <h1 className="mb-3 mt-5 text-[22px] font-bold tracking-tight text-white first:mt-0">
+              {children}
+            </h1>
+          ),
+          h2: ({ children }) => (
+            <h2 className="mb-2.5 mt-5 text-[19px] font-bold tracking-tight text-white first:mt-0">
+              {children}
+            </h2>
+          ),
+          h3: ({ children }) => (
+            <h3 className="mb-2 mt-4 text-[17px] font-semibold tracking-tight text-white first:mt-0">
+              {children}
+            </h3>
+          ),
+          h4: ({ children }) => (
+            <h4 className="mb-1.5 mt-3 text-[15px] font-semibold text-white first:mt-0">
+              {children}
+            </h4>
+          ),
+          // Paragraph
+          p: ({ children }) => (
+            <p className="mb-3 last:mb-0">{children}</p>
+          ),
+          // Strong / em
+          strong: ({ children }) => (
+            <strong className="font-semibold text-white">{children}</strong>
+          ),
+          em: ({ children }) => (
+            <em className="italic text-[#E8E8E5]">{children}</em>
+          ),
+          // Lists
+          ul: ({ children }) => (
+            <ul className="my-3 ml-1 space-y-1.5 [&>li]:relative [&>li]:pl-5">
+              {children}
+            </ul>
+          ),
+          ol: ({ children }) => (
+            <ol className="my-3 ml-1 list-decimal space-y-1.5 pl-5 marker:text-[#777]">
+              {children}
+            </ol>
+          ),
+          li: ({ children, ...props }) => {
+            const isOrdered = "ordered" in props && props.ordered;
+            return (
+              <li className="leading-[1.65]">
+                {!isOrdered && (
+                  <span className="absolute left-1 top-[0.7em] h-[5px] w-[5px] rounded-full bg-[#777]" />
+                )}
+                {children}
+              </li>
+            );
+          },
+          // Inline code (block code is handled via the `pre` override).
+          code: ({ className, children, ...props }: {
+            className?: string;
+            children?: React.ReactNode;
+          }) => (
+            <code
+              className={
+                className?.startsWith("language-")
+                  ? `${className} font-mono`
+                  : "rounded-md border border-white/[0.06] bg-white/[0.05] px-1.5 py-[1px] font-mono text-[13px] text-[#E8B98A]"
+              }
+              {...props}
+            >
+              {children}
+            </code>
+          ),
+          // Code block wrapper
+          pre: ({ children }) => {
+            // children is usually a single <code> element; pull its
+            // language from className for the header chip.
+            const codeEl = children as { props?: { className?: string } };
+            const lang = /language-(\w+)/.exec(codeEl?.props?.className || "")?.[1];
+            return (
+              <div className="my-3 overflow-hidden rounded-xl border border-white/[0.08] bg-[#0F0F0F]">
+                {lang && (
+                  <div className="flex items-center justify-between border-b border-white/[0.06] bg-white/[0.02] px-3 py-1.5">
+                    <span className="font-mono text-[10px] uppercase tracking-wider text-[#666]">
+                      {lang}
+                    </span>
+                  </div>
+                )}
+                <pre className="overflow-x-auto px-4 py-3 font-mono text-[13px] leading-[1.6] text-[#D4D4D0]">
+                  {children}
+                </pre>
+              </div>
+            );
+          },
+          // Blockquote
+          blockquote: ({ children }) => (
+            <blockquote className="my-3 border-l-2 border-white/[0.15] pl-4 text-[#A8A8A0] italic">
+              {children}
+            </blockquote>
+          ),
+          // Tables — GFM
+          table: ({ children }) => (
+            <div className="my-4 overflow-x-auto rounded-xl border border-white/[0.08]">
+              <table className="w-full border-collapse text-[14px]">
+                {children}
+              </table>
+            </div>
+          ),
+          thead: ({ children }) => (
+            <thead className="bg-white/[0.04]">{children}</thead>
+          ),
+          tbody: ({ children }) => <tbody>{children}</tbody>,
+          tr: ({ children }) => (
+            <tr className="border-b border-white/[0.05] last:border-0">
+              {children}
+            </tr>
+          ),
+          th: ({ children }) => (
+            <th className="px-4 py-2.5 text-left text-[12px] font-semibold uppercase tracking-wider text-[#888]">
+              {children}
+            </th>
+          ),
+          td: ({ children }) => (
+            <td className="px-4 py-2.5 align-top text-[14px] text-[#D4D4D0]">
+              {children}
+            </td>
+          ),
+          // Links
+          a: ({ children, href }) => (
+            <a
+              href={href}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="text-[#9BB5FF] underline decoration-white/20 underline-offset-2 transition-colors hover:text-[#B8CBFF] hover:decoration-white/40"
+            >
+              {children}
+            </a>
+          ),
+          // Horizontal rule
+          hr: () => <hr className="my-5 border-t border-white/[0.08]" />,
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
+  );
+}
+
+function MessageActionBar({ content }: { content: string }) {
+  const [copied, setCopied] = useState(false);
+  const [shared, setShared] = useState(false);
+  const [feedback, setFeedback] = useState<"like" | "dislike" | null>(null);
+  const [moreOpen, setMoreOpen] = useState(false);
+
+  const handleCopy = () => {
+    void navigator.clipboard.writeText(content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1800);
+  };
+
+  const handleShare = async () => {
+    try {
+      const nav = navigator as Navigator & {
+        share?: (data: { title?: string; text?: string; url?: string }) => Promise<void>;
+      };
+      if (nav.share) {
+        await nav.share({ title: "Meld", text: content });
+      } else {
+        await nav.clipboard.writeText(content);
+      }
+      setShared(true);
+      setTimeout(() => setShared(false), 1800);
+    } catch {
+      // user dismissed
+    }
+  };
+
+  const btnCls =
+    "flex h-8 w-8 items-center justify-center rounded-lg text-[#666] transition-colors hover:bg-white/[0.06] hover:text-[#E8E8E5]";
+
+  return (
+    <div className="mt-3 flex items-center gap-1">
+      <button onClick={handleCopy} className={btnCls} title="Copy" aria-label="Copy">
+        {copied ? (
+          <CheckCheck className="h-4 w-4 text-emerald-400" />
+        ) : (
+          <Copy className="h-4 w-4" />
+        )}
+      </button>
+      <button
+        onClick={() => setFeedback((f) => (f === "like" ? null : "like"))}
+        className={`${btnCls} ${feedback === "like" ? "!bg-white/[0.08] !text-[#E8E8E5]" : ""}`}
+        title="Good response"
+        aria-label="Good response"
+      >
+        <ThumbsUp className="h-4 w-4" />
+      </button>
+      <button
+        onClick={() => setFeedback((f) => (f === "dislike" ? null : "dislike"))}
+        className={`${btnCls} ${feedback === "dislike" ? "!bg-white/[0.08] !text-[#E8E8E5]" : ""}`}
+        title="Bad response"
+        aria-label="Bad response"
+      >
+        <ThumbsDown className="h-4 w-4" />
+      </button>
+      <button onClick={handleShare} className={btnCls} title="Share" aria-label="Share">
+        {shared ? (
+          <CheckCheck className="h-4 w-4 text-emerald-400" />
+        ) : (
+          <Share className="h-4 w-4" />
+        )}
+      </button>
+      <button className={btnCls} title="Retry" aria-label="Retry">
+        <RefreshCw className="h-4 w-4" />
+      </button>
+      <div className="relative">
+        <button
+          onClick={() => setMoreOpen((v) => !v)}
+          className={`${btnCls} ${moreOpen ? "!bg-white/[0.08] !text-[#E8E8E5]" : ""}`}
+          title="More"
+          aria-label="More options"
+          aria-expanded={moreOpen}
+        >
+          <MoreHorizontal className="h-4 w-4" />
+        </button>
+        {moreOpen && (
+          <>
+            <div
+              className="fixed inset-0 z-40"
+              onClick={() => setMoreOpen(false)}
+              aria-hidden
+            />
+            <div className="absolute left-0 top-9 z-50 min-w-[180px] overflow-hidden rounded-xl bg-[#1E1E1E] py-1 shadow-xl ring-1 ring-white/[0.08]">
+              <button
+                onClick={() => {
+                  handleCopy();
+                  setMoreOpen(false);
+                }}
+                className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-[12px] text-[#ccc] transition-colors hover:bg-white/[0.06]"
+              >
+                <Copy className="h-3.5 w-3.5" />
+                Copy as markdown
+              </button>
+              <button
+                onClick={() => setMoreOpen(false)}
+                className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-[12px] text-[#ccc] transition-colors hover:bg-white/[0.06]"
+              >
+                <FileText className="h-3.5 w-3.5" />
+                Export as file
+              </button>
+              <button
+                onClick={() => setMoreOpen(false)}
+                className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-[12px] text-[#ccc] transition-colors hover:bg-white/[0.06]"
+              >
+                <ArrowRight className="h-3.5 w-3.5" />
+                Continue in new session
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Chat History Panel (Sidebar) ─────────────────────
-function ChatHistoryPanel({ messages, setMessages, onOpenSettings, onOpenSkills, onOpenMCPHub, fullscreen }: {
+function ChatHistoryPanel({ messages, setMessages, onOpenSettings, onOpenSkills, onOpenMCPHub, onMCPConnectRequest, onMCPDismissRequest, fullscreen }: {
   messages: Array<{ role: "user" | "assistant"; content: string; id: string; duration?: number; timestamp?: number }>;
   setMessages: React.Dispatch<React.SetStateAction<Array<{ role: "user" | "assistant"; content: string; id: string; duration?: number; timestamp?: number }>>>;
   onOpenSettings: () => void;
   onOpenSkills: () => void;
   onOpenMCPHub: () => void;
+  /** Bridge to WorkspaceContent's handleMCPConnect — invoked when the
+   *  inline card inside AgentActivityFeed is clicked. */
+  onMCPConnectRequest?: (serverId: string) => void;
+  /** Called when the user dismisses an inline MCP request card. */
+  onMCPDismissRequest?: (serverId: string) => void;
   fullscreen?: boolean;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -3944,6 +4237,37 @@ function ChatHistoryPanel({ messages, setMessages, onOpenSettings, onOpenSkills,
   const agentSession = useAgentSessionStore();
   const designSystem = useDesignSystemStore();
   const mcpStore = useMCPStore();
+
+  // Did the agent actually do real "project work" this run? Used to hide
+  // the activity feed for trivial conversational answers (e.g. greeting,
+  // a simple question that needs no tools). Activity feed should ONLY
+  // appear when files are written, commands are run, browsing happens,
+  // etc. — basically anything that produced an artifact.
+  const isProjectWorkSession = (events: typeof agentSession.events): boolean => {
+    return (events as Array<{ type: string; toolName?: string }>).some((e) => {
+      if (e.type === "file_edit_auto" || e.type === "file_edit") return true;
+      if (e.type === "file_delete" || e.type === "file_rename") return true;
+      if (e.type === "command_start" || e.type === "command_done") return true;
+      if (e.type === "devServer") return true;
+      if (e.type === "search_start" || e.type === "search_results") return true;
+      if (e.type === "browse_start" || e.type === "browser_screenshot") return true;
+      if (e.type === "tool_call") {
+        const name = e.toolName ?? "";
+        // Anything that's not just a passive read counts as project work.
+        if (
+          name === "write_file" ||
+          name === "delete_file" ||
+          name === "rename_file" ||
+          name === "run_command" ||
+          name === "web_search" ||
+          name === "browse_url"
+        ) {
+          return true;
+        }
+      }
+      return false;
+    });
+  };
 
   // Build project context for ai.chat
   const buildProjectContext = async () => {
@@ -4100,9 +4424,27 @@ function ChatHistoryPanel({ messages, setMessages, onOpenSettings, onOpenSkills,
     return cleanup;
   }, []);
 
+  // Auto-scroll to the bottom whenever new content arrives. We schedule
+  // two animation frames so the scroll happens AFTER React has painted
+  // the new message — measuring scrollHeight too early can leave the
+  // viewport stuck near the previous bottom.
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages.length, agentSession.events.length]);
+    const el = scrollRef.current;
+    if (!el) return;
+    const scrollNow = () => {
+      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    };
+    const raf1 = requestAnimationFrame(() => {
+      const raf2 = requestAnimationFrame(scrollNow);
+      // store inner raf so cleanup can cancel it
+      (el as unknown as { __raf2?: number }).__raf2 = raf2;
+    });
+    return () => {
+      cancelAnimationFrame(raf1);
+      const inner = (el as unknown as { __raf2?: number }).__raf2;
+      if (inner) cancelAnimationFrame(inner);
+    };
+  }, [messages, agentSession.events.length]);
 
   // Auto-trigger AI when external code adds a user message (e.g. "Fix with AI")
   // Only fires for messages added externally — NOT from handleSend or onStartWithPrompt.
@@ -4155,6 +4497,10 @@ function ChatHistoryPanel({ messages, setMessages, onOpenSettings, onOpenSkills,
 
           // Web mode → E2B agent-run with polling
           agentSession.startSession();
+          // Reset per-run browser activity + pending MCP prompt so each run
+          // starts from a clean slate.
+          useAgentStore.getState().clearBrowserActivity();
+          useAgentStore.getState().setMcpRequest(null);
           agentSession.addEvent({ type: "thinking", content: "Starting Meld AI agent..." });
 
           try {
@@ -4198,6 +4544,96 @@ function ChatHistoryPanel({ messages, setMessages, onOpenSettings, onOpenSkills,
                   // Dev server event — set preview URL
                   if (event.type === "devServer" && typeof event.url === "string") {
                     setDevServerUrl(event.url);
+                  }
+                  // File write — grow the file tree + cache content in the
+                  // agent store. WorkspaceContent subscribes to
+                  // `lastChangedFilePath` and handles opening the editor tab.
+                  // We also snapshot the previous content (if any) into the
+                  // current turn so the "되돌리기" button can rewind to the
+                  // file state right before this turn.
+                  if (
+                    (event.type === "file_edit_auto" || event.type === "file_edit") &&
+                    typeof event.filePath === "string"
+                  ) {
+                    const store = useAgentStore.getState();
+                    const filePath = event.filePath;
+                    const prevContent = store.fileContents[filePath];
+                    // Find the most recent user message id — that's the
+                    // current turn id. (Falls back to a literal label if
+                    // none exists, which shouldn't happen during a live run.)
+                    const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
+                    const turnId = lastUserMsg?.id ?? "no-turn";
+                    if (prevContent !== undefined) {
+                      store.captureSnapshotForTurn(turnId, filePath, prevContent);
+                    } else {
+                      // Brand new file — capture empty string so rollback
+                      // restores it to "did not exist before this turn".
+                      store.captureSnapshotForTurn(turnId, filePath, "");
+                    }
+                    store.upsertFileByPath(filePath);
+                    if (typeof event.content === "string") {
+                      store.setFileContent(filePath, event.content);
+                    }
+                    store.setSelectedFilePath(filePath);
+                  }
+                  // Web search / browsing — push to browserActivity so the
+                  // chat panel can render Manus-style "searching / visiting"
+                  // cards with results + screenshots.
+                  if (event.type === "search_start" && typeof event.query === "string") {
+                    useAgentStore.getState().pushBrowserActivity({
+                      kind: "search",
+                      query: event.query,
+                      status: "running",
+                      timestamp: Date.now(),
+                    });
+                  }
+                  if (event.type === "search_results" && typeof event.query === "string") {
+                    useAgentStore.getState().pushBrowserActivity({
+                      kind: "search",
+                      query: event.query,
+                      status: "done",
+                      results: Array.isArray(event.results) ? event.results : [],
+                      timestamp: Date.now(),
+                    });
+                  }
+                  if (event.type === "search_error" && typeof event.query === "string") {
+                    useAgentStore.getState().pushBrowserActivity({
+                      kind: "search",
+                      query: event.query,
+                      status: "error",
+                      timestamp: Date.now(),
+                    });
+                  }
+                  if (event.type === "browse_start" && typeof event.url === "string") {
+                    useAgentStore.getState().pushBrowserActivity({
+                      kind: "browse",
+                      url: event.url,
+                      status: "running",
+                      timestamp: Date.now(),
+                    });
+                  }
+                  if (event.type === "browser_screenshot" && typeof event.url === "string") {
+                    useAgentStore.getState().pushBrowserActivity({
+                      kind: "browse",
+                      url: event.url,
+                      status: "done",
+                      title: typeof event.title === "string" ? event.title : undefined,
+                      screenshotUrl: typeof event.screenshotUrl === "string" ? event.screenshotUrl : undefined,
+                      description: typeof event.description === "string" ? event.description : undefined,
+                      timestamp: Date.now(),
+                    });
+                  }
+                  // Agent is asking the user to connect an MCP server.
+                  // Stash it in the store so WorkspaceContent can show a modal.
+                  if (
+                    event.type === "mcp_request" &&
+                    typeof event.serverId === "string" &&
+                    typeof event.reason === "string"
+                  ) {
+                    useAgentStore.getState().setMcpRequest({
+                      serverId: event.serverId,
+                      reason: event.reason,
+                    });
                   }
                 }
 
@@ -4576,6 +5012,15 @@ function ChatHistoryPanel({ messages, setMessages, onOpenSettings, onOpenSkills,
           ref={inputRef}
           rows={2}
           value={input}
+          // Block all browser autofill / history suggestions / password
+          // managers so clicking the input never re-injects an old prompt.
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
+          data-form-type="other"
+          data-lpignore="true"
+          data-1p-ignore="true"
           onChange={(e) => {
             const val = e.target.value;
             setInput(val);
@@ -4786,13 +5231,30 @@ function ChatHistoryPanel({ messages, setMessages, onOpenSettings, onOpenSkills,
             </button>
           )}
 
-          {/* Send */}
+          {/* Send / Stop — same button, swaps role while the agent is
+              working. While idle it sends the prompt; while processing it
+              cancels the in-flight run. */}
           <button
-            onClick={handleSend}
-            disabled={!input.trim() || isProcessing}
+            onClick={() => {
+              if (isProcessing) {
+                window.electronAgent?.agentLoop?.cancel();
+                agentSession.cancelSession();
+                setIsProcessing(false);
+                setProcessingStart(null);
+              } else {
+                handleSend();
+              }
+            }}
+            disabled={!isProcessing && !input.trim()}
+            aria-label={isProcessing ? "Stop generating" : "Send message"}
+            title={isProcessing ? "Stop generating" : "Send message"}
             className="flex h-8 w-8 items-center justify-center rounded-full bg-[#E8E8E5] text-[#1A1A1A] transition-all duration-200 hover:bg-white active:scale-[0.95] disabled:opacity-15"
           >
-            {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+            {isProcessing ? (
+              <Square className="h-3 w-3 fill-current" />
+            ) : (
+              <ArrowRight className="h-4 w-4" />
+            )}
           </button>
         </div>
       </div>
@@ -4805,64 +5267,88 @@ function ChatHistoryPanel({ messages, setMessages, onOpenSettings, onOpenSkills,
     const isError = msg.content.startsWith("Error:");
 
     if (isUser) {
+      // The store may hold a per-turn snapshot keyed by this message id.
+      // If so, show a small "되돌리기" button on hover that rewinds the
+      // file tree to the state right before the agent took this turn.
+      const hasSnapshot = !!useAgentStore.getState().fileSnapshots[msg.id];
       return (
-        <div key={msg.id} className="animate-fade-in-up group mb-8 flex justify-end">
-          <div className="relative max-w-[80%]">
-            <div className="rounded-2xl bg-[#3D3D3D] px-5 py-3.5 text-[16px] leading-[1.7] text-[#E8E8E5]">
-              <p className="whitespace-pre-wrap">{msg.content}</p>
-            </div>
-            <div className="mt-1.5 flex justify-end">
-              <button
-                onClick={() => { navigator.clipboard.writeText(msg.content); }}
-                className="rounded-md p-1 text-[#444] hover:text-[#888] transition-all duration-200 opacity-0 group-hover:opacity-100"
-                title="Copy message"
-              >
-                <Copy className="h-4 w-4" />
-              </button>
-            </div>
+        <div key={msg.id} className="group animate-fade-in-up mb-8 flex flex-col items-end">
+          <div className="max-w-[80%] rounded-2xl bg-[#3D3D3D] px-5 py-3.5 text-[16px] leading-[1.7] text-[#E8E8E5]">
+            <p className="whitespace-pre-wrap">{msg.content}</p>
           </div>
+          {hasSnapshot && (
+            <button
+              onClick={() => {
+                const restored = useAgentStore
+                  .getState()
+                  .restoreSnapshotForTurn(msg.id);
+                if (restored.length > 0) {
+                  // Push the restored content back to the sandbox via
+                  // writeFileFn so the dev server picks it up.
+                  const writeFn = useAgentStore.getState().writeFileFn;
+                  if (writeFn) {
+                    for (const p of restored) {
+                      const c = useAgentStore.getState().fileContents[p];
+                      if (typeof c === "string") void writeFn(p, c);
+                    }
+                  }
+                }
+              }}
+              className="mt-1.5 inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] text-[#666] opacity-0 transition-all hover:bg-white/[0.04] hover:text-[#bbb] group-hover:opacity-100"
+              title="이 메시지 직전 상태로 파일 복구"
+            >
+              <RefreshCw className="h-3 w-3" />
+              되돌리기
+            </button>
+          )}
         </div>
       );
     }
 
     return (
       <div key={msg.id} className="animate-fade-in-up group mb-8">
-        {/* Agent step history (Manus-style) — show above message */}
-        {!!(msg as Record<string, unknown>).showSteps && agentSession.events.length > 0 && (
-          <div className="mb-4">
-            <AgentActivityFeed
-              onApprove={() => {}} onReject={() => {}} onApproveAll={() => {}} onRejectAll={() => {}} onCancel={() => {}}
-            />
-          </div>
-        )}
-
-        {/* Message body with typewriter effect */}
-        <div className={`text-[16px] leading-[1.8] overflow-hidden ${
-          isError
-            ? "text-red-400"
-            : "text-[#D4D4D0]"
-        }`}>
-          <TypewriterText content={String(msg.content).replace("[Download ZIP]", "")} />
-          {String(msg.content).includes("[Download ZIP]") && !!(msg as Record<string, unknown>).generatedFiles && (
-            <button
-              onClick={() => downloadAsZip(
-                (msg as Record<string, unknown>).generatedFiles as Array<{ path: string; content: string }>,
-                useAgentStore.getState().projectName || "meld-project",
-              )}
-              className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-4 py-2 text-[14px] font-medium text-emerald-400 ring-1 ring-emerald-500/20 transition-all duration-200 hover:bg-emerald-500/15"
+        {/* Message body. Typewriter effect ONLY for the live (last) message
+            while the agent is actively producing it. Already-completed
+            replies render instantly so reopening a project doesn't replay
+            the entire response from scratch. */}
+        {(() => {
+          // Normalize: drop the ZIP marker, collapse 3+ blank lines to 2
+          // (markdown paragraph break) so over-padded responses don't
+          // leave huge gaps.
+          const raw = String(msg.content)
+            .replace("[Download ZIP]", "")
+            .replace(/\n{3,}/g, "\n\n")
+            .trim();
+          const isLive = isLast && (isProcessing || agentSession.status === "running");
+          return (
+            <div
+              className={`text-[16px] overflow-hidden ${
+                isError ? "text-red-400" : "text-[#D4D4D0]"
+              }`}
             >
-              <svg className="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 2v8m0 0l-3-3m3 3l3-3M3 12h10" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              Download ZIP
-            </button>
-          )}
-        </div>
+              {isLive ? (
+                <TypewriterText content={raw} />
+              ) : (
+                <MeldMarkdown content={raw} />
+              )}
+              {String(msg.content).includes("[Download ZIP]") && !!(msg as Record<string, unknown>).generatedFiles && (
+                <button
+                  onClick={() => downloadAsZip(
+                    (msg as Record<string, unknown>).generatedFiles as Array<{ path: string; content: string }>,
+                    useAgentStore.getState().projectName || "meld-project",
+                  )}
+                  className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-4 py-2 text-[14px] font-medium text-emerald-400 ring-1 ring-emerald-500/20 transition-all duration-200 hover:bg-emerald-500/15"
+                >
+                  <svg className="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 2v8m0 0l-3-3m3 3l3-3M3 12h10" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  Download ZIP
+                </button>
+              )}
+            </div>
+          );
+        })()}
 
-        {/* Action icons */}
-        <div className="mt-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-          <button onClick={() => { navigator.clipboard.writeText(msg.content); }} className="rounded-md p-1.5 text-[#444] hover:text-[#999] hover:bg-white/[0.04] transition-all" title="Copy">
-            <Copy className="h-4 w-4" />
-          </button>
-        </div>
+        {/* Action bar — 6-button Manus-style row */}
+        <MessageActionBar content={msg.content} />
       </div>
     );
   };
@@ -4918,60 +5404,66 @@ function ChatHistoryPanel({ messages, setMessages, onOpenSettings, onOpenSkills,
           {/* Messages + Agent Activity */}
           <div ref={scrollRef} className="flex-1 overflow-y-auto">
             {messages.length === 0 && !isProcessing && agentSession.status === "idle" ? (
-              <SidebarGuide onSetInput={setInput} />
+              <div />
             ) : (
               <div className={`space-y-2 py-5 ${fullscreen ? "px-12 max-w-[960px] mx-auto" : "px-6 max-w-[640px]"}`}>
                 {messages.map((msg, i) => renderMessage(msg, i === messages.length - 1))}
 
-                {/* Manus-style AI response — Meld logo + intent + thinking */}
-                {(isProcessing || agentSession.status === "running" || agentSession.status === "awaiting_approval" || agentSession.status === "completed" || agentSession.status === "error") && (
-                  <div className="animate-fade-in-up mb-8">
-                    {/* Meld identity — blackhole spinner */}
-                    <div className="flex items-center gap-3 mb-4">
-                      {(agentSession.status === "running" || agentSession.status === "awaiting_approval" || isProcessing) ? (
-                        <div className="blackhole-spinner h-8 w-8">
-                          <div className="ring-outer" />
-                          <div className="ring-inner" />
-                          <div className="core" />
-                        </div>
-                      ) : (
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#333]">
-                          <Check className="h-3.5 w-3.5 text-[#888]" />
-                        </div>
-                      )}
-                      <span className="text-[15px] font-semibold text-[#E8E8E5]">Meld</span>
-                    </div>
+                <BrowserActivityFeed />
 
-                    {/* Agent activity feed */}
-                    <div className="overflow-hidden">
-                      <AgentActivityFeedEnhanced
-                          agentSession={agentSession}
-                          processingStart={processingStart}
-                          onApprove={(id) => {
-                            agentSession.approveEdit(id);
-                            window.electronAgent?.agentLoop?.approveEdit(id, true);
-                          }}
-                          onReject={(id) => {
-                            agentSession.rejectEdit(id);
-                            window.electronAgent?.agentLoop?.approveEdit(id, false);
-                          }}
-                          onApproveAll={() => {
-                            agentSession.pendingEdits.filter(e => e.status === "pending").forEach(e => {
-                              window.electronAgent?.agentLoop?.approveEdit(e.toolCallId, true);
-                            });
-                            agentSession.approveAll();
-                          }}
-                          onRejectAll={() => {
-                            agentSession.pendingEdits.filter(e => e.status === "pending").forEach(e => {
-                              window.electronAgent?.agentLoop?.approveEdit(e.toolCallId, false);
-                            });
-                            agentSession.rejectAll();
-                          }}
-                          onCancel={() => { window.electronAgent?.agentLoop?.cancel(); agentSession.cancelSession(); setIsProcessing(false); setProcessingStart(null); }}
-                        />
-                      </div>
-                  </div>
-                )}
+                {/* Live activity feed — placeholder for the answer the agent
+                    is currently producing. Sits at the BOTTOM of the message
+                    list (right after the user's latest prompt) so it appears
+                    in the answer's eventual position.
+
+                    Shows whenever the user's latest message is awaiting a
+                    reply — on the first turn AND subsequent turns. The
+                    Manus-style blackhole spinner + section timeline lives
+                    inside AgentActivityFeed itself. */}
+                {(() => {
+                  const lastMsg = messages[messages.length - 1];
+                  const waitingForReply =
+                    isProcessing &&
+                    lastMsg?.role === "user" &&
+                    (agentSession.status === "running" ||
+                      agentSession.status === "awaiting_approval" ||
+                      agentSession.status === "idle");
+                  if (!waitingForReply) return null;
+                  return (
+                    <div className="animate-fade-in-up mb-8">
+                      <AgentActivityFeed
+                        onApprove={(id) => {
+                          agentSession.approveEdit(id);
+                          window.electronAgent?.agentLoop?.approveEdit(id, true);
+                        }}
+                        onReject={(id) => {
+                          agentSession.rejectEdit(id);
+                          window.electronAgent?.agentLoop?.approveEdit(id, false);
+                        }}
+                        onApproveAll={() => {
+                          agentSession.pendingEdits.filter(e => e.status === "pending").forEach(e => {
+                            window.electronAgent?.agentLoop?.approveEdit(e.toolCallId, true);
+                          });
+                          agentSession.approveAll();
+                        }}
+                        onRejectAll={() => {
+                          agentSession.pendingEdits.filter(e => e.status === "pending").forEach(e => {
+                            window.electronAgent?.agentLoop?.approveEdit(e.toolCallId, false);
+                          });
+                          agentSession.rejectAll();
+                        }}
+                        onCancel={() => {
+                          window.electronAgent?.agentLoop?.cancel();
+                          agentSession.cancelSession();
+                          setIsProcessing(false);
+                          setProcessingStart(null);
+                        }}
+                        onMCPConnect={onMCPConnectRequest}
+                        onMCPDismiss={onMCPDismissRequest}
+                      />
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </div>
@@ -5432,19 +5924,35 @@ function WorkspaceContent() {
   type MainTab = { id: string; label: string; type: "preview" | "mcp" | "tasks" | "marketplace" | "design" | "editor" | "settings"; filePath?: string };
   const [mainTabs, setMainTabs] = useState<MainTab[]>([{ id: "preview", label: "Preview", type: "preview" }]);
   const [activeMainTab, setActiveMainTab] = useState("preview");
+  // High-level toggle between the code editor view (shows the mainTabs bar
+  // + whatever editor/file tab is active) and the live preview view (the
+  // Preview/VM iframe). Agent runs default to "code" so the user sees
+  // files being written; flips to "preview" when dev server becomes ready.
+  const [rightView, setRightView] = useState<"code" | "preview">("code");
   const [editorContents, setEditorContents] = useState<Record<string, string>>({});
   const [editorDirty, setEditorDirty] = useState<Set<string>>(new Set());
+  // Tracks which file tabs have their diff view toggled on. Diff mode
+  // compares the current editor value against the most recent snapshot
+  // from agentStore.fileSnapshots (P0-3 rollback infrastructure).
+  const [diffEnabled, setDiffEnabled] = useState<Set<string>>(new Set());
   const addMainTab = (tab: MainTab) => {
     if (!mainTabs.find(t => t.id === tab.id)) setMainTabs(prev => [...prev, tab]);
     setActiveMainTab(tab.id);
+    // Opening an editor tab implies the user wants to see code, not the
+    // live preview — flip the segment toggle so the editor is visible.
+    if (tab.type === "editor") setRightView("code");
   };
   const openFileInEditor = async (filePath: string) => {
     const tabId = `file:${filePath}`;
     const fileName = filePath.split("/").pop() ?? filePath;
     if (!mainTabs.find(t => t.id === tabId)) {
       setMainTabs(prev => [...prev, { id: tabId, label: fileName, type: "editor", filePath }]);
-      // Read file content
-      if (agentStore.readFileFn && !editorContents[filePath]) {
+      // Prefer in-memory content cached from agent file_edit events
+      // (E2B cloud mode), fall back to readFileFn (Electron/local mode).
+      const cached = useAgentStore.getState().fileContents[filePath];
+      if (cached !== undefined) {
+        setEditorContents(prev => ({ ...prev, [filePath]: cached }));
+      } else if (agentStore.readFileFn && !editorContents[filePath]) {
         try {
           const content = await agentStore.readFileFn(filePath);
           if (content) {
@@ -5454,7 +5962,31 @@ function WorkspaceContent() {
       }
     }
     setActiveMainTab(tabId);
+    setRightView("code");
   };
+
+  // Auto-open the file the agent most recently wrote, so the right panel
+  // shows "live typing" as files arrive via polling. Subscribed via
+  // `lastChangedFilePath` which the polling loop updates.
+  const lastChangedFilePath = useAgentStore(s => s.lastChangedFilePath);
+  const lastWriteTs = useAgentStore(s => s.lastWriteTimestamp);
+  useEffect(() => {
+    if (!lastChangedFilePath) return;
+    const path = lastChangedFilePath;
+    const tabId = `file:${path}`;
+    const fileName = path.split("/").pop() ?? path;
+    const cached = useAgentStore.getState().fileContents[path];
+    if (cached !== undefined) {
+      setEditorContents(prev => ({ ...prev, [path]: cached }));
+    }
+    setMainTabs(prev =>
+      prev.find(t => t.id === tabId)
+        ? prev
+        : [...prev, { id: tabId, label: fileName, type: "editor", filePath: path }],
+    );
+    setActiveMainTab(tabId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastChangedFilePath, lastWriteTs]);
   const flattenFileTree = (entries: unknown[]): string[] => {
     const paths: string[] = [];
     for (const e of entries as Array<{ path: string; type: string; children?: unknown[] }>) {
@@ -5487,12 +6019,124 @@ function WorkspaceContent() {
     } catch { return []; }
   });
 
-  // Persist chat messages to localStorage
+  // Persist chat messages to localStorage (legacy, still used as an
+  // offline fallback). The authoritative store is Supabase via the
+  // workspaceProjectId effects below.
   useEffect(() => {
     if (chatMessages.length > 0) {
       localStorage.setItem(chatStorageKey, JSON.stringify(chatMessages));
     }
   }, [chatMessages, chatStorageKey]);
+
+  // ─── Workspace project persistence (server) ────────
+  // When loaded with ?projectId=xxx, restore the full chat history from
+  // Supabase. When the user sends their first message without a project
+  // id, we lazily create a new workspace_projects row and push the id
+  // into the URL so subsequent saves target the same conversation.
+  const [workspaceProjectId, setWorkspaceProjectId] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return new URL(window.location.href).searchParams.get("projectId");
+  });
+  const restoredProjectIdRef = useRef<string | null>(null);
+
+  // Restore messages from server on first mount when ?projectId is set.
+  useEffect(() => {
+    if (!workspaceProjectId) return;
+    if (restoredProjectIdRef.current === workspaceProjectId) return;
+    restoredProjectIdRef.current = workspaceProjectId;
+    void (async () => {
+      try {
+        const res = await fetch(`/api/workspace/projects/${workspaceProjectId}`);
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          messages?: Array<{
+            role: "user" | "assistant";
+            content: string;
+            clientId: string;
+            clientTs: number;
+            durationMs: number | null;
+          }>;
+        };
+        const restored = (data.messages ?? []).map((m) => ({
+          role: m.role,
+          content: m.content,
+          id: m.clientId,
+          timestamp: m.clientTs,
+          duration: m.durationMs ?? undefined,
+        }));
+        if (restored.length > 0) setChatMessages(restored);
+      } catch {
+        // ignore — user will still have localStorage fallback
+      }
+    })();
+  }, [workspaceProjectId]);
+
+  // Debounced save to server on chatMessages change.
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (chatMessages.length === 0) return;
+    const activeProjectId = workspaceProjectId;
+
+    // Capture the current buffer for the async save.
+    const buffer = chatMessages.map((m) => ({
+      role: m.role,
+      content: m.content,
+      clientId: m.id,
+      clientTs: m.timestamp ?? Date.now(),
+      durationMs: m.duration ?? null,
+    }));
+
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      void (async () => {
+        try {
+          let pid = activeProjectId;
+          // Lazily create the project on the first save so brand-new
+          // conversations get an id we can persist against.
+          if (!pid) {
+            const firstUserMsg = chatMessages.find((m) => m.role === "user");
+            const createRes = await fetch("/api/workspace/projects", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                firstPrompt: firstUserMsg?.content ?? null,
+              }),
+            });
+            if (!createRes.ok) return;
+            const createData = (await createRes.json()) as {
+              project?: { id: string };
+            };
+            pid = createData.project?.id ?? null;
+            if (!pid) return;
+            setWorkspaceProjectId(pid);
+            restoredProjectIdRef.current = pid;
+            // Reflect the id in the URL without triggering navigation so
+            // reload / back-forward preserves the project context.
+            if (typeof window !== "undefined") {
+              const url = new URL(window.location.href);
+              url.searchParams.set("projectId", pid);
+              window.history.replaceState({}, "", url.toString());
+              // Tell the shared sidebar to refetch so the new project
+              // appears immediately without a page reload.
+              window.dispatchEvent(new CustomEvent("workspaceProjectCreated"));
+            }
+          }
+          await fetch(`/api/workspace/projects/${pid}/messages`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ messages: buffer }),
+          });
+        } catch {
+          // ignore — localStorage keeps the data until next try
+        }
+      })();
+    }, 800);
+
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chatMessages]);
 
   // Multi-session sidebar sync: mirrors single-session store + chat messages
   // into the multi-session store so switching sessions restores both the
@@ -5993,35 +6637,22 @@ function WorkspaceContent() {
     return () => clearInterval(interval);
   }, []);
 
-  // tRPC mutation hooks
-  const mcpConnectMutation = trpc.mcp.connect.useMutation();
+  // tRPC mutation hooks (only registerCustom is still direct — connect
+  // goes through the shared useMCPConnect hook which handles store
+  // updates, error formatting, and the TOKEN_REQUIRED / LOGIN_REQUIRED
+  // sentinels in one place).
   const mcpRegisterMutation = trpc.mcp.registerCustom.useMutation();
+  const mcpConnectHook = useMCPConnect();
 
-  // Generic MCP connection handler
+  // Thin adapter that preserves the workspace-only UI affordances
+  // (the "just connected" highlight + the connecting-modal overlay)
+  // on top of the shared connect flow.
   const handleMCPConnect = async (adapterId: string, token?: string, opts?: { silent?: boolean }) => {
     if (!adapterId || typeof adapterId !== "string") return;
-    // Add to store if server is not present
-    if (!mcpStore.getServer(adapterId)) {
-      mcpStore.addServer({ adapterId, name: adapterId, icon: adapterId, category: "custom" });
-    }
-    mcpStore.setConnecting(adapterId);
     if (!opts?.silent) setMcpConnecting(adapterId);
-    try {
-      const result = await mcpConnectMutation.mutateAsync({ adapterId, token });
-      const toolCount = result?.toolCount ?? 0;
-      const meta = result?.meta ?? {};
-      mcpStore.setConnected(adapterId, toolCount, meta);
-      setMcpConnecting(null);
-      if (!opts?.silent) setMcpJustConnected(adapterId);
-    } catch (err) {
-      setMcpConnecting(null);
-      const errMsg = err instanceof Error ? err.message : "";
-      if (errMsg.startsWith("LOGIN_REQUIRED:") || errMsg === "TOKEN_REQUIRED") {
-        mcpStore.setDisconnected(adapterId);
-      } else {
-        mcpStore.setError(adapterId, formatMCPError(err, adapterId));
-      }
-    }
+    const result = await mcpConnectHook.connect(adapterId, token, { silent: opts?.silent });
+    setMcpConnecting(null);
+    if (result.ok && !opts?.silent) setMcpJustConnected(adapterId);
   };
 
   // MCP: Figma connection (called from modal)
@@ -6048,39 +6679,29 @@ function WorkspaceContent() {
 
   const hasSources = workspace.figma || workspace.local || workspace.github;
   const hasLocalFiles = !!(workspace.local?.connected);
-  // Chat-only fullscreen mode: messages exist but no project sources yet
-  const chatOnlyMode = !hasSources && !hasLocalFiles && !devServerReady && (chatMessages.length > 0 || promptTriggered);
+  // Files the E2B agent has written via tool events count as sources for UI.
+  const hasAgentFiles = agentStore.fileTree.length > 0;
+  // Chat-only fullscreen mode: messages exist (or are about to be restored)
+  // but nothing to show on the right yet. Treat a pending projectId as
+  // "messages will arrive" so the empty-state placeholder never flashes.
+  const chatOnlyMode =
+    !hasSources &&
+    !hasLocalFiles &&
+    !devServerReady &&
+    !hasAgentFiles &&
+    (chatMessages.length > 0 || promptTriggered || !!workspaceProjectId);
   // Show sidebar if sources exist OR chat is active with messages (but NOT in chatOnlyMode)
-  const showSidebar = chatOnlyMode ? false : (hasSources || chatMessages.length > 0);
+  const showSidebar = chatOnlyMode
+    ? false
+    : hasSources || hasAgentFiles || chatMessages.length > 0;
 
   return (
     <div className={`flex flex-col h-screen ${t.bg}`}>
       {/* Main area */}
       <div className="relative flex flex-1 overflow-hidden">
-        {/* Multi-agent sessions sidebar (Manus/Claude hybrid) */}
-        {showSessionsSidebar && isDark && (
-          <AgentSessionsSidebar
-            onNewSession={() => {
-              agentSessionReset();
-              setChatMessages([]);
-              sessionsStoreSetActive(null);
-            }}
-            onSelectSession={(id) => {
-              const meta = useAgentSessionsStore.getState().getSession(id);
-              if (!meta) return;
-              // Reseed single-session store from the selected session's
-              // history so the activity feed shows the same step cards.
-              agentSessionReset();
-              const singleStore = useAgentSessionStore.getState();
-              for (const ev of meta.events) {
-                singleStore.addEvent(ev);
-              }
-              // Restore the full chat conversation (user prompts + assistant
-              // replies) for the selected session.
-              setChatMessages(meta.messages ?? []);
-            }}
-          />
-        )}
+        {/* Shared app-shell sidebar — same component used on /agents and
+            /projects so navigation feels consistent across the product. */}
+        <AgentsSidebar />
         {/* Source panel (left) — resizable */}
         <div
           className={`relative flex-shrink-0 ${isDark ? "bg-[#111111]" : "bg-white"} ${!showSidebar || sidebarCollapsed ? "w-0 overflow-hidden" : ""}`}
@@ -6088,7 +6709,23 @@ function WorkspaceContent() {
         >
           <div key={activeIconTab} className="h-full overflow-hidden animate-tab-slide-in" style={{ width: sidebarWidth }}>
             {activeIconTab === "chat" && (
-              <ChatHistoryPanel messages={chatMessages} setMessages={setChatMessages} onOpenSettings={() => addMainTab({ id: "settings", label: "Settings", type: "settings" as never })} onOpenSkills={() => { addMainTab({ id: "marketplace", label: "Skills & Plugins", type: "marketplace" }); setActiveMainTab("marketplace"); }} onOpenMCPHub={() => setShowMCPHub(true)} />
+              <ChatHistoryPanel
+                messages={chatMessages}
+                setMessages={setChatMessages}
+                onOpenSettings={() => addMainTab({ id: "settings", label: "Settings", type: "settings" as never })}
+                onOpenSkills={() => { addMainTab({ id: "marketplace", label: "Skills & Plugins", type: "marketplace" }); setActiveMainTab("marketplace"); }}
+                onOpenMCPHub={() => setShowMCPHub(true)}
+                onMCPConnectRequest={(serverId) => {
+                  const preset = MCP_PRESETS.find((p) => p.id === serverId);
+                  agentStore.setMcpRequest(null);
+                  if (preset?.auth === "token") {
+                    setMcpTokenModal({ adapterId: serverId, name: preset.name, hint: preset.hint });
+                  } else {
+                    void handleMCPConnect(serverId);
+                  }
+                }}
+                onMCPDismissRequest={() => agentStore.setMcpRequest(null)}
+              />
             )}
             {activeIconTab === "files" && (
               <div className={`flex h-full flex-col ${isDark ? "bg-[#111111]" : "bg-white"}`}>
@@ -6147,8 +6784,54 @@ function WorkspaceContent() {
 
         {/* Center: Tabs + Content */}
         <div className="relative flex flex-1 flex-col overflow-hidden">
-          {/* Tab bar — VSCode style (hide when only preview tab) */}
-          <div className={`flex items-end ${isDark ? "bg-[#181818]" : "bg-[#F0F0EE]"} ${mainTabs.length <= 1 ? "hidden" : ""}`}>
+          {/* Code / Preview segment toggle.
+              Lives above the tab bar. Only makes sense once the workspace
+              has real content to show (project sources or a live dev
+              server). Keeps both sides discoverable — the agent is often
+              writing files while a dev server is spinning up. */}
+          {(hasSources || hasLocalFiles || devServerReady || mainTabs.some(t => t.type === "editor")) && (
+            <div className={`flex items-center justify-center gap-1 border-b px-3 py-2 ${isDark ? "border-white/[0.06] bg-[#181818]" : "border-black/[0.06] bg-[#F0F0EE]"}`}>
+              <div className={`inline-flex items-center gap-0.5 rounded-xl p-0.5 ${isDark ? "bg-[#0E0E0E] ring-1 ring-white/[0.06]" : "bg-white ring-1 ring-black/[0.06]"}`}>
+                <button
+                  onClick={() => setRightView("code")}
+                  className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-medium transition-all ${
+                    rightView === "code"
+                      ? isDark ? "bg-white/[0.1] text-white" : "bg-[#1A1A1A] text-white"
+                      : isDark ? "text-[#777] hover:text-[#ccc]" : "text-[#787774] hover:text-[#1A1A1A]"
+                  }`}
+                  aria-pressed={rightView === "code"}
+                >
+                  <Code className="h-3.5 w-3.5" />
+                  Code
+                </button>
+                <button
+                  onClick={() => {
+                    setRightView("preview");
+                    setActiveMainTab("preview");
+                  }}
+                  disabled={!devServerReady}
+                  className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-medium transition-all ${
+                    rightView === "preview"
+                      ? isDark ? "bg-white/[0.1] text-white" : "bg-[#1A1A1A] text-white"
+                      : isDark ? "text-[#777] hover:text-[#ccc] disabled:text-[#444] disabled:hover:text-[#444]" : "text-[#787774] hover:text-[#1A1A1A] disabled:text-[#CCC] disabled:hover:text-[#CCC]"
+                  } disabled:cursor-not-allowed`}
+                  aria-pressed={rightView === "preview"}
+                  title={devServerReady ? "Show live preview" : "Preview will be available once the dev server is ready"}
+                >
+                  <Eye className="h-3.5 w-3.5" />
+                  Preview
+                  {devServerReady && (
+                    <span className="ml-1 h-1.5 w-1.5 rounded-full bg-emerald-400" aria-hidden />
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+          {/* Tab bar — VSCode style (hide when only preview tab OR when
+              we're in preview view — in preview mode the tab bar would
+              just show a stale file tab that's unrelated to what's on
+              screen, so we collapse it). */}
+          <div className={`flex items-end ${isDark ? "bg-[#181818]" : "bg-[#F0F0EE]"} ${mainTabs.length <= 1 || rightView === "preview" ? "hidden" : ""}`}>
             {mainTabs.map((tab) => {
               const isActive = activeMainTab === tab.id;
               const isDirty = tab.type === "editor" && editorDirty.has(tab.filePath!);
@@ -6215,14 +6898,37 @@ function WorkspaceContent() {
             {/* Chat-only fullscreen mode — no project yet, just chat */}
             {chatOnlyMode ? (
               <div className="h-full">
-                <ChatHistoryPanel messages={chatMessages} setMessages={setChatMessages} onOpenSettings={() => addMainTab({ id: "settings", label: "Settings", type: "settings" as never })} onOpenSkills={() => { addMainTab({ id: "marketplace", label: "Skills & Plugins", type: "marketplace" }); setActiveMainTab("marketplace"); }} onOpenMCPHub={() => setShowMCPHub(true)} fullscreen />
+                <ChatHistoryPanel
+                  messages={chatMessages}
+                  setMessages={setChatMessages}
+                  onOpenSettings={() => addMainTab({ id: "settings", label: "Settings", type: "settings" as never })}
+                  onOpenSkills={() => { addMainTab({ id: "marketplace", label: "Skills & Plugins", type: "marketplace" }); setActiveMainTab("marketplace"); }}
+                  onOpenMCPHub={() => setShowMCPHub(true)}
+                  onMCPConnectRequest={(serverId) => {
+                    const preset = MCP_PRESETS.find((p) => p.id === serverId);
+                    agentStore.setMcpRequest(null);
+                    if (preset?.auth === "token") {
+                      setMcpTokenModal({ adapterId: serverId, name: preset.name, hint: preset.hint });
+                    } else {
+                      void handleMCPConnect(serverId);
+                    }
+                  }}
+                  onMCPDismissRequest={() => agentStore.setMcpRequest(null)}
+                  fullscreen
+                />
               </div>
             ) : (
             <>
-            {/* Preview tab */}
-            <div className={activeMainTab === "preview" ? "h-full relative" : "hidden"}>
-              {/* Redirect to /projects when no sources AND no chat AND no prompt triggered */}
-            {!hasSources && chatMessages.length === 0 && !promptTriggered ? (
+            {/* Preview tab — gated by the Code/Preview segment toggle.
+                Visible only when rightView === "preview" AND the active
+                tab is still "preview" (so switching to an editor tab in
+                Code view correctly hides this). */}
+            <div className={rightView === "preview" && activeMainTab === "preview" ? "h-full relative" : "hidden"}>
+              {/* Hide the empty/placeholder state entirely when a projectId
+                  is present — that means we're restoring a saved project
+                  and the empty hint would only flash for one frame before
+                  the messages arrive. */}
+            {!hasSources && chatMessages.length === 0 && !promptTriggered && !workspaceProjectId ? (
                 showTemplateSelector ? (
                   <TemplateSelector
                     onSelect={handleTemplateSelect}
@@ -6240,7 +6946,13 @@ function WorkspaceContent() {
                     </div>
                   </div>
                 ) : (
-                <RedirectToProjects />
+                <div className="flex h-full items-center justify-center px-6 text-center">
+                  <div>
+                    <p className={`text-[14px] font-medium ${isDark ? "text-[#888]" : "text-[#787774]"}`}>
+                      작업할 프로젝트를 선택하거나 채팅에 요청을 입력해 주세요.
+                    </p>
+                  </div>
+                </div>
               )
               ) : (hasLocalFiles || devServerReady) ? (
                 <div className="relative flex h-full flex-col">
@@ -6553,9 +7265,26 @@ function WorkspaceContent() {
               </div>
             )}
 
-            {/* Editor tabs */}
+            {/* Code view placeholder — when the user flips to Code but
+                no editor tab is open yet (e.g. agent hasn't written any
+                file yet, or they closed all of them). */}
+            {rightView === "code" && !mainTabs.some(t2 => t2.type === "editor") && (
+              <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
+                <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${isDark ? "bg-white/[0.06] ring-1 ring-white/[0.08]" : "bg-black/[0.04] ring-1 ring-black/[0.08]"}`}>
+                  <Code className={`h-5 w-5 ${isDark ? "text-[#ccc]" : "text-[#1A1A1A]"}`} />
+                </div>
+                <div>
+                  <p className={`text-[14px] font-semibold ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`}>No file open</p>
+                  <p className={`mt-1 text-[12px] ${isDark ? "text-[#777]" : "text-[#9A9A95]"}`}>
+                    에이전트가 파일을 만들면 이곳에 자동으로 열립니다.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Editor tabs — only rendered in Code view. */}
             {mainTabs.filter(t2 => t2.type === "editor").map((tab) => (
-              <div key={tab.id} className={activeMainTab === tab.id ? "h-full flex flex-col animate-tab-fade-in" : "hidden"}>
+              <div key={tab.id} className={rightView === "code" && activeMainTab === tab.id ? "h-full flex flex-col animate-tab-fade-in" : "hidden"}>
                 <div className={`flex-1 overflow-hidden ${isDark ? "bg-[#181818]" : "bg-white"}`}>
                   {editorContents[tab.filePath!] !== undefined ? (
                     <div className="h-full flex flex-col">
@@ -6568,21 +7297,56 @@ function WorkspaceContent() {
                             <span className="h-2 w-2 rounded-full bg-amber-400" title="Unsaved changes" />
                           )}
                         </div>
-                        <button
-                          onClick={async () => {
-                            if (tab.filePath && agentStore.writeFileFn && editorContents[tab.filePath]) {
-                              await agentStore.writeFileFn(tab.filePath, editorContents[tab.filePath]);
-                              agentStore.setLastWrite();
-                              setEditorDirty(prev => { const n = new Set(prev); n.delete(tab.filePath!); return n; });
-                            }
-                          }}
-                          disabled={!editorDirty.has(tab.filePath!)}
-                          className={`rounded-lg px-3 py-1 text-[11px] font-medium transition-colors disabled:opacity-30 ${
-                            isDark ? "bg-[#E8E8E5] text-[#1A1A1A] hover:bg-white" : "bg-[#1A1A1A] text-white hover:bg-[#333]"
-                          }`}
-                        >
-                          Save
-                        </button>
+                        <div className="flex items-center gap-2">
+                          {(() => {
+                            // Diff toggle only renders when a prior
+                            // snapshot exists for this file (P0-3
+                            // rollback infra writes snapshots to
+                            // agentStore.fileSnapshots on every agent
+                            // write).
+                            const snaps = agentStore.fileSnapshots;
+                            const hasSnap = Object.values(snaps).some(
+                              (turn) => tab.filePath! in turn,
+                            );
+                            if (!hasSnap) return null;
+                            const isDiff = diffEnabled.has(tab.filePath!);
+                            return (
+                              <button
+                                onClick={() => {
+                                  setDiffEnabled((prev) => {
+                                    const n = new Set(prev);
+                                    if (n.has(tab.filePath!)) n.delete(tab.filePath!);
+                                    else n.add(tab.filePath!);
+                                    return n;
+                                  });
+                                }}
+                                className={`rounded-lg px-3 py-1 text-[11px] font-medium transition-colors ${
+                                  isDiff
+                                    ? isDark ? "bg-purple-500/20 text-purple-200 ring-1 ring-purple-500/30" : "bg-purple-500/10 text-purple-700 ring-1 ring-purple-500/20"
+                                    : isDark ? "text-[#888] hover:text-[#ccc]" : "text-[#787774] hover:text-[#1A1A1A]"
+                                }`}
+                                title={isDiff ? "Diff 끄기" : "이전 스냅샷과 비교"}
+                              >
+                                {isDiff ? "Diff ✓" : "Diff"}
+                              </button>
+                            );
+                          })()}
+                          <button
+                            onClick={async () => {
+                              if (tab.filePath && agentStore.writeFileFn && editorContents[tab.filePath]) {
+                                await agentStore.writeFileFn(tab.filePath, editorContents[tab.filePath]);
+                                agentStore.setLastWrite();
+                                setEditorDirty(prev => { const n = new Set(prev); n.delete(tab.filePath!); return n; });
+                              }
+                            }}
+                            disabled={!editorDirty.has(tab.filePath!)}
+                            className={`rounded-lg px-3 py-1 text-[11px] font-medium transition-colors disabled:opacity-30 ${
+                              isDark ? "bg-[#E8E8E5] text-[#1A1A1A] hover:bg-white" : "bg-[#1A1A1A] text-white hover:bg-[#333]"
+                            }`}
+                          >
+                            Save
+                          </button>
+                        </div>
                       </div>
                       {/* Code editor with Monaco Editor (VSCode-style) */}
                       <div className="flex-1 overflow-hidden">
@@ -6601,6 +7365,22 @@ function WorkspaceContent() {
                             }
                           }}
                           isDark={isDark}
+                          diffAgainst={(() => {
+                            if (!diffEnabled.has(tab.filePath!)) return undefined;
+                            // Walk the snapshots in insertion order (JS
+                            // preserves object key insertion order) and
+                            // return the FIRST snapshot encountered —
+                            // that's the earliest baseline before any
+                            // agent edits.
+                            const snaps = agentStore.fileSnapshots;
+                            for (const turnId of Object.keys(snaps)) {
+                              const turn = snaps[turnId];
+                              if (tab.filePath! in turn) {
+                                return turn[tab.filePath!];
+                              }
+                            }
+                            return undefined;
+                          })()}
                         />
                       </div>
                     </div>
@@ -6826,7 +7606,64 @@ function WorkspaceContent() {
         </div>
       )}
 
-      {/* Modals */}
+      {/* MCP connection request — non-blocking bottom-right card so
+          the agent's prose stays visible and the user can keep
+          reading/reviewing work while deciding whether to connect. */}
+      {agentStore.mcpRequest && (
+        <div className="fixed bottom-6 right-6 z-50 w-full max-w-sm animate-scale-in rounded-2xl bg-[#1C1C1C] p-5 shadow-2xl ring-1 ring-white/[0.08]">
+          <div className="mb-3 flex items-start gap-3">
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-white/[0.06] text-[18px] ring-1 ring-white/[0.08]">
+              {MCP_SERVER_META[agentStore.mcpRequest.serverId]?.emoji ?? "🔌"}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-mono text-[9px] uppercase tracking-[0.15em] text-[#666]">
+                Meld AI · 연결 요청
+              </p>
+              <h3 className="mt-0.5 text-[14px] font-semibold tracking-[-0.01em] text-white">
+                {MCP_SERVER_META[agentStore.mcpRequest.serverId]?.label ?? agentStore.mcpRequest.serverId} 연결이 필요해요
+              </h3>
+            </div>
+            <button
+              onClick={() => agentStore.setMcpRequest(null)}
+              className="rounded-md p-1 text-[#666] transition-colors hover:bg-white/[0.06] hover:text-white"
+              aria-label="Dismiss"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <p className="mb-4 text-[12px] leading-relaxed text-[#bbb]">
+            {agentStore.mcpRequest.reason}
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => agentStore.setMcpRequest(null)}
+              className="flex-1 rounded-lg bg-white/[0.04] py-2 text-[12px] font-medium text-[#999] transition-colors hover:bg-white/[0.08] hover:text-[#ccc]"
+            >
+              나중에
+            </button>
+            <button
+              onClick={() => {
+                const id = agentStore.mcpRequest?.serverId;
+                agentStore.setMcpRequest(null);
+                if (!id) return;
+                const preset = MCP_PRESETS.find((p) => p.id === id);
+                if (preset?.auth === "token") {
+                  setMcpTokenModal({
+                    adapterId: id,
+                    name: preset.name,
+                    hint: preset.hint,
+                  });
+                } else {
+                  void handleMCPConnect(id);
+                }
+              }}
+              className="flex-1 rounded-lg bg-white py-2 text-[12px] font-semibold text-[#0A0A0A] transition-all hover:bg-[#E8E8E5] active:scale-[0.97]"
+            >
+              연결하기
+            </button>
+          </div>
+        </div>
+      )}
       {showMCPHub && (
         <>
           <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" onClick={() => setShowMCPHub(false)} />
@@ -6985,6 +7822,20 @@ function WorkspaceContent() {
     </div>
   );
 }
+
+// Meta map used by the inline MCP request modal above.
+const MCP_SERVER_META: Record<string, { label: string; emoji: string }> = {
+  notion: { label: "Notion", emoji: "📓" },
+  github: { label: "GitHub", emoji: "🐙" },
+  supabase: { label: "Supabase", emoji: "🟢" },
+  vercel: { label: "Vercel", emoji: "▲" },
+  figma: { label: "Figma", emoji: "🎨" },
+  linear: { label: "Linear", emoji: "📐" },
+  slack: { label: "Slack", emoji: "💬" },
+  sentry: { label: "Sentry", emoji: "🛡" },
+  gmail: { label: "Gmail", emoji: "✉️" },
+  canva: { label: "Canva", emoji: "🖼" },
+};
 
 export default function WorkspacePage() {
   return (

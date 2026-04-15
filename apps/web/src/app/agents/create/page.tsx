@@ -1,587 +1,541 @@
 "use client";
 
-import { useState, useEffect } from "react";
+// /agents/create — single-page HarnessConfig editor
+//
+// Escape hatch for users who want to skip the conversational drawer and
+// edit the full HarnessConfig by hand. Wrapped in the same /projects-style
+// sidebar shell for visual continuity.
+
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Bot, Wrench, Clock, Box, GitBranch, ChevronLeft, ChevronRight,
-  Sun, Moon, Sparkles, Check, Plus, X, Search, Zap, Play,
-  FileText, Terminal, Globe, Eye, Trash2, PenLine, FolderSearch,
-} from "lucide-react";
-import Image from "next/image";
+import { Check, ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { useThemePref } from "@/lib/hooks/useThemePref";
+import { AgentsSidebar } from "../_components/AgentsSidebar";
 
-// Theme hook — shared implementation
-import { useThemePref as useTheme } from "@/lib/hooks/useThemePref";
-
-// Available tools
-const AVAILABLE_TOOLS = [
-  { id: "read_file", name: "Read File", icon: FileText },
-  { id: "write_file", name: "Write File", icon: PenLine },
-  { id: "delete_file", name: "Delete File", icon: Trash2 },
-  { id: "list_files", name: "List Files", icon: FolderSearch },
-  { id: "search_files", name: "Search Files", icon: Search },
-  { id: "run_command", name: "Run Command", icon: Terminal },
-  { id: "web_search", name: "Web Search", icon: Globe },
-  { id: "browse_url", name: "Browse URL", icon: Eye },
+const BUILTIN_TOOLS = [
+  { id: "read_file", label: "read_file", note: "파일 읽기" },
+  { id: "write_file", label: "write_file", note: "파일 쓰기" },
+  { id: "delete_file", label: "delete_file", note: "파일 삭제" },
+  { id: "rename_file", label: "rename_file", note: "파일 이동/이름 변경" },
+  { id: "list_files", label: "list_files", note: "디렉토리 탐색" },
+  { id: "search_files", label: "search_files", note: "텍스트 검색" },
+  { id: "run_command", label: "run_command", note: "셸 명령 실행" },
+  { id: "web_search", label: "web_search", note: "Google 검색 (Serper)" },
+  { id: "browse_url", label: "browse_url", note: "URL 탐색 + 스크린샷 (Firecrawl)" },
 ];
 
-// Available MCP servers
-const AVAILABLE_MCP = [
-  { id: "github", name: "GitHub", logo: "/mcp-icons/github.svg" },
-  { id: "figma", name: "Figma", logo: "/mcp-icons/figma.svg" },
-  { id: "supabase", name: "Supabase", logo: "/mcp-icons/supabase.svg" },
-  { id: "vercel", name: "Vercel", logo: "/mcp-icons/vercel.svg" },
-  { id: "notion", name: "Notion", logo: "/mcp-icons/notion.svg" },
-  { id: "sentry", name: "Sentry", logo: "/mcp-icons/sentry.svg" },
+const MCP_SERVERS = [
+  { id: "github", label: "GitHub" },
+  { id: "vercel", label: "Vercel" },
+  { id: "supabase", label: "Supabase" },
+  { id: "linear", label: "Linear" },
+  { id: "notion", label: "Notion" },
+  { id: "slack", label: "Slack" },
+  { id: "canva", label: "Canva" },
+  { id: "figma", label: "Figma" },
 ];
 
-// Session types
-const SESSION_TYPES = [
-  { id: "persistent", name: "Persistent", description: "대화 기록 유지" },
-  { id: "stateless", name: "Stateless", description: "독립적 처리" },
-  { id: "conversation", name: "Conversation", description: "대화형 최적화" },
-];
-
-// Sandbox types
-const SANDBOX_TYPES = [
-  { id: "e2b-meld-agent", name: "E2B Cloud", description: "Node.js 22 + pnpm" },
-  { id: "local", name: "Local", description: "로컬 파일 시스템" },
-  { id: "none", name: "None", description: "샌드박스 없음" },
-];
-
-// Orchestration patterns
-const ORCHESTRATION_PATTERNS = [
-  { id: "sequential", name: "Sequential", description: "순차 실행" },
-  { id: "parallel", name: "Parallel", description: "병렬 실행" },
-  { id: "loop", name: "Loop", description: "GAN-style 반복" },
-  { id: "router", name: "Router", description: "조건부 분기" },
-];
-
-// Steps
-const STEPS = [
-  { id: 1, title: "Basic Info", icon: Bot },
-  { id: 2, title: "Tools & MCP", icon: Wrench },
-  { id: 3, title: "Session", icon: Clock },
-  { id: 4, title: "Sandbox", icon: Box },
-  { id: 5, title: "Orchestration", icon: GitBranch },
-  { id: 6, title: "Review", icon: Sparkles },
-];
-
-interface AgentConfig {
+interface FormState {
   name: string;
   description: string;
-  tools: string[];
-  mcpServers: string[];
-  sessionType: string;
-  sandboxType: string;
-  orchestration: string;
-  maxRounds: number;
+  pipeline: "single-loop" | "three-agent";
+  systemPrompt: string;
+  modelId: string;
   maxTokens: number;
+  builtinToolIds: string[];
+  mcpServerIds: string[];
+  sandboxTemplate: string;
+  sandboxTimeoutMs: number;
+  maxRounds: number;
+  maxIterations: number;
 }
+
+const INITIAL: FormState = {
+  name: "",
+  description: "",
+  pipeline: "three-agent",
+  systemPrompt: "",
+  modelId: "claude-sonnet-4-20250514",
+  maxTokens: 16384,
+  builtinToolIds: BUILTIN_TOOLS.map(t => t.id),
+  mcpServerIds: [],
+  sandboxTemplate: "meld-agent",
+  sandboxTimeoutMs: 30 * 60 * 1000,
+  maxRounds: 50,
+  maxIterations: 2,
+};
 
 export default function CreateAgentPage() {
   const router = useRouter();
-  const { isDark, toggle: toggleTheme, mounted } = useTheme();
-  const [currentStep, setCurrentStep] = useState(1);
-  const [config, setConfig] = useState<AgentConfig>({
-    name: "",
-    description: "",
-    tools: ["read_file", "write_file", "run_command"],
-    mcpServers: [],
-    sessionType: "persistent",
-    sandboxType: "e2b-meld-agent",
-    orchestration: "sequential",
-    maxRounds: 50,
-    maxTokens: 16384,
-  });
+  const { isDark, mounted } = useThemePref();
+  const [form, setForm] = useState<FormState>(INITIAL);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const toggleTool = (id: string) => {
-    setConfig((prev) => ({
+  function set<K extends keyof FormState>(key: K, value: FormState[K]) {
+    setForm(prev => ({ ...prev, [key]: value }));
+  }
+
+  function toggleBuiltin(id: string) {
+    setForm(prev => ({
       ...prev,
-      tools: prev.tools.includes(id)
-        ? prev.tools.filter((t) => t !== id)
-        : [...prev.tools, id],
+      builtinToolIds: prev.builtinToolIds.includes(id)
+        ? prev.builtinToolIds.filter(t => t !== id)
+        : [...prev.builtinToolIds, id],
     }));
-  };
+  }
 
-  const toggleMCP = (id: string) => {
-    setConfig((prev) => ({
+  function toggleMCP(id: string) {
+    setForm(prev => ({
       ...prev,
-      mcpServers: prev.mcpServers.includes(id)
-        ? prev.mcpServers.filter((m) => m !== id)
-        : [...prev.mcpServers, id],
+      mcpServerIds: prev.mcpServerIds.includes(id)
+        ? prev.mcpServerIds.filter(m => m !== id)
+        : [...prev.mcpServerIds, id],
     }));
-  };
+  }
 
-  const canProceed = () => {
-    switch (currentStep) {
-      case 1:
-        return config.name.trim().length > 0;
-      case 2:
-        return config.tools.length > 0;
-      default:
-        return true;
+  async function handleSubmit() {
+    setError(null);
+    if (!form.name.trim()) {
+      setError("이름을 입력해 주세요.");
+      return;
     }
-  };
-
-  const handleCreate = () => {
-    // Save agent config
-    const agents = JSON.parse(localStorage.getItem("meld-agents") || "[]");
-    agents.push({ ...config, id: Date.now().toString(), createdAt: new Date().toISOString() });
-    localStorage.setItem("meld-agents", JSON.stringify(agents));
-    router.push("/agents");
-  };
+    setSaving(true);
+    try {
+      const res = await fetch("/api/harness/agents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name,
+          description: form.description,
+          pipeline: form.pipeline,
+          systemPrompt: form.systemPrompt,
+          modelId: form.modelId,
+          maxTokens: form.maxTokens,
+          builtinToolIds: form.builtinToolIds,
+          mcpServerIds: form.mcpServerIds,
+          sandboxTemplate: form.sandboxTemplate,
+          sandboxTimeoutMs: form.sandboxTimeoutMs,
+          orchestration: {
+            maxRounds: form.maxRounds,
+            maxIterations: form.maxIterations,
+          },
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "failed");
+      router.push("/agents");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "unknown");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   if (!mounted) return null;
 
+  const rootBg = isDark ? "bg-[#0A0A0A]" : "bg-white";
+  const mainBg = isDark ? "bg-[#151515]" : "bg-white";
+  const mainRing = isDark ? "ring-1 ring-white/[0.04]" : "ring-1 ring-black/[0.04]";
+  const fg = isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]";
+
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-      className={`min-h-screen ${isDark ? "bg-[#0D0D0D]" : "bg-[#FAFAFA]"}`}
-    >
-      {/* Header */}
-      <header className={`sticky top-0 z-50 backdrop-blur-xl ${isDark ? "bg-[#0D0D0D]/80 border-b border-white/[0.06]" : "bg-[#FAFAFA]/80 border-b border-black/[0.06]"}`}>
-        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.push("/agents")}
-              className={`flex items-center gap-2 text-[13px] font-medium transition-colors ${isDark ? "text-[#666] hover:text-[#999]" : "text-[#999] hover:text-[#666]"}`}
+    <div className={`flex h-screen ${rootBg} ${fg}`}>
+      <AgentsSidebar />
+
+      <main
+        className={`m-3 ml-0 flex flex-1 flex-col overflow-hidden rounded-2xl ${mainBg} ${mainRing}`}
+      >
+        <div className="flex-1 overflow-y-auto px-10 py-12 lg:px-16 lg:py-16">
+          <Link
+            href="/agents"
+            className={`mb-6 inline-flex items-center gap-2 text-[12px] transition-colors ${
+              isDark ? "text-[#666] hover:text-white" : "text-[#999] hover:text-[#1A1A1A]"
+            }`}
+          >
+            <ArrowLeft className="h-3 w-3" />
+            Back to agents
+          </Link>
+
+          {/* ─── Hero ─── */}
+          <div className="mb-12 max-w-2xl">
+            <p
+              className={`mb-4 font-mono text-[11px] uppercase tracking-[0.15em] ${
+                isDark ? "text-[#666]" : "text-[#999]"
+              }`}
             >
-              <ChevronLeft className="h-4 w-4" />
-              Cancel
-            </button>
-            <div className={`h-4 w-px ${isDark ? "bg-white/[0.08]" : "bg-black/[0.08]"}`} />
-            <h1 className={`text-[15px] font-bold ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`}>
-              Create Agent
+              New agent · Manual
+            </p>
+            <h1
+              className={`mb-5 text-[32px] font-bold leading-[1.1] tracking-[-0.03em] sm:text-[40px] ${
+                isDark ? "text-white" : "text-[#1A1A1A]"
+              }`}
+            >
+              에이전트를
+              <br />
+              <span className={isDark ? "text-[#555]" : "text-[#AAA]"}>조립합니다.</span>
             </h1>
+            <p
+              className={`text-[15px] leading-relaxed ${
+                isDark ? "text-[#888]" : "text-[#787774]"
+              }`}
+            >
+              Model · Tools · Sandbox · Orchestration 네 축을 직접 조합합니다. 대화형으로
+              만들고 싶다면{" "}
+              <Link
+                href="/agents"
+                className={isDark ? "text-white underline" : "text-[#1A1A1A] underline"}
+              >
+                /agents
+              </Link>
+              에서 &ldquo;New agent&rdquo;를 사용하세요.
+            </p>
           </div>
-          <button
-            onClick={toggleTheme}
-            className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all ${isDark ? "text-[#555] hover:text-[#999] hover:bg-white/[0.04]" : "text-[#999] hover:text-[#1A1A1A] hover:bg-black/[0.03]"}`}
-          >
-            {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </button>
-        </div>
-      </header>
 
-      {/* Progress steps */}
-      <div className={`border-b ${isDark ? "border-white/[0.06]" : "border-black/[0.06]"}`}>
-        <div className="max-w-4xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            {STEPS.map((step, i) => (
-              <div key={step.id} className="flex items-center">
-                <button
-                  onClick={() => step.id <= currentStep && setCurrentStep(step.id)}
-                  className={`flex items-center gap-2 rounded-lg px-3 py-2 transition-all ${
-                    step.id === currentStep
-                      ? isDark ? "bg-white/[0.08] text-[#E8E8E5]" : "bg-black/[0.05] text-[#1A1A1A]"
-                      : step.id < currentStep
-                      ? isDark ? "text-emerald-400" : "text-emerald-600"
-                      : isDark ? "text-[#555]" : "text-[#CCC]"
+        {error && (
+          <div className="mb-8 rounded-xl bg-[#111111] px-5 py-4 ring-1 ring-red-500/30">
+            <p className="text-[13px] text-red-400">{error}</p>
+          </div>
+        )}
+
+        <div className="space-y-10">
+          {/* Basics */}
+          <Section eyebrow="01 · Basics" title="Identity">
+            <Field label="Name">
+              <input
+                value={form.name}
+                onChange={e => set("name", e.target.value)}
+                placeholder="Next.js 풀스택 빌더"
+                className="w-full rounded-xl bg-[#111111] px-4 py-3 text-[15px] text-white outline-none ring-1 ring-white/[0.08] transition-all placeholder:text-[#555] focus:ring-white/[0.2]"
+              />
+            </Field>
+            <Field label="Description">
+              <textarea
+                value={form.description}
+                onChange={e => set("description", e.target.value)}
+                placeholder="이 에이전트가 잘 하는 것을 설명해 주세요."
+                rows={2}
+                className="w-full resize-none rounded-xl bg-[#111111] px-4 py-3 text-[15px] text-white outline-none ring-1 ring-white/[0.08] transition-all placeholder:text-[#555] focus:ring-white/[0.2]"
+              />
+            </Field>
+          </Section>
+
+          {/* Orchestration */}
+          <Section eyebrow="02 · Orchestration" title="Pipeline">
+            <div className="grid grid-cols-2 gap-3">
+              <PipelineCard
+                selected={form.pipeline === "single-loop"}
+                onClick={() => set("pipeline", "single-loop")}
+                title="Single loop"
+                description="1-agent 루프. 빠른 생성, 자가 평가 없음."
+              />
+              <PipelineCard
+                selected={form.pipeline === "three-agent"}
+                onClick={() => set("pipeline", "three-agent")}
+                title="3-agent pipeline"
+                description="Planner → Generator → Evaluator. 품질 우선."
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-6 pt-2">
+              <Field label={`Max rounds — ${form.maxRounds}`}>
+                <input
+                  type="range"
+                  min={5}
+                  max={100}
+                  value={form.maxRounds}
+                  onChange={e => set("maxRounds", parseInt(e.target.value, 10))}
+                  className="w-full accent-white"
+                />
+              </Field>
+              <Field label={`Max iterations — ${form.maxIterations}`}>
+                <input
+                  type="range"
+                  min={1}
+                  max={5}
+                  value={form.maxIterations}
+                  onChange={e => set("maxIterations", parseInt(e.target.value, 10))}
+                  className="w-full accent-white disabled:opacity-40"
+                  disabled={form.pipeline !== "three-agent"}
+                />
+              </Field>
+            </div>
+          </Section>
+
+          {/* System prompt */}
+          <Section eyebrow="03 · Instructions" title="System prompt">
+            <textarea
+              value={form.systemPrompt}
+              onChange={e => set("systemPrompt", e.target.value)}
+              placeholder="You are a Next.js specialist. Prefer Tailwind + App Router."
+              rows={5}
+              className="w-full resize-none rounded-xl bg-[#111111] px-4 py-3 font-mono text-[13px] leading-relaxed text-white outline-none ring-1 ring-white/[0.08] transition-all placeholder:text-[#555] focus:ring-white/[0.2]"
+            />
+          </Section>
+
+          {/* Model */}
+          <Section eyebrow="04 · Model" title="Claude Sonnet 4">
+            <div className="grid grid-cols-2 gap-6">
+              <Field label="Model ID">
+                <input
+                  value={form.modelId}
+                  onChange={e => set("modelId", e.target.value)}
+                  className="w-full rounded-xl bg-[#111111] px-4 py-3 font-mono text-[12px] text-white outline-none ring-1 ring-white/[0.08] transition-all focus:ring-white/[0.2]"
+                />
+              </Field>
+              <Field label={`Max tokens — ${form.maxTokens.toLocaleString()}`}>
+                <input
+                  type="range"
+                  min={1024}
+                  max={32768}
+                  step={1024}
+                  value={form.maxTokens}
+                  onChange={e => set("maxTokens", parseInt(e.target.value, 10))}
+                  className="w-full accent-white"
+                />
+              </Field>
+            </div>
+          </Section>
+
+          {/* Tools */}
+          <Section
+            eyebrow="05 · Tools"
+            title="Built-in"
+            meta={`${form.builtinToolIds.length} / 9 selected`}
+          >
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {BUILTIN_TOOLS.map(tool => (
+                <ToolToggle
+                  key={tool.id}
+                  label={tool.label}
+                  note={tool.note}
+                  selected={form.builtinToolIds.includes(tool.id)}
+                  onClick={() => toggleBuiltin(tool.id)}
+                />
+              ))}
+            </div>
+          </Section>
+
+          {/* MCP */}
+          <Section
+            eyebrow="06 · MCP"
+            title="External servers"
+            meta={`${form.mcpServerIds.length} selected`}
+          >
+            <div className="flex flex-wrap gap-2">
+              {MCP_SERVERS.map(s => {
+                const selected = form.mcpServerIds.includes(s.id);
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => toggleMCP(s.id)}
+                    className={`rounded-xl px-4 py-2 text-[13px] font-medium transition-all ${
+                      selected
+                        ? "bg-white text-[#0A0A0A]"
+                        : "bg-[#111111] text-[#ccc] ring-1 ring-white/[0.08] hover:ring-white/[0.16]"
+                    }`}
+                  >
+                    {s.label}
+                  </button>
+                );
+              })}
+            </div>
+          </Section>
+
+          {/* Sandbox */}
+          <Section eyebrow="07 · Sandbox" title="E2B cloud">
+            <div className="grid grid-cols-2 gap-6">
+              <Field label="Template">
+                <input
+                  value={form.sandboxTemplate}
+                  onChange={e => set("sandboxTemplate", e.target.value)}
+                  className="w-full rounded-xl bg-[#111111] px-4 py-3 font-mono text-[12px] text-white outline-none ring-1 ring-white/[0.08] transition-all focus:ring-white/[0.2]"
+                />
+              </Field>
+              <Field label={`Timeout — ${Math.round(form.sandboxTimeoutMs / 60000)} min`}>
+                <input
+                  type="range"
+                  min={60000}
+                  max={60 * 60 * 1000}
+                  step={60000}
+                  value={form.sandboxTimeoutMs}
+                  onChange={e =>
+                    set("sandboxTimeoutMs", parseInt(e.target.value, 10))
+                  }
+                  className="w-full accent-white"
+                />
+              </Field>
+            </div>
+          </Section>
+
+          {/* Review */}
+          <Section eyebrow="08 · Review" title="Summary">
+            <div className="rounded-xl bg-[#111111] px-6 py-5 ring-1 ring-white/[0.06]">
+              <dl className="grid grid-cols-2 gap-x-8 gap-y-3 text-[13px]">
+                <ReviewRow label="Pipeline" value={form.pipeline} />
+                <ReviewRow label="Model" value={form.modelId} mono />
+                <ReviewRow
+                  label="Built-in tools"
+                  value={`${form.builtinToolIds.length} / 9`}
+                />
+                <ReviewRow label="MCP servers" value={String(form.mcpServerIds.length)} />
+                <ReviewRow
+                  label="Rounds × iterations"
+                  value={`${form.maxRounds} × ${
+                    form.pipeline === "three-agent" ? form.maxIterations : 1
                   }`}
-                >
-                  <div className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold ${
-                    step.id === currentStep
-                      ? isDark ? "bg-white/[0.12] text-white" : "bg-black/[0.1] text-[#1A1A1A]"
-                      : step.id < currentStep
-                      ? "bg-emerald-500/20 text-emerald-400"
-                      : isDark ? "bg-white/[0.04]" : "bg-black/[0.04]"
-                  }`}>
-                    {step.id < currentStep ? <Check className="h-3 w-3" /> : step.id}
-                  </div>
-                  <span className="text-[12px] font-medium hidden sm:block">{step.title}</span>
-                </button>
-                {i < STEPS.length - 1 && (
-                  <div className={`w-8 h-px mx-2 ${
-                    step.id < currentStep
-                      ? "bg-emerald-500/40"
-                      : isDark ? "bg-white/[0.06]" : "bg-black/[0.06]"
-                  }`} />
-                )}
-              </div>
-            ))}
+                />
+                <ReviewRow label="Sandbox template" value={form.sandboxTemplate} mono />
+              </dl>
+            </div>
+          </Section>
+
+          {/* Bottom save */}
+          <div className="flex justify-end pt-4">
+            <button
+              onClick={handleSubmit}
+              disabled={saving}
+              className={`inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-[15px] font-semibold transition-all active:scale-[0.98] disabled:opacity-60 ${
+                isDark
+                  ? "bg-white text-[#0A0A0A] hover:bg-[#E8E8E5] hover:shadow-lg hover:shadow-white/10"
+                  : "bg-[#1A1A1A] text-white hover:bg-[#333]"
+              }`}
+            >
+              <Check className="h-4 w-4" />
+              {saving ? "Saving agent..." : "Save agent"}
+            </button>
           </div>
-        </div>
-      </div>
-
-      <main className="max-w-4xl mx-auto px-6 py-8">
-        <AnimatePresence mode="wait">
-          {/* Step 1: Basic Info */}
-          {currentStep === 1 && (
-            <motion.div
-              key="step1"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.2 }}
-            >
-              <h2 className={`text-[24px] font-bold mb-2 ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`}>
-                Name your agent
-              </h2>
-              <p className={`text-[14px] mb-8 ${isDark ? "text-[#888]" : "text-[#666]"}`}>
-                에이전트의 이름과 설명을 입력하세요.
-              </p>
-
-              <div className="space-y-6">
-                <div>
-                  <label className={`block text-[13px] font-medium mb-2 ${isDark ? "text-[#999]" : "text-[#666]"}`}>
-                    Agent Name
-                  </label>
-                  <input
-                    type="text"
-                    value={config.name}
-                    onChange={(e) => setConfig({ ...config, name: e.target.value })}
-                    placeholder="e.g., Full Stack Builder"
-                    className={`w-full rounded-xl px-4 py-3 text-[15px] outline-none transition-all ${isDark ? "bg-[#151515] ring-1 ring-white/[0.06] text-[#E8E8E5] placeholder:text-[#555] focus:ring-white/[0.12]" : "bg-white ring-1 ring-black/[0.06] text-[#1A1A1A] placeholder:text-[#999] focus:ring-black/[0.12]"}`}
-                  />
-                </div>
-                <div>
-                  <label className={`block text-[13px] font-medium mb-2 ${isDark ? "text-[#999]" : "text-[#666]"}`}>
-                    Description
-                  </label>
-                  <textarea
-                    value={config.description}
-                    onChange={(e) => setConfig({ ...config, description: e.target.value })}
-                    placeholder="What does this agent do?"
-                    rows={3}
-                    className={`w-full rounded-xl px-4 py-3 text-[15px] outline-none resize-none transition-all ${isDark ? "bg-[#151515] ring-1 ring-white/[0.06] text-[#E8E8E5] placeholder:text-[#555] focus:ring-white/[0.12]" : "bg-white ring-1 ring-black/[0.06] text-[#1A1A1A] placeholder:text-[#999] focus:ring-black/[0.12]"}`}
-                  />
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Step 2: Tools & MCP */}
-          {currentStep === 2 && (
-            <motion.div
-              key="step2"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.2 }}
-            >
-              <h2 className={`text-[24px] font-bold mb-2 ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`}>
-                Select tools
-              </h2>
-              <p className={`text-[14px] mb-8 ${isDark ? "text-[#888]" : "text-[#666]"}`}>
-                에이전트가 사용할 도구와 MCP 서버를 선택하세요.
-              </p>
-
-              <div className="mb-8">
-                <h3 className={`text-[12px] font-semibold uppercase tracking-wider mb-3 ${isDark ? "text-[#555]" : "text-[#999]"}`}>
-                  Built-in Tools
-                </h3>
-                <div className="grid grid-cols-4 gap-3">
-                  {AVAILABLE_TOOLS.map((tool) => {
-                    const isSelected = config.tools.includes(tool.id);
-                    return (
-                      <button
-                        key={tool.id}
-                        onClick={() => toggleTool(tool.id)}
-                        className={`flex flex-col items-center gap-2 rounded-xl p-4 transition-all ${
-                          isSelected
-                            ? isDark ? "bg-violet-500/20 ring-1 ring-violet-500/40 text-violet-400" : "bg-violet-500/10 ring-1 ring-violet-500/30 text-violet-600"
-                            : isDark ? "bg-[#151515] ring-1 ring-white/[0.06] text-[#888] hover:ring-white/[0.1]" : "bg-white ring-1 ring-black/[0.04] text-[#666] hover:ring-black/[0.08]"
-                        }`}
-                      >
-                        <tool.icon className="h-5 w-5" />
-                        <span className="text-[11px] font-medium text-center">{tool.name}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div>
-                <h3 className={`text-[12px] font-semibold uppercase tracking-wider mb-3 ${isDark ? "text-[#555]" : "text-[#999]"}`}>
-                  MCP Servers
-                </h3>
-                <div className="grid grid-cols-6 gap-3">
-                  {AVAILABLE_MCP.map((mcp) => {
-                    const isSelected = config.mcpServers.includes(mcp.id);
-                    return (
-                      <button
-                        key={mcp.id}
-                        onClick={() => toggleMCP(mcp.id)}
-                        className={`flex flex-col items-center gap-2 rounded-xl p-3 transition-all ${
-                          isSelected
-                            ? isDark ? "bg-blue-500/20 ring-1 ring-blue-500/40" : "bg-blue-500/10 ring-1 ring-blue-500/30"
-                            : isDark ? "bg-[#151515] ring-1 ring-white/[0.06] hover:ring-white/[0.1]" : "bg-white ring-1 ring-black/[0.04] hover:ring-black/[0.08]"
-                        }`}
-                      >
-                        <Image src={mcp.logo} alt={mcp.name} width={24} height={24} className="rounded" />
-                        <span className={`text-[10px] font-medium ${isDark ? "text-[#888]" : "text-[#666]"}`}>{mcp.name}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Step 3: Session */}
-          {currentStep === 3 && (
-            <motion.div
-              key="step3"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.2 }}
-            >
-              <h2 className={`text-[24px] font-bold mb-2 ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`}>
-                Configure session
-              </h2>
-              <p className={`text-[14px] mb-8 ${isDark ? "text-[#888]" : "text-[#666]"}`}>
-                세션 타입과 설정을 선택하세요.
-              </p>
-
-              <div className="grid grid-cols-3 gap-4 mb-8">
-                {SESSION_TYPES.map((session) => (
-                  <button
-                    key={session.id}
-                    onClick={() => setConfig({ ...config, sessionType: session.id })}
-                    className={`flex flex-col rounded-xl p-5 text-left transition-all ${
-                      config.sessionType === session.id
-                        ? isDark ? "bg-amber-500/20 ring-1 ring-amber-500/40" : "bg-amber-500/10 ring-1 ring-amber-500/30"
-                        : isDark ? "bg-[#151515] ring-1 ring-white/[0.06] hover:ring-white/[0.1]" : "bg-white ring-1 ring-black/[0.04] hover:ring-black/[0.08]"
-                    }`}
-                  >
-                    <h4 className={`text-[14px] font-semibold mb-1 ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`}>
-                      {session.name}
-                    </h4>
-                    <p className={`text-[12px] ${isDark ? "text-[#888]" : "text-[#666]"}`}>
-                      {session.description}
-                    </p>
-                  </button>
-                ))}
-              </div>
-
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <label className={`block text-[13px] font-medium mb-2 ${isDark ? "text-[#999]" : "text-[#666]"}`}>
-                    Max Tokens
-                  </label>
-                  <input
-                    type="number"
-                    value={config.maxTokens}
-                    onChange={(e) => setConfig({ ...config, maxTokens: parseInt(e.target.value) || 16384 })}
-                    className={`w-full rounded-xl px-4 py-3 text-[15px] outline-none ${isDark ? "bg-[#151515] ring-1 ring-white/[0.06] text-[#E8E8E5]" : "bg-white ring-1 ring-black/[0.06] text-[#1A1A1A]"}`}
-                  />
-                </div>
-                <div>
-                  <label className={`block text-[13px] font-medium mb-2 ${isDark ? "text-[#999]" : "text-[#666]"}`}>
-                    Max Rounds
-                  </label>
-                  <input
-                    type="number"
-                    value={config.maxRounds}
-                    onChange={(e) => setConfig({ ...config, maxRounds: parseInt(e.target.value) || 50 })}
-                    className={`w-full rounded-xl px-4 py-3 text-[15px] outline-none ${isDark ? "bg-[#151515] ring-1 ring-white/[0.06] text-[#E8E8E5]" : "bg-white ring-1 ring-black/[0.06] text-[#1A1A1A]"}`}
-                  />
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Step 4: Sandbox */}
-          {currentStep === 4 && (
-            <motion.div
-              key="step4"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.2 }}
-            >
-              <h2 className={`text-[24px] font-bold mb-2 ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`}>
-                Choose sandbox
-              </h2>
-              <p className={`text-[14px] mb-8 ${isDark ? "text-[#888]" : "text-[#666]"}`}>
-                코드 실행 환경을 선택하세요.
-              </p>
-
-              <div className="grid grid-cols-3 gap-4">
-                {SANDBOX_TYPES.map((sandbox) => (
-                  <button
-                    key={sandbox.id}
-                    onClick={() => setConfig({ ...config, sandboxType: sandbox.id })}
-                    className={`flex flex-col rounded-xl p-5 text-left transition-all ${
-                      config.sandboxType === sandbox.id
-                        ? isDark ? "bg-emerald-500/20 ring-1 ring-emerald-500/40" : "bg-emerald-500/10 ring-1 ring-emerald-500/30"
-                        : isDark ? "bg-[#151515] ring-1 ring-white/[0.06] hover:ring-white/[0.1]" : "bg-white ring-1 ring-black/[0.04] hover:ring-black/[0.08]"
-                    }`}
-                  >
-                    <h4 className={`text-[14px] font-semibold mb-1 ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`}>
-                      {sandbox.name}
-                    </h4>
-                    <p className={`text-[12px] ${isDark ? "text-[#888]" : "text-[#666]"}`}>
-                      {sandbox.description}
-                    </p>
-                  </button>
-                ))}
-              </div>
-            </motion.div>
-          )}
-
-          {/* Step 5: Orchestration */}
-          {currentStep === 5 && (
-            <motion.div
-              key="step5"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.2 }}
-            >
-              <h2 className={`text-[24px] font-bold mb-2 ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`}>
-                Orchestration pattern
-              </h2>
-              <p className={`text-[14px] mb-8 ${isDark ? "text-[#888]" : "text-[#666]"}`}>
-                에이전트의 실행 패턴을 선택하세요.
-              </p>
-
-              <div className="grid grid-cols-2 gap-4">
-                {ORCHESTRATION_PATTERNS.map((pattern) => (
-                  <button
-                    key={pattern.id}
-                    onClick={() => setConfig({ ...config, orchestration: pattern.id })}
-                    className={`flex flex-col rounded-xl p-5 text-left transition-all ${
-                      config.orchestration === pattern.id
-                        ? isDark ? "bg-violet-500/20 ring-1 ring-violet-500/40" : "bg-violet-500/10 ring-1 ring-violet-500/30"
-                        : isDark ? "bg-[#151515] ring-1 ring-white/[0.06] hover:ring-white/[0.1]" : "bg-white ring-1 ring-black/[0.04] hover:ring-black/[0.08]"
-                    }`}
-                  >
-                    <h4 className={`text-[14px] font-semibold mb-1 ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`}>
-                      {pattern.name}
-                    </h4>
-                    <p className={`text-[12px] ${isDark ? "text-[#888]" : "text-[#666]"}`}>
-                      {pattern.description}
-                    </p>
-                  </button>
-                ))}
-              </div>
-            </motion.div>
-          )}
-
-          {/* Step 6: Review */}
-          {currentStep === 6 && (
-            <motion.div
-              key="step6"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.2 }}
-            >
-              <h2 className={`text-[24px] font-bold mb-2 ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`}>
-                Review & Create
-              </h2>
-              <p className={`text-[14px] mb-8 ${isDark ? "text-[#888]" : "text-[#666]"}`}>
-                설정을 확인하고 에이전트를 생성하세요.
-              </p>
-
-              <div className={`rounded-2xl p-6 ${isDark ? "bg-[#151515] ring-1 ring-white/[0.06]" : "bg-white ring-1 ring-black/[0.04]"}`}>
-                <div className="flex items-center gap-4 mb-6">
-                  <div className={`flex h-14 w-14 items-center justify-center rounded-xl ${isDark ? "bg-gradient-to-br from-violet-500/20 to-blue-500/20" : "bg-gradient-to-br from-violet-500/10 to-blue-500/10"}`}>
-                    <Bot className="h-7 w-7 text-violet-400" />
-                  </div>
-                  <div>
-                    <h3 className={`text-[18px] font-bold ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`}>
-                      {config.name || "Untitled Agent"}
-                    </h3>
-                    <p className={`text-[13px] ${isDark ? "text-[#888]" : "text-[#666]"}`}>
-                      {config.description || "No description"}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <h4 className={`text-[11px] font-semibold uppercase tracking-wider mb-2 ${isDark ? "text-[#555]" : "text-[#999]"}`}>
-                      Tools ({config.tools.length})
-                    </h4>
-                    <div className="flex flex-wrap gap-1.5">
-                      {config.tools.map((t) => (
-                        <span key={t} className={`rounded-full px-2.5 py-1 text-[11px] ${isDark ? "bg-white/[0.06] text-[#888]" : "bg-black/[0.04] text-[#666]"}`}>
-                          {AVAILABLE_TOOLS.find((tool) => tool.id === t)?.name || t}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <h4 className={`text-[11px] font-semibold uppercase tracking-wider mb-2 ${isDark ? "text-[#555]" : "text-[#999]"}`}>
-                      MCP Servers ({config.mcpServers.length})
-                    </h4>
-                    <div className="flex flex-wrap gap-1.5">
-                      {config.mcpServers.length > 0 ? config.mcpServers.map((m) => (
-                        <span key={m} className={`rounded-full px-2.5 py-1 text-[11px] ${isDark ? "bg-white/[0.06] text-[#888]" : "bg-black/[0.04] text-[#666]"}`}>
-                          {AVAILABLE_MCP.find((mcp) => mcp.id === m)?.name || m}
-                        </span>
-                      )) : (
-                        <span className={`text-[11px] ${isDark ? "text-[#555]" : "text-[#999]"}`}>None</span>
-                      )}
-                    </div>
-                  </div>
-                  <div>
-                    <h4 className={`text-[11px] font-semibold uppercase tracking-wider mb-2 ${isDark ? "text-[#555]" : "text-[#999]"}`}>
-                      Session
-                    </h4>
-                    <p className={`text-[13px] ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`}>
-                      {SESSION_TYPES.find((s) => s.id === config.sessionType)?.name} · {config.maxTokens.toLocaleString()} tokens · {config.maxRounds} rounds
-                    </p>
-                  </div>
-                  <div>
-                    <h4 className={`text-[11px] font-semibold uppercase tracking-wider mb-2 ${isDark ? "text-[#555]" : "text-[#999]"}`}>
-                      Sandbox
-                    </h4>
-                    <p className={`text-[13px] ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`}>
-                      {SANDBOX_TYPES.find((s) => s.id === config.sandboxType)?.name}
-                    </p>
-                  </div>
-                  <div>
-                    <h4 className={`text-[11px] font-semibold uppercase tracking-wider mb-2 ${isDark ? "text-[#555]" : "text-[#999]"}`}>
-                      Orchestration
-                    </h4>
-                    <p className={`text-[13px] ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`}>
-                      {ORCHESTRATION_PATTERNS.find((p) => p.id === config.orchestration)?.name}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Navigation */}
-        <div className="flex items-center justify-between mt-10 pt-6 border-t border-white/[0.06]">
-          <button
-            onClick={() => setCurrentStep((prev) => Math.max(1, prev - 1))}
-            disabled={currentStep === 1}
-            className={`flex items-center gap-2 rounded-lg px-4 py-2 text-[13px] font-medium transition-all disabled:opacity-30 ${isDark ? "text-[#888] hover:text-[#E8E8E5] hover:bg-white/[0.04]" : "text-[#666] hover:text-[#1A1A1A] hover:bg-black/[0.04]"}`}
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Back
-          </button>
-
-          {currentStep < 6 ? (
-            <button
-              onClick={() => setCurrentStep((prev) => Math.min(6, prev + 1))}
-              disabled={!canProceed()}
-              className={`flex items-center gap-2 rounded-xl px-5 py-2.5 text-[13px] font-semibold transition-all disabled:opacity-30 ${isDark ? "bg-white text-[#1A1A1A] hover:bg-[#E8E8E5]" : "bg-[#1A1A1A] text-white hover:bg-[#333]"}`}
-            >
-              Continue
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          ) : (
-            <button
-              onClick={handleCreate}
-              className="flex items-center gap-2 rounded-xl px-5 py-2.5 text-[13px] font-semibold bg-violet-600 text-white hover:bg-violet-700 transition-all"
-            >
-              <Sparkles className="h-4 w-4" />
-              Create Agent
-            </button>
-          )}
+          </div>
         </div>
       </main>
-    </motion.div>
+    </div>
+  );
+}
+
+// ─── Subcomponents ────────────────────────────────────
+function Section({
+  eyebrow,
+  title,
+  meta,
+  children,
+}: {
+  eyebrow: string;
+  title: string;
+  meta?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="space-y-4">
+      <div className="flex items-baseline justify-between">
+        <div>
+          <p className="mb-1 font-mono text-[11px] uppercase tracking-[0.15em] text-[#666]">
+            {eyebrow}
+          </p>
+          <h2 className="text-[22px] font-semibold tracking-[-0.02em] text-white">
+            {title}
+          </h2>
+        </div>
+        {meta && <span className="font-mono text-[11px] text-[#555]">{meta}</span>}
+      </div>
+      <div className="space-y-3">{children}</div>
+    </section>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block space-y-2">
+      <span className="block font-mono text-[11px] uppercase tracking-[0.1em] text-[#666]">
+        {label}
+      </span>
+      {children}
+    </label>
+  );
+}
+
+function PipelineCard({
+  selected,
+  onClick,
+  title,
+  description,
+}: {
+  selected: boolean;
+  onClick: () => void;
+  title: string;
+  description: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`rounded-xl bg-[#111111] p-5 text-left transition-all ${
+        selected
+          ? "ring-1 ring-white/[0.25]"
+          : "ring-1 ring-white/[0.06] hover:ring-white/[0.12]"
+      }`}
+    >
+      <div className="mb-2 flex items-center justify-between">
+        <h3 className="text-[15px] font-semibold text-white">{title}</h3>
+        {selected && (
+          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-white">
+            <Check className="h-3 w-3 text-[#0A0A0A]" />
+          </div>
+        )}
+      </div>
+      <p className="text-[12px] leading-relaxed text-[#888]">{description}</p>
+    </button>
+  );
+}
+
+function ToolToggle({
+  label,
+  note,
+  selected,
+  onClick,
+}: {
+  label: string;
+  note: string;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center justify-between rounded-xl px-4 py-3 text-left transition-all ${
+        selected
+          ? "bg-[#111111] ring-1 ring-white/[0.2]"
+          : "bg-[#111111] ring-1 ring-white/[0.06] hover:ring-white/[0.12]"
+      }`}
+    >
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-mono text-[12px] text-white">{label}</p>
+        <p className="truncate text-[11px] text-[#666]">{note}</p>
+      </div>
+      {selected && (
+        <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-white">
+          <Check className="h-3 w-3 text-[#0A0A0A]" />
+        </div>
+      )}
+    </button>
+  );
+}
+
+function ReviewRow({
+  label,
+  value,
+  mono,
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+}) {
+  return (
+    <>
+      <dt className="font-mono text-[11px] uppercase tracking-[0.1em] text-[#666]">
+        {label}
+      </dt>
+      <dd className={`text-[13px] text-white ${mono ? "font-mono text-[12px]" : ""}`}>
+        {value}
+      </dd>
+    </>
   );
 }

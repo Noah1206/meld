@@ -9,6 +9,8 @@ export type AgentEventType =
   | "message" | "done" | "error" | "cancelled" | "awaiting_approval"
   | "rollback_available" | "rollback_complete"
   | "mcp_connect_required"
+  // MCP request lifecycle (agent-run request_mcp tool)
+  | "mcp_request" | "mcp_auto_connected"
   // Autonomous agent events
   | "agent_plan" | "agent_plan_progress"
   | "agent_question" | "agent_service_request"

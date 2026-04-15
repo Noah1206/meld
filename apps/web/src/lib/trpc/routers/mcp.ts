@@ -33,6 +33,10 @@ export const mcpRouter = router({
       adapterId: z.string(),
       // Pass token directly, or use user's OAuth token
       token: z.string().optional(),
+      // Additional auth metadata: projectRef for Supabase, rootPath
+      // for filesystem, serverUrl for windows-mcp, etc. Flows through
+      // to `auth.extra` on the adapter call.
+      extra: z.record(z.string(), z.string()).optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       // Token resolution: direct param > DB lookup (session token may be stale)
@@ -52,15 +56,28 @@ export const mcpRouter = router({
           if (!ctx.user.githubAccessToken) throw new Error("LOGIN_REQUIRED:github");
           token = ctx.user.githubAccessToken;
         } else {
-          // Try to get token from DB for OAuth services
+          // Try to get token from DB for OAuth / token services.
+          // Defensive: the column may not exist for newer adapters
+          // (e.g. `supabase`, `agent-bridge`, local services). When
+          // the lookup fails for ANY reason, fall through to the
+          // TOKEN_REQUIRED sentinel so the UI opens the PAT modal.
           const supabase = createAdminClient();
           const tokenColumn = `${input.adapterId}_access_token`;
-          const { data } = await supabase
-            .from("users")
-            .select(tokenColumn)
-            .eq("id", ctx.user.id)
-            .single();
-          const dbToken = data?.[tokenColumn as keyof typeof data] as string | null;
+          let dbToken: string | null = null;
+          try {
+            const { data, error } = await supabase
+              .from("users")
+              .select(tokenColumn)
+              .eq("id", ctx.user.id)
+              .single();
+            if (!error && data) {
+              dbToken = (data[tokenColumn as keyof typeof data] as string | null) ?? null;
+            }
+          } catch {
+            // Column missing or other schema mismatch — no stored
+            // token, treat as first-time connection.
+            dbToken = null;
+          }
           if (dbToken) {
             token = dbToken;
           } else if (!token) {
@@ -71,8 +88,9 @@ export const mcpRouter = router({
 
       // Attempt connection — on failure, refresh Figma token and retry
       console.log(`[mcp.connect] adapterId=${input.adapterId} token=${token ? token.slice(0, 10) + "..." : "null"}`);
+      const extra = input.extra;
       try {
-        return await connectServer(ctx.user.id, input.adapterId, { type: "bearer", token });
+        return await connectServer(ctx.user.id, input.adapterId, { type: "bearer", token, extra });
       } catch (err) {
         console.error(`[mcp.connect] connectServer failed:`, err instanceof Error ? err.message : err);
         if (input.adapterId === "figma" && !input.token) {
@@ -91,7 +109,7 @@ export const mcpRouter = router({
                 figma_access_token: refreshed.accessToken,
                 figma_refresh_token: refreshed.refreshToken,
               }).eq("id", ctx.user.id);
-              return await connectServer(ctx.user.id, input.adapterId, { type: "bearer", token: refreshed.accessToken });
+              return await connectServer(ctx.user.id, input.adapterId, { type: "bearer", token: refreshed.accessToken, extra });
             } catch (refreshErr) {
               console.error(`[mcp.connect] refresh failed:`, refreshErr instanceof Error ? refreshErr.message : refreshErr);
             }

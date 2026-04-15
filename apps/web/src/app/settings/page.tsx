@@ -8,6 +8,7 @@ import {
   Settings, ChevronRight, ExternalLink, LogOut, Blend, Check,
   Heart, Key, Trash2, Moon, Sun, Monitor,
 } from "lucide-react";
+import { MCPHubView } from "@/components/mcp/MCPHubView";
 
 // ─── Types ───
 interface UserProfile {
@@ -27,6 +28,7 @@ const TABS: { id: SettingsTab; label: string; icon: React.ReactNode }[] = [
   { id: "account", label: "Account", icon: <User className="h-4 w-4" /> },
   { id: "billing", label: "Plan & Billing", icon: <CreditCard className="h-4 w-4" /> },
   { id: "ai", label: "AI & Models", icon: <Zap className="h-4 w-4" /> },
+  { id: "integrations", label: "Integrations", icon: <Blend className="h-4 w-4" /> },
   { id: "notifications", label: "Notifications", icon: <Bell className="h-4 w-4" /> },
   { id: "appearance", label: "Appearance", icon: <Palette className="h-4 w-4" /> },
 ];
@@ -394,53 +396,10 @@ function AITab() {
 }
 
 // ─── Integrations Tab ───
+// Thin wrapper around the shared MCPHubView so Settings and the
+// standalone /integrations route render the exact same view.
 function IntegrationsTab() {
-  const integrations = [
-    { name: "GitHub", icon: "github", connected: true, description: "Source control and collaboration" },
-    { name: "Figma", icon: "figma", connected: false, description: "Design files and tokens" },
-    { name: "Vercel", icon: "vercel", connected: false, description: "Deployment and hosting" },
-    { name: "Supabase", icon: "supabase", connected: false, description: "Database and authentication" },
-    { name: "Stripe", icon: "stripe", connected: false, description: "Payments and billing" },
-    { name: "Sentry", icon: "sentry", connected: false, description: "Error tracking" },
-    { name: "Linear", icon: "linear", connected: false, description: "Issue tracking" },
-    { name: "Slack", icon: "slack", connected: false, description: "Team communication" },
-  ];
-
-  return (
-    <div className="animate-tab-switch">
-      <h2 className="text-[22px] font-semibold text-white">Integrations</h2>
-      <p className="mt-2 text-[14px] text-[#777]">Connect external services to enhance AI capabilities.</p>
-
-      <SectionTitle>Connected Services</SectionTitle>
-      <div className="mt-2 space-y-2">
-        {integrations.map((int) => (
-          <div key={int.name} className="flex items-center justify-between rounded-xl bg-[#1E1E1E] px-4 py-3.5 ring-1 ring-white/[0.04] transition-all hover:ring-white/[0.08]">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#252525] text-[13px] font-bold text-[#999]">
-                {int.name.charAt(0)}
-              </div>
-              <div>
-                <div className="text-[13px] font-medium text-white">{int.name}</div>
-                <div className="text-[11px] text-[#666]">{int.description}</div>
-              </div>
-            </div>
-            {int.connected ? (
-              <div className="flex items-center gap-2">
-                <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-medium text-emerald-400">Connected</span>
-                <button className="rounded-lg px-3 py-1.5 text-[11px] text-[#777] transition-colors hover:text-red-400">
-                  Disconnect
-                </button>
-              </div>
-            ) : (
-              <button className="rounded-lg border border-[#3A3A3A] px-4 py-1.5 text-[12px] font-medium text-[#ccc] transition-all hover:border-purple-500/50 hover:text-white">
-                Connect
-              </button>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+  return <MCPHubView header />;
 }
 
 // ─── Notifications Tab ───
@@ -623,6 +582,7 @@ export default function SettingsPage() {
           {activeTab === "account" && <AccountTab />}
           {activeTab === "billing" && <BillingTab />}
           {activeTab === "ai" && <AITab />}
+          {activeTab === "integrations" && <IntegrationsTab />}
           {activeTab === "notifications" && <NotificationsTab />}
           {activeTab === "appearance" && <AppearanceTab />}
         </div>

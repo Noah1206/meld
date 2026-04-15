@@ -886,3 +886,228 @@ body {
   background: radial-gradient(circle, #555 0%, #222 70%, transparent 100%);
   animation: blackhole-pulse 2s ease-in-out infinite;
 }
+
+/* ChatGPT-style breathing dot — kept for reference, no longer used. */
+@keyframes meld-breathing {
+  0%,
+  100% {
+    transform: scale(1, 1) rotate(0deg);
+    opacity: 0.85;
+  }
+  25% {
+    transform: scale(1.18, 0.78) rotate(18deg);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(0.9, 1.14) rotate(0deg);
+    opacity: 0.85;
+  }
+  75% {
+    transform: scale(1.18, 0.78) rotate(-18deg);
+    opacity: 1;
+  }
+}
+.meld-breathing-dot {
+  display: inline-block;
+  border-radius: 9999px;
+  background: #e8e8e5;
+  transform-origin: center;
+  animation: meld-breathing 1.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+/* ─── Mini blackhole (3D) ─────────────────────────────
+   Inline blackhole used in the activity StatusLine. Built from:
+   - a dark glowing core sphere
+   - two accretion rings tilted on different axes that rotate
+   - a tilted "equator" ring that catches a highlight
+   - a breathing outer halo
+   The whole thing lives inside a 3D perspective container so the
+   rings genuinely look like they're orbiting in space. */
+.meld-blackhole {
+  position: relative;
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  vertical-align: middle;
+  perspective: 60px;
+  transform-style: preserve-3d;
+}
+.meld-blackhole > .ring,
+.meld-blackhole > .ring-2,
+.meld-blackhole > .equator,
+.meld-blackhole > .core {
+  display: block;
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+
+/* outer halo removed — was getting clipped by the parent flex
+   container's bounds and showing a rectangular silhouette. */
+
+/* core — dark glowing sphere. Subtly pulses size + shape so it feels
+   alive without competing with the rotating rings. */
+.meld-blackhole .core {
+  inset: 26%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 35%, #1a1a22 0%, #060608 55%, #000 100%);
+  box-shadow: inset 0 0 3px rgba(0, 0, 0, 1);
+  z-index: 4;
+  transform-origin: center;
+  animation: meld-blackhole-core 3.2s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+/* primary accretion ring — warm orange/gold, tilted nearly edge-on.
+   Soft radial mask gradient so the ring fades smoothly into the
+   background instead of having a hard cropped edge. */
+.meld-blackhole .ring {
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    rgba(255, 240, 220, 0) 0deg,
+    rgba(255, 215, 170, 0.95) 70deg,
+    rgba(255, 245, 220, 0.45) 140deg,
+    rgba(255, 240, 220, 0) 180deg,
+    rgba(255, 215, 170, 0.95) 250deg,
+    rgba(255, 245, 220, 0.45) 320deg,
+    rgba(255, 240, 220, 0) 360deg
+  );
+  -webkit-mask: radial-gradient(
+    circle,
+    transparent 30%,
+    rgba(0, 0, 0, 0.6) 38%,
+    #000 46%,
+    rgba(0, 0, 0, 0.6) 54%,
+    transparent 64%
+  );
+          mask: radial-gradient(
+    circle,
+    transparent 30%,
+    rgba(0, 0, 0, 0.6) 38%,
+    #000 46%,
+    rgba(0, 0, 0, 0.6) 54%,
+    transparent 64%
+  );
+  filter: blur(0.4px);
+  animation: meld-blackhole-ring-1 2.6s linear infinite;
+  z-index: 2;
+}
+
+/* secondary ring — cooler blue/violet, very small angle offset from
+   the primary so they share the same plane and feel like one disk. */
+.meld-blackhole .ring-2 {
+  border-radius: 50%;
+  background: conic-gradient(
+    from 180deg,
+    rgba(180, 200, 255, 0) 0deg,
+    rgba(150, 180, 255, 0.7) 80deg,
+    rgba(200, 220, 255, 0.3) 150deg,
+    rgba(180, 200, 255, 0) 180deg,
+    rgba(150, 180, 255, 0.7) 260deg,
+    rgba(200, 220, 255, 0.3) 330deg,
+    rgba(180, 200, 255, 0) 360deg
+  );
+  -webkit-mask: radial-gradient(
+    circle,
+    transparent 32%,
+    rgba(0, 0, 0, 0.5) 40%,
+    #000 47%,
+    rgba(0, 0, 0, 0.5) 54%,
+    transparent 64%
+  );
+          mask: radial-gradient(
+    circle,
+    transparent 32%,
+    rgba(0, 0, 0, 0.5) 40%,
+    #000 47%,
+    rgba(0, 0, 0, 0.5) 54%,
+    transparent 64%
+  );
+  filter: blur(0.5px);
+  animation: meld-blackhole-ring-2 3.4s linear infinite;
+  z-index: 1;
+}
+
+/* equatorial highlight — soft horizontal band, no hard edges */
+.meld-blackhole .equator {
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse 60% 12% at 50% 50%,
+    rgba(255, 255, 255, 0.55) 0%,
+    rgba(255, 240, 220, 0.35) 35%,
+    transparent 70%
+  );
+  filter: blur(0.6px);
+  animation: meld-blackhole-equator 2.8s ease-in-out infinite;
+  z-index: 3;
+  pointer-events: none;
+}
+
+@keyframes meld-blackhole-ring-1 {
+  from {
+    transform: rotateX(78deg) rotateZ(0deg);
+  }
+  to {
+    transform: rotateX(78deg) rotateZ(360deg);
+  }
+}
+@keyframes meld-blackhole-ring-2 {
+  from {
+    transform: rotateX(74deg) rotateY(8deg) rotateZ(0deg);
+  }
+  to {
+    transform: rotateX(74deg) rotateY(8deg) rotateZ(-360deg);
+  }
+}
+@keyframes meld-blackhole-equator {
+  0%,
+  100% {
+    opacity: 0.65;
+    transform: rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: rotate(180deg);
+  }
+}
+@keyframes meld-blackhole-core {
+  0%,
+  100% {
+    transform: scale(1, 1) rotate(0deg);
+    border-radius: 50%;
+    box-shadow: inset 0 0 3px rgba(0, 0, 0, 1);
+  }
+  20% {
+    transform: scale(1.12, 0.92) rotate(8deg);
+    border-radius: 48% 52% 55% 45% / 52% 48% 52% 48%;
+    box-shadow: inset 0 0 4px rgba(0, 0, 0, 1);
+  }
+  40% {
+    transform: scale(0.94, 1.1) rotate(-4deg);
+    border-radius: 55% 45% 48% 52% / 45% 55% 45% 55%;
+    box-shadow: inset 0 0 3px rgba(0, 0, 0, 1);
+  }
+  60% {
+    transform: scale(1.08, 0.95) rotate(6deg);
+    border-radius: 50% 50% 52% 48% / 48% 52% 48% 52%;
+    box-shadow: inset 0 0 4px rgba(0, 0, 0, 1);
+  }
+  80% {
+    transform: scale(0.96, 1.05) rotate(-3deg);
+    border-radius: 52% 48% 45% 55% / 55% 45% 55% 45%;
+    box-shadow: inset 0 0 3px rgba(0, 0, 0, 1);
+  }
+}
+@keyframes meld-blackhole-halo {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+}
