@@ -8,6 +8,7 @@ import {
   touchWorkspaceProject,
   listWorkspaceMessages,
   deleteWorkspaceProject,
+  renameWorkspaceProject,
 } from "@/lib/workspace/projects";
 
 export async function GET(
@@ -28,6 +29,29 @@ export async function GET(
     // Bump last_opened_at for sidebar ordering.
     void touchWorkspaceProject(session.userId, id).catch(() => {});
     return Response.json({ project, messages });
+  } catch (err) {
+    return Response.json(
+      { error: err instanceof Error ? err.message : "unknown" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await getSession();
+  if (!session) {
+    return Response.json({ error: "unauthorized" }, { status: 401 });
+  }
+  const { id } = await params;
+  try {
+    const body = await req.json();
+    if (typeof body.name === "string") {
+      await renameWorkspaceProject(session.userId, id, body.name);
+    }
+    return Response.json({ ok: true });
   } catch (err) {
     return Response.json(
       { error: err instanceof Error ? err.message : "unknown" },

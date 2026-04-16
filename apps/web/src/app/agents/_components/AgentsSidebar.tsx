@@ -10,7 +10,7 @@
 // The visual language (colors, border-radius, rings, typography) is copied
 // from apps/web/src/app/projects/page.tsx lines 199-363.
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import {
   Plus,
@@ -26,6 +26,10 @@ import {
   Sun,
   Moon,
   Blend,
+  MoreVertical,
+  GripVertical,
+  Trash2,
+  Pencil,
 } from "lucide-react";
 import { useThemePref } from "@/lib/hooks/useThemePref";
 
@@ -115,6 +119,29 @@ export function AgentsSidebar({
   };
   const [fetchedAgents, setFetchedAgents] = useState<RecentAgent[]>([]);
   const [recentProjects, setRecentProjects] = useState<RecentProject[]>([]);
+  const [contextMenu, setContextMenu] = useState<{ id: string; type: "project" | "agent" } | null>(null);
+  const contextMenuRef = useRef<HTMLDivElement>(null);
+
+  const deleteProject = useCallback(async (projectId: string) => {
+    try {
+      const res = await fetch(`/api/workspace/projects/${projectId}`, { method: "DELETE" });
+      if (res.ok) {
+        setRecentProjects((prev) => prev.filter((p) => p.id !== projectId));
+      }
+    } catch { /* ignore */ }
+    setContextMenu(null);
+  }, []);
+
+  useEffect(() => {
+    if (!contextMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (contextMenuRef.current && !contextMenuRef.current.contains(e.target as Node)) {
+        setContextMenu(null);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [contextMenu]);
 
   // Recent projects live on the server now — fetch them on mount, on
   // pathname change (so navigating back from workspace shows the new
@@ -212,7 +239,7 @@ export function AgentsSidebar({
     return (
       <div
         className={`relative flex flex-shrink-0 flex-col overflow-hidden transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-          isDark ? "m-3 mr-3 rounded-2xl bg-[#151515]" : "m-3 mr-3 rounded-2xl bg-[#F4F4F2]"
+          isDark ? "bg-[#181818]" : "bg-white"
         }`}
         style={{ width: 64 }}
       >
@@ -337,8 +364,8 @@ export function AgentsSidebar({
     <div
       className={`relative flex flex-shrink-0 flex-col overflow-hidden transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
         isDark
-          ? "m-3 mr-3 rounded-2xl bg-[#151515]"
-          : "m-3 mr-3 rounded-2xl bg-[#F4F4F2]"
+          ? "bg-[#181818]"
+          : "bg-white"
       }`}
       style={{ width: 260 }}
     >
@@ -511,26 +538,88 @@ export function AgentsSidebar({
               <span className="flex-1 text-[13px]">New Project</span>
             </button>
 
-            {/* Recent projects — workspace history. Navigate with ?projectId
-                so the workspace restores chat history. */}
+            {/* Recent projects — workspace history */}
             {recentProjects.length > 0 && (
-              <div className="mt-2.5 space-y-1">
+              <div className="mt-2.5 space-y-0.5">
                 {recentProjects.slice(0, 6).map(project => (
-                  <button
-                    key={project.id}
-                    onClick={() =>
-                      (window.location.href = `/project/workspace?projectId=${project.id}`)
-                    }
-                    className={`flex w-full items-center gap-2.5 rounded-lg py-2 pl-8 pr-2 text-left transition-all duration-200 ${
-                      isDark
-                        ? "text-[#888] hover:bg-white/[0.04] hover:text-[#ccc]"
-                        : "text-[#787774] hover:bg-black/[0.03] hover:text-[#1A1A1A]"
-                    }`}
-                  >
-                    <span className="flex-1 truncate text-[12px]">
-                      {project.name || project.firstPrompt || "Untitled"}
-                    </span>
-                  </button>
+                  <div key={project.id} className="group/item relative">
+                    <button
+                      onClick={() =>
+                        (window.location.href = `/project/workspace?projectId=${project.id}`)
+                      }
+                      className={`flex w-full items-center rounded-lg py-2 pl-2 pr-2 text-left transition-all duration-200 ${
+                        isDark
+                          ? "text-[#888] hover:bg-white/[0.04] hover:text-[#ccc]"
+                          : "text-[#787774] hover:bg-black/[0.03] hover:text-[#1A1A1A]"
+                      }`}
+                    >
+                      <GripVertical className={`mr-1.5 h-3.5 w-3.5 flex-shrink-0 opacity-0 transition-opacity group-hover/item:opacity-50 ${
+                        isDark ? "text-[#555]" : "text-[#aaa]"
+                      }`} />
+                      <span className="flex-1 truncate text-[12px]">
+                        {project.name || project.firstPrompt || "Untitled"}
+                      </span>
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setContextMenu(
+                          contextMenu?.id === project.id ? null : { id: project.id, type: "project" }
+                        );
+                      }}
+                      className={`absolute right-1.5 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-md opacity-0 transition-opacity group-hover/item:opacity-100 ${
+                        isDark
+                          ? "text-[#555] hover:bg-white/[0.08] hover:text-[#999]"
+                          : "text-[#aaa] hover:bg-black/[0.06] hover:text-[#666]"
+                      } ${contextMenu?.id === project.id ? "!opacity-100" : ""}`}
+                    >
+                      <MoreVertical className="h-3.5 w-3.5" />
+                    </button>
+
+                    {contextMenu?.id === project.id && (
+                      <div
+                        ref={contextMenuRef}
+                        className={`absolute right-0 top-full z-50 mt-1 w-40 rounded-lg p-1 shadow-xl ${
+                          isDark
+                            ? "bg-[#222] ring-1 ring-white/[0.08]"
+                            : "bg-white ring-1 ring-black/[0.08]"
+                        }`}
+                      >
+                        <button
+                          onClick={() => {
+                            const newName = prompt("프로젝트 이름 변경", project.name || "");
+                            if (newName !== null && newName !== project.name) {
+                              void fetch(`/api/workspace/projects/${project.id}`, {
+                                method: "PATCH",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ name: newName }),
+                              }).then(() => void fetchProjects());
+                            }
+                            setContextMenu(null);
+                          }}
+                          className={`flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-[12px] transition-colors ${
+                            isDark
+                              ? "text-[#ccc] hover:bg-white/[0.06]"
+                              : "text-[#1A1A1A] hover:bg-black/[0.04]"
+                          }`}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                          이름 변경
+                        </button>
+                        <button
+                          onClick={() => void deleteProject(project.id)}
+                          className={`flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-[12px] transition-colors ${
+                            isDark
+                              ? "text-red-400 hover:bg-red-500/10"
+                              : "text-red-600 hover:bg-red-50"
+                          }`}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          삭제
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             )}
@@ -621,7 +710,7 @@ export function AgentsSidebar({
                           window.location.href = `/agents?run=${agent.id}`;
                         }
                       }}
-                      className={`flex w-full items-center gap-2.5 rounded-lg py-2 pl-8 pr-2 text-left transition-all duration-200 ${
+                      className={`flex w-full items-center gap-2.5 rounded-lg py-2 pl-2 pr-2 text-left transition-all duration-200 ${
                         active
                           ? isDark
                             ? "bg-white/[0.08] text-white"
