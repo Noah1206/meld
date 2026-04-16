@@ -5429,22 +5429,6 @@ function ChatHistoryPanel({ messages, setMessages, onOpenSettings, onOpenSkills,
 
   return (
     <div className={`flex h-full flex-col ${fullscreen ? "bg-[#2B2B2B]" : "bg-[#0D0D0D]"}`}>
-      {/* Header with back button */}
-      <div className={`flex items-center gap-2 px-4 py-2.5 flex-shrink-0 ${fullscreen ? "border-b border-[#3A3A3A]" : ""}`}>
-        <button
-          onClick={() => { window.location.href = "/projects"; }}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-[#555] hover:text-red-400 transition-all duration-200"
-          title="Back"
-        >
-          <ArrowLeft className="h-[18px] w-[18px]" />
-        </button>
-        <div className="flex items-center gap-2">
-          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-[#1A1A1A]">
-            <Blend className="h-3.5 w-3.5 text-white" />
-          </div>
-          <span className="text-[14px] font-semibold tracking-[-0.02em] text-[#E8E8E5]">Meld</span>
-        </div>
-      </div>
 
       {showHistory ? (
         <div className="flex-1 overflow-y-auto">

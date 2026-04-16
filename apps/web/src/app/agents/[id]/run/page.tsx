@@ -138,7 +138,7 @@ export default function RunAgentPage() {
 
   if (!mounted) return null;
 
-  const rootBg = isDark ? "bg-[#0A0A0A]" : "bg-white";
+  const rootBg = isDark ? "bg-[#181818]" : "bg-white";
   const mainBg = isDark ? "bg-[#151515]" : "bg-white";
   const mainRing = isDark ? "ring-1 ring-white/[0.04]" : "ring-1 ring-black/[0.04]";
   const fg = isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]";

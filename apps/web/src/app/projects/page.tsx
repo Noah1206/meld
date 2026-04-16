@@ -180,7 +180,7 @@ function MCPDetailModalProjects({ server, isDark, onClose, onConnect, onDisconne
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
-      <div className={`w-full max-w-md rounded-2xl shadow-2xl ring-1 ${isDark ? "bg-[#1A1A1A] ring-white/[0.08]" : "bg-white ring-black/[0.06]"}`} onClick={(e) => e.stopPropagation()}>
+      <div className={`w-full max-w-md rounded-2xl shadow-2xl ring-1 ${isDark ? "bg-[#181818] ring-white/[0.08]" : "bg-white ring-black/[0.06]"}`} onClick={(e) => e.stopPropagation()}>
         {/* Close */}
         <div className="flex justify-end px-5 pt-5">
           <button onClick={onClose} className={`rounded-lg p-1.5 transition-colors ${isDark ? "text-[#555] hover:bg-[#333] hover:text-[#aaa]" : "text-[#999] hover:bg-[#F0F0EE] hover:text-[#666]"}`}>
@@ -214,7 +214,7 @@ function MCPDetailModalProjects({ server, isDark, onClose, onConnect, onDisconne
             <button
               onClick={() => onConnect(server.id)}
               disabled={isConnecting}
-              className={`mt-6 flex items-center gap-2 rounded-full px-6 py-3 text-[16px] font-semibold transition-all active:scale-[0.97] disabled:opacity-50 ${isDark ? "bg-white text-[#1A1A1A] hover:bg-[#E8E8E5]" : "bg-[#1A1A1A] text-white hover:bg-[#333]"}`}
+              className={`mt-6 flex items-center gap-2 rounded-full px-6 py-3 text-[16px] font-semibold transition-all active:scale-[0.97] disabled:opacity-50 ${isDark ? "bg-white text-[#1A1A1A] hover:bg-[#E8E8E5]" : "bg-[#181818] text-white hover:bg-[#333]"}`}
             >
               {isConnecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
               Connect {server.name}
@@ -286,7 +286,7 @@ function CategoryDropdown({ isDark }: { isDark: boolean }) {
       </button>
 
       {open && (
-        <div className={`animate-pop-in absolute bottom-full left-0 mb-2 w-[200px] rounded-xl p-1 shadow-2xl z-[100] ${isDark ? "bg-[#1A1A1A] ring-1 ring-white/[0.08]" : "bg-white ring-1 ring-black/[0.08]"}`}>
+        <div className={`animate-pop-in absolute bottom-full left-0 mb-2 w-[200px] rounded-xl p-1 shadow-2xl z-[100] ${isDark ? "bg-[#181818] ring-1 ring-white/[0.08]" : "bg-white ring-1 ring-black/[0.08]"}`}>
           {categories.map((cat) => (
             <button
               key={cat.id}
@@ -491,7 +491,7 @@ function SettingsContent({ isDark, toggleTheme, onOpenTab, plan }: { isDark: boo
         <div className={`rounded-2xl px-6 py-5 ring-1 ${isDark ? "ring-white/[0.06]" : "ring-black/[0.04]"}`}>
           <h2 className={`text-[16px] font-bold mb-1 ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`}>AI Model</h2>
           <p className={`text-[16px] mb-4 ${isDark ? "text-[#666]" : "text-[#999]"}`}>Default model for code generation.</p>
-          <select className={`w-full rounded-xl px-4 py-2.5 text-[16px] outline-none ring-1 ${isDark ? "bg-[#1A1A1A] ring-white/[0.06] text-[#E8E8E5]" : "bg-white ring-black/[0.04] text-[#1A1A1A]"}`}>
+          <select className={`w-full rounded-xl px-4 py-2.5 text-[16px] outline-none ring-1 ${isDark ? "bg-[#181818] ring-white/[0.06] text-[#E8E8E5]" : "bg-white ring-black/[0.04] text-[#1A1A1A]"}`}>
             <option>Claude Sonnet 4 (Recommended)</option>
             <option>Claude Opus 4</option>
             <option>GPT-4o</option>
@@ -640,9 +640,9 @@ function ProjectsContent() {
   // Show loading while auto-redirecting from landing
   if (autoRedirecting) {
     return (
-      <div className={`flex h-screen items-center justify-center ${isDark ? "bg-[#1A1A1A]" : "bg-white"}`}>
+      <div className={`flex h-screen items-center justify-center ${isDark ? "bg-[#181818]" : "bg-white"}`}>
         <div className="flex flex-col items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1A1A1A]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#181818]">
             <Blend className="h-4 w-4 text-white" />
           </div>
           <Loader2 className={`h-4 w-4 animate-spin ${isDark ? "text-[#555]" : "text-[#999]"}`} />
@@ -656,7 +656,7 @@ function ProjectsContent() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
-      className={`flex h-screen ${isDark ? "bg-[#1A1A1A]" : "bg-white"}`}
+      className={`flex h-screen ${isDark ? "bg-[#181818]" : "bg-white"}`}
     >
       {/* Sidebar — shared across /agents and /projects */}
       <AgentsSidebar />
@@ -713,7 +713,7 @@ function ProjectsContent() {
 
               {/* Input — full width, larger */}
               <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 1.6, ease: [0.16, 1, 0.3, 1] }}>
-                <div className={`relative rounded-2xl border transition-all duration-300 ${isDark ? "bg-[#1A1A1A]/90 backdrop-blur-sm border-[#3A3A3A]" : "bg-white/90 backdrop-blur-sm border-[#D0D0D0]"}`}>
+                <div className={`relative rounded-2xl border transition-all duration-300 ${isDark ? "bg-[#181818]/90 backdrop-blur-sm border-[#3A3A3A]" : "bg-white/90 backdrop-blur-sm border-[#D0D0D0]"}`}>
                   <textarea
                     ref={inputRef}
                     value={prompt}
@@ -730,7 +730,7 @@ function ProjectsContent() {
                     <button
                       onClick={handleSubmit}
                       disabled={!prompt.trim()}
-                      className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full transition-all duration-200 active:scale-[0.92] disabled:opacity-20 ${isDark ? "bg-[#E8E8E5] text-[#1A1A1A] hover:bg-white" : "bg-[#1A1A1A] text-white hover:bg-[#333]"}`}
+                      className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full transition-all duration-200 active:scale-[0.92] disabled:opacity-20 ${isDark ? "bg-[#E8E8E5] text-[#1A1A1A] hover:bg-white" : "bg-[#181818] text-white hover:bg-[#333]"}`}
                     >
                       <ArrowRight className="h-4 w-4" />
                     </button>
@@ -776,18 +776,18 @@ function ProjectsContent() {
 
             {/* Search */}
             <div className="flex items-start gap-4 mb-8">
-              <div className={`flex items-center gap-2.5 rounded-xl px-4 py-2.5 flex-1 max-w-md ring-1 transition-all ${isDark ? "bg-[#1A1A1A] ring-white/[0.06] focus-within:ring-white/[0.12]" : "bg-[#FAFAFA] ring-black/[0.04] focus-within:ring-black/[0.1]"}`}>
+              <div className={`flex items-center gap-2.5 rounded-xl px-4 py-2.5 flex-1 max-w-md ring-1 transition-all ${isDark ? "bg-[#181818] ring-white/[0.06] focus-within:ring-white/[0.12]" : "bg-[#FAFAFA] ring-black/[0.04] focus-within:ring-black/[0.1]"}`}>
                 <Search className={`h-4 w-4 flex-shrink-0 ${isDark ? "text-[#555]" : "text-[#B4B4B0]"}`} />
                 <input type="text" placeholder="Search projects..." className={`flex-1 bg-transparent text-[16px] outline-none ${isDark ? "text-[#E8E8E5] placeholder:text-[#555]" : "text-[#1A1A1A] placeholder:text-[#B4B4B0]"}`} />
               </div>
             </div>
 
             {/* New project input */}
-            <div className={`rounded-2xl ring-1 transition-all duration-200 mb-10 ${isDark ? "bg-[#1A1A1A] ring-white/[0.08] focus-within:ring-white/[0.15]" : "bg-white ring-black/[0.08] focus-within:ring-black/[0.15] focus-within:shadow-lg"}`}>
+            <div className={`rounded-2xl ring-1 transition-all duration-200 mb-10 ${isDark ? "bg-[#181818] ring-white/[0.08] focus-within:ring-white/[0.15]" : "bg-white ring-black/[0.08] focus-within:ring-black/[0.15] focus-within:shadow-lg"}`}>
               <textarea ref={inputRef} rows={2} value={prompt} onChange={(e) => setPrompt(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }} placeholder="Describe what you want to build — Meld AI will create it for you..." className={`w-full resize-none bg-transparent px-5 pt-4 pb-2 text-[16px] leading-relaxed outline-none ${isDark ? "text-[#E8E8E5] placeholder:text-[#555]" : "text-[#1A1A1A] placeholder:text-[#B4B4B0]"}`} style={{ minHeight: 60 }} />
               <div className="flex items-center justify-between px-4 pb-3">
                 <p className={`text-[16px] ${isDark ? "text-[#444]" : "text-[#B4B4B0]"}`}>Press Enter to create a new project</p>
-                <button onClick={handleSubmit} disabled={!prompt.trim()} className={`flex h-8 w-8 items-center justify-center rounded-full transition-all duration-200 active:scale-[0.95] disabled:opacity-15 ${isDark ? "bg-[#E8E8E5] text-[#1A1A1A] hover:bg-white" : "bg-[#1A1A1A] text-white hover:bg-[#333]"}`}>
+                <button onClick={handleSubmit} disabled={!prompt.trim()} className={`flex h-8 w-8 items-center justify-center rounded-full transition-all duration-200 active:scale-[0.95] disabled:opacity-15 ${isDark ? "bg-[#E8E8E5] text-[#1A1A1A] hover:bg-white" : "bg-[#181818] text-white hover:bg-[#333]"}`}>
                   <ArrowRight className="h-4 w-4" />
                 </button>
               </div>
@@ -804,7 +804,7 @@ function ProjectsContent() {
                   </button>
                   {projects.map((project, i) => (
                     <button key={project.path || i} onClick={() => router.push(`/project/workspace`)} className={`group flex flex-col rounded-2xl ring-1 overflow-hidden text-left transition-all duration-300 hover:-translate-y-1 ${isDark ? "ring-white/[0.06] hover:ring-white/[0.12] bg-[#141414]" : "ring-black/[0.04] hover:ring-black/[0.08] hover:shadow-lg bg-white"}`}>
-                      <div className={`h-36 flex items-center justify-center ${isDark ? "bg-[#1A1A1A]" : "bg-[#FAFAFA]"}`}>
+                      <div className={`h-36 flex items-center justify-center ${isDark ? "bg-[#181818]" : "bg-[#FAFAFA]"}`}>
                         <div className={`text-center px-4 ${isDark ? "text-[#444]" : "text-[#CCC]"}`}>
                           <Code className="h-8 w-8 mx-auto mb-2 opacity-50" />
                           <p className="text-[16px]">{project.framework || "Project"}</p>
@@ -848,7 +848,7 @@ function ProjectsContent() {
 export default function ProjectsPage() {
   return (
     <Suspense fallback={
-      <div className="flex h-screen items-center justify-center bg-[#1A1A1A]">
+      <div className="flex h-screen items-center justify-center bg-[#181818]">
         <Loader2 className="h-4 w-4 animate-spin text-[#555]" />
       </div>
     }>

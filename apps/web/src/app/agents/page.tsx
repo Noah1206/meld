@@ -153,8 +153,8 @@ export default function AgentsDashboardPage() {
 
   if (!mounted) return null;
 
-  const rootBg = isDark ? "bg-[#1C1C1C]" : "bg-white";
-  const mainBg = isDark ? "bg-[#1C1C1C]" : "bg-white";
+  const rootBg = isDark ? "bg-[#181818]" : "bg-white";
+  const mainBg = isDark ? "bg-[#181818]" : "bg-white";
   // ring-inset draws the border on the inside of the box so it isn't clipped
   // by the parent wrapper's overflow-hidden.
   const mainRing = isDark
