@@ -4205,6 +4205,7 @@ function ChatHistoryPanel({ messages, setMessages, onOpenSettings, onOpenSkills,
   onMCPDismissRequest?: (serverId: string) => void;
   fullscreen?: boolean;
 }) {
+  const { isDark } = useTheme();
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [input, setInput] = useState("");
@@ -4497,11 +4498,6 @@ function ChatHistoryPanel({ messages, setMessages, onOpenSettings, onOpenSkills,
 
           // Web mode → E2B agent-run with polling
           agentSession.startSession();
-          // Auto-open the Agent activity tab so the user can see progress
-          // in the main right panel alongside code/preview.
-          addMainTab({ id: "agent-activity", label: "Agent", type: "agent" as MainTab["type"] });
-          setActiveMainTab("agent-activity");
-          setRightView("code");
           // Reset per-run browser activity + pending MCP prompt so each run
           // starts from a clean slate.
           useAgentStore.getState().clearBrowserActivity();
@@ -5045,9 +5041,7 @@ function ChatHistoryPanel({ messages, setMessages, onOpenSettings, onOpenSkills,
       <button
         type="button"
         onClick={() => {
-          addMainTab({ id: "agent-activity", label: "Agent", type: "agent" as MainTab["type"] });
-          setActiveMainTab("agent-activity");
-          setRightView("code");
+          window.dispatchEvent(new CustomEvent("meld-open-agent-tab"));
         }}
         className={`group mx-1 mb-2 flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-left transition-all ${
           isDark
@@ -5754,6 +5748,8 @@ function WorkspaceContent() {
   useBackgroundSessionPolling();
   const [showSessionsSidebar, setShowSessionsSidebar] = useState(true);
   const agentSessionReset = useAgentSessionStore((s) => s.reset);
+  // Full store access for the Agent activity tab panel
+  const agentSessionStore = useAgentSessionStore();
   const sessionsStoreSetActive = useAgentSessionsStore((s) => s.setActiveSession);
 
   // Auth state (for display purposes only, NOT for redirects in Electron)
@@ -6022,6 +6018,34 @@ function WorkspaceContent() {
     // live preview — flip the segment toggle so the editor is visible.
     if (tab.type === "editor") setRightView("code");
   };
+
+  // Auto-open the Agent activity tab when the agent starts running.
+  const agentSessionStatus = useAgentSessionStore((s) => s.status);
+  const prevAgentStatus = useRef(agentSessionStatus);
+  const openAgentTab = useCallback(() => {
+    if (!mainTabs.find(t => t.id === "agent-activity")) {
+      setMainTabs(prev => [...prev, { id: "agent-activity", label: "Agent", type: "agent" as MainTab["type"] }]);
+    }
+    setActiveMainTab("agent-activity");
+    setRightView("code");
+  }, [mainTabs]);
+  useEffect(() => {
+    if (
+      agentSessionStatus === "running" &&
+      prevAgentStatus.current !== "running"
+    ) {
+      openAgentTab();
+    }
+    prevAgentStatus.current = agentSessionStatus;
+  }, [agentSessionStatus, openAgentTab]);
+
+  // Listen for compact card clicks from ChatHistoryPanel
+  useEffect(() => {
+    const handler = () => openAgentTab();
+    window.addEventListener("meld-open-agent-tab", handler);
+    return () => window.removeEventListener("meld-open-agent-tab", handler);
+  }, [openAgentTab]);
+
   const openFileInEditor = async (filePath: string) => {
     const tabId = `file:${filePath}`;
     const fileName = filePath.split("/").pop() ?? filePath;
@@ -7354,37 +7378,35 @@ function WorkspaceContent() {
                 <div className={`flex items-center gap-2.5 border-b px-5 py-3 ${isDark ? "border-white/[0.06]" : "border-black/[0.06]"}`}>
                   <Activity className={`h-4 w-4 ${isDark ? "text-[#888]" : "text-[#787774]"}`} />
                   <span className={`text-[13px] font-medium ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`}>Agent Activity</span>
-                  {(agentSession.status === "running" || agentSession.status === "idle") && (
+                  {(agentSessionStatus === "running" || agentSessionStatus === "idle") && (
                     <span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" />
                   )}
                 </div>
                 <div className="flex-1 overflow-y-auto p-4">
                   <AgentActivityFeed
                     onApprove={(id) => {
-                      agentSession.approveEdit(id);
+                      agentSessionStore.approveEdit(id);
                       window.electronAgent?.agentLoop?.approveEdit(id, true);
                     }}
                     onReject={(id) => {
-                      agentSession.rejectEdit(id);
+                      agentSessionStore.rejectEdit(id);
                       window.electronAgent?.agentLoop?.approveEdit(id, false);
                     }}
                     onApproveAll={() => {
-                      agentSession.pendingEdits.filter(e => e.status === "pending").forEach(e => {
+                      agentSessionStore.pendingEdits.filter(e => e.status === "pending").forEach(e => {
                         window.electronAgent?.agentLoop?.approveEdit(e.toolCallId, true);
                       });
-                      agentSession.approveAll();
+                      agentSessionStore.approveAll();
                     }}
                     onRejectAll={() => {
-                      agentSession.pendingEdits.filter(e => e.status === "pending").forEach(e => {
+                      agentSessionStore.pendingEdits.filter(e => e.status === "pending").forEach(e => {
                         window.electronAgent?.agentLoop?.approveEdit(e.toolCallId, false);
                       });
-                      agentSession.rejectAll();
+                      agentSessionStore.rejectAll();
                     }}
                     onCancel={() => {
                       window.electronAgent?.agentLoop?.cancel();
-                      agentSession.cancelSession();
-                      setIsProcessing(false);
-                      setProcessingStart(null);
+                      agentSessionStore.cancelSession();
                     }}
                     onMCPConnect={(serverId) => {
                       const preset = MCP_PRESETS.find((p) => p.id === serverId);
