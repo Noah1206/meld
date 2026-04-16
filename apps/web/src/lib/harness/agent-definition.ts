@@ -84,7 +84,7 @@ export function fillDefaults(draft: AgentDefinitionDraft): Omit<
     description: draft.description ?? "",
     pipeline: draft.pipeline ?? "three-agent",
     systemPrompt: draft.systemPrompt ?? "",
-    modelId: draft.modelId ?? "claude-sonnet-4-20250514",
+    modelId: draft.modelId ?? "claude-sonnet-4-6-20250514",
     maxTokens: draft.maxTokens ?? 16384,
     builtinToolIds: draft.builtinToolIds ?? DEFAULT_BUILTIN_TOOLS,
     mcpServerIds: draft.mcpServerIds ?? [],

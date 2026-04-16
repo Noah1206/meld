@@ -14,9 +14,9 @@ export interface ModelConfig {
 
 export const AVAILABLE_MODELS: ModelConfig[] = [
   {
-    id: "claude-sonnet-4",
+    id: "claude-sonnet-4-6",
     label: "Claude",
-    sub: "Sonnet 4",
+    sub: "Sonnet 4.6",
     provider: "claude",
     available: true,
     internalModel: "claude-sonnet-4-6-20250514",
@@ -117,6 +117,6 @@ export function selectModel(input: ModelSelectionInput): ModelConfig {
   }
 
   // Default: Claude Sonnet
-  const claude = AVAILABLE_MODELS.find((m) => m.id === "claude-sonnet-4")!;
+  const claude = AVAILABLE_MODELS.find((m) => m.id === "claude-sonnet-4-6")!;
   return claude;
 }

@@ -18,7 +18,7 @@ import {
   PanelLeftClose, PanelLeftOpen, ChevronDown, ChevronRight, ArrowRight, Play, Square, Clock,
   Sun, Moon, RefreshCw, ExternalLink, MessageSquare, CheckSquare, Package, Settings, Search, Palette, FileCode, ChevronUp,
   Globe, Code, Layout, Blocks, Send, MousePointerClick, Smartphone, Server, Copy, CheckCheck, Monitor, Trash2,
-  ThumbsUp, ThumbsDown, Share, MoreHorizontal, FileText,
+  ThumbsUp, ThumbsDown, Share, MoreHorizontal, FileText, Activity,
 } from "lucide-react";
 
 // ─── Theme System ─────────────────────────────────────
@@ -2715,7 +2715,7 @@ function SettingsPage({ isDark, t, workspace, agentStore, electronAgent, onDisco
               </div>
 
               <SettingRow label="Model" desc="Default AI model for code editing">
-                <span className={`rounded-full px-2.5 py-1 text-[11px] font-mono font-medium ${isDark ? "bg-[#333] text-[#9A9A95]" : "bg-[#F0F0EE] text-[#787774]"}`}>claude-sonnet-4</span>
+                <span className={`rounded-full px-2.5 py-1 text-[11px] font-mono font-medium ${isDark ? "bg-[#333] text-[#9A9A95]" : "bg-[#F0F0EE] text-[#787774]"}`}>claude-sonnet-4.6</span>
               </SettingRow>
 
               <SettingRow label="Auto-approve" desc="Automatically apply AI code changes">
@@ -3174,7 +3174,7 @@ function ChatInput({ messages, setMessages, devServerReady, onSwitchToPreview }:
       if (window.electronAgent?.ai) {
         result = await window.electronAgent.ai.editCode({
           filePath: targetFile, command, currentCode,
-          modelId: "claude-sonnet-4",
+          modelId: "claude-sonnet-4-6",
           framework: devServerFramework ?? undefined,
           dependencies: dependencies.length > 0 ? dependencies : undefined,
         });
@@ -3184,7 +3184,7 @@ function ChatInput({ messages, setMessages, devServerReady, onSwitchToPreview }:
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             filePath: targetFile, command, currentCode,
-            modelId: "claude-sonnet-4",
+            modelId: "claude-sonnet-4-6",
             framework: devServerFramework ?? undefined,
             dependencies: dependencies.length > 0 ? dependencies : undefined,
             designSystemMd: designSystem.getDesignMd() || undefined,
@@ -4483,7 +4483,7 @@ function ChatHistoryPanel({ messages, setMessages, onOpenSettings, onOpenSkills,
             agentSession.startSession();
             window.electronAgent.agentLoop.start({
               command,
-              modelId: "claude-sonnet-4-20250514",
+              modelId: "claude-sonnet-4-6-20250514",
               context: {
                 framework: devServerFramework ?? undefined,
                 dependencies: dependencies?.length ? dependencies : undefined,
@@ -4497,6 +4497,11 @@ function ChatHistoryPanel({ messages, setMessages, onOpenSettings, onOpenSkills,
 
           // Web mode → E2B agent-run with polling
           agentSession.startSession();
+          // Auto-open the Agent activity tab so the user can see progress
+          // in the main right panel alongside code/preview.
+          addMainTab({ id: "agent-activity", label: "Agent", type: "agent" as MainTab["type"] });
+          setActiveMainTab("agent-activity");
+          setRightView("code");
           // Reset per-run browser activity + pending MCP prompt so each run
           // starts from a clean slate.
           useAgentStore.getState().clearBrowserActivity();
@@ -4713,7 +4718,7 @@ function ChatHistoryPanel({ messages, setMessages, onOpenSettings, onOpenSkills,
         getCode().then(async (currentCode) => {
           window.electronAgent?.agentLoop?.start({
             command,
-            modelId: "claude-sonnet-4-20250514",
+            modelId: "claude-sonnet-4-6-20250514",
             context: {
               selectedFile: targetFile,
               currentCode: currentCode,
@@ -4837,7 +4842,7 @@ function ChatHistoryPanel({ messages, setMessages, onOpenSettings, onOpenSkills,
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             filePath: targetFile, command, currentCode,
-            modelId: "claude-sonnet-4",
+            modelId: "claude-sonnet-4-6",
           }),
         });
         clearInterval(thinkingInterval);
@@ -5005,8 +5010,83 @@ function ChatHistoryPanel({ messages, setMessages, onOpenSettings, onOpenSkills,
     if (submenuTimerRef.current) { clearTimeout(submenuTimerRef.current); submenuTimerRef.current = null; }
   };
   const [powerFiles, setPowerFiles] = useState<string[]>([]);
+
+  // ─── Agent Compact Card (above input) ────────────────
+  // Shows a small card above the input bar while the agent is running.
+  // Clicking it opens the "Agent" tab in the right panel so the user
+  // can see the full activity feed.
+  const agentCompactCard = (() => {
+    const isAgentActive =
+      isProcessing &&
+      (agentSession.status === "running" ||
+        agentSession.status === "awaiting_approval" ||
+        agentSession.status === "idle");
+    if (!isAgentActive) return null;
+
+    // Build a one-line summary from the latest thinking event
+    const latestThinking = agentSession.currentThinking || "작업 중이에요...";
+    const summary = latestThinking.length > 60
+      ? latestThinking.slice(0, 60) + "…"
+      : latestThinking;
+
+    // Count completed steps
+    const thinkingEvents = agentSession.events.filter(
+      (e: { type: string }) => e.type === "thinking",
+    );
+    const toolEvents = agentSession.events.filter(
+      (e: { type: string }) =>
+        e.type === "file_edit_auto" ||
+        e.type === "command_start" ||
+        e.type === "search_results" ||
+        e.type === "browser_screenshot",
+    );
+
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          addMainTab({ id: "agent-activity", label: "Agent", type: "agent" as MainTab["type"] });
+          setActiveMainTab("agent-activity");
+          setRightView("code");
+        }}
+        className={`group mx-1 mb-2 flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-left transition-all ${
+          isDark
+            ? "bg-[#1E1E1E] ring-1 ring-white/[0.06] hover:ring-white/[0.12]"
+            : "bg-[#F5F5F3] ring-1 ring-black/[0.06] hover:ring-black/[0.12]"
+        }`}
+      >
+        {/* Blackhole spinner */}
+        <span
+          aria-label="loading"
+          className="meld-blackhole"
+          style={{ position: "relative", display: "inline-block", width: 18, height: 18, flexShrink: 0 }}
+        >
+          <span className="ring" />
+          <span className="ring-2" />
+          <span className="equator" />
+          <span className="core" />
+        </span>
+        {/* Status text */}
+        <div className="min-w-0 flex-1">
+          <p className={`truncate text-[12px] font-medium leading-tight ${isDark ? "text-[#ccc]" : "text-[#1A1A1A]"}`}>
+            {summary}
+          </p>
+          <p className={`mt-0.5 text-[10px] ${isDark ? "text-[#666]" : "text-[#999]"}`}>
+            {thinkingEvents.length} 단계 · {toolEvents.length} 도구 호출
+          </p>
+        </div>
+        {/* "보기" hint */}
+        <span className={`flex-shrink-0 text-[11px] font-medium opacity-0 transition-opacity group-hover:opacity-100 ${isDark ? "text-[#888]" : "text-[#999]"}`}>
+          보기 →
+        </span>
+      </button>
+    );
+  })();
+
   const inputArea = (
     <div className={`pb-5 pt-2 ${fullscreen ? "px-12 max-w-[960px] mx-auto w-full" : "px-5"}`}>
+      {/* Agent compact card — shown above input while agent is running */}
+      {agentCompactCard}
       <div className={`rounded-2xl border transition-all duration-200 ${fullscreen ? "bg-[#363636] border-[#4A4A4A] focus-within:border-[#5A5A5A]" : "bg-[#1A1A1A] border-[#333] focus-within:border-[#555]"}`}>
         <textarea
           ref={inputRef}
@@ -5921,7 +6001,7 @@ function WorkspaceContent() {
   const [rightPanelTab, setRightPanelTab] = useState<"terminal" | "properties">("terminal");
   const [rightTerminalLogs, setRightTerminalLogs] = useState<string[]>([]);
   const rightTerminalRef = useRef<HTMLDivElement>(null);
-  type MainTab = { id: string; label: string; type: "preview" | "mcp" | "tasks" | "marketplace" | "design" | "editor" | "settings"; filePath?: string };
+  type MainTab = { id: string; label: string; type: "preview" | "mcp" | "tasks" | "marketplace" | "design" | "editor" | "settings" | "agent"; filePath?: string };
   const [mainTabs, setMainTabs] = useState<MainTab[]>([{ id: "preview", label: "Preview", type: "preview" }]);
   const [activeMainTab, setActiveMainTab] = useState("preview");
   // High-level toggle between the code editor view (shows the mainTabs bar
@@ -6570,7 +6650,7 @@ function WorkspaceContent() {
         // Same logic as ChatHistoryPanel's handleSend
         window.electronAgent.agentLoop.start({
           command,
-          modelId: "claude-sonnet-4-20250514",
+          modelId: "claude-sonnet-4-6-20250514",
           context: {
             framework: undefined,
             dependencies: undefined,
@@ -6869,6 +6949,7 @@ function WorkspaceContent() {
                   {tab.type === "marketplace" && <Package className="h-4 w-4" />}
                   {tab.type === "design" && <Palette className="h-4 w-4" />}
                   {tab.type === "settings" && <Settings className="h-4 w-4" />}
+                  {tab.type === "agent" && <Activity className="h-4 w-4" />}
                   {tab.type === "editor" && <FileCode className={`h-4 w-4 ${getEditorIconColor()}`} />}
                   {/* Label */}
                   <span className="max-w-[120px] truncate flex-1">{tab.label}</span>
@@ -7262,6 +7343,61 @@ function WorkspaceContent() {
                   onMCPConnect={(id) => handleMCPConnect(id)}
                   onMCPDisconnect={(id) => { mcpStore.setDisconnected(id); if (id === "figma") disconnectFigma(); else if (id === "github") disconnectGitHub(); }}
                 />
+              </div>
+            )}
+
+            {/* Agent activity tab — full-screen view of what the agent
+                is doing right now. Opened by clicking the compact card
+                above the input bar. */}
+            {mainTabs.some(t2 => t2.id === "agent-activity") && (
+              <div key={activeMainTab === "agent-activity" ? "agent-active" : "agent"} className={activeMainTab === "agent-activity" ? "h-full overflow-hidden animate-tab-fade-in flex flex-col" : "hidden"}>
+                <div className={`flex items-center gap-2.5 border-b px-5 py-3 ${isDark ? "border-white/[0.06]" : "border-black/[0.06]"}`}>
+                  <Activity className={`h-4 w-4 ${isDark ? "text-[#888]" : "text-[#787774]"}`} />
+                  <span className={`text-[13px] font-medium ${isDark ? "text-[#E8E8E5]" : "text-[#1A1A1A]"}`}>Agent Activity</span>
+                  {(agentSession.status === "running" || agentSession.status === "idle") && (
+                    <span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" />
+                  )}
+                </div>
+                <div className="flex-1 overflow-y-auto p-4">
+                  <AgentActivityFeed
+                    onApprove={(id) => {
+                      agentSession.approveEdit(id);
+                      window.electronAgent?.agentLoop?.approveEdit(id, true);
+                    }}
+                    onReject={(id) => {
+                      agentSession.rejectEdit(id);
+                      window.electronAgent?.agentLoop?.approveEdit(id, false);
+                    }}
+                    onApproveAll={() => {
+                      agentSession.pendingEdits.filter(e => e.status === "pending").forEach(e => {
+                        window.electronAgent?.agentLoop?.approveEdit(e.toolCallId, true);
+                      });
+                      agentSession.approveAll();
+                    }}
+                    onRejectAll={() => {
+                      agentSession.pendingEdits.filter(e => e.status === "pending").forEach(e => {
+                        window.electronAgent?.agentLoop?.approveEdit(e.toolCallId, false);
+                      });
+                      agentSession.rejectAll();
+                    }}
+                    onCancel={() => {
+                      window.electronAgent?.agentLoop?.cancel();
+                      agentSession.cancelSession();
+                      setIsProcessing(false);
+                      setProcessingStart(null);
+                    }}
+                    onMCPConnect={(serverId) => {
+                      const preset = MCP_PRESETS.find((p) => p.id === serverId);
+                      agentStore.setMcpRequest(null);
+                      if (preset?.auth === "token") {
+                        setMcpTokenModal({ adapterId: serverId, name: preset.name, hint: preset.hint });
+                      } else {
+                        void handleMCPConnect(serverId);
+                      }
+                    }}
+                    onMCPDismiss={() => agentStore.setMcpRequest(null)}
+                  />
+                </div>
               </div>
             )}
 

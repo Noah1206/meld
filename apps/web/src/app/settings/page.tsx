@@ -333,7 +333,7 @@ function BillingTab() {
 
 // ─── AI & Models Tab ───
 function AITab() {
-  const [model, setModel] = useSettings("ai-model", "claude-sonnet-4");
+  const [model, setModel] = useSettings("ai-model", "claude-sonnet-4-6");
   const [selfVerify, setSelfVerify] = useSettings("self-verification", true);
   const [autoRetry, setAutoRetry] = useSettings("auto-retry", true);
   const [planning, setPlanning] = useSettings("planning-mode", true);
@@ -352,8 +352,8 @@ function AITab() {
           onChange={(e) => setModel(e.target.value)}
           className="no-hover-fill w-[220px] rounded-lg border border-[#3A3A3A] bg-[#252525] px-4 py-2.5 text-[14px] text-white outline-none"
         >
-          <option value="claude-sonnet-4">Claude Sonnet 4</option>
-          <option value="claude-opus-4">Claude Opus 4</option>
+          <option value="claude-sonnet-4-6">Claude Sonnet 4.6</option>
+          <option value="claude-opus-4-6">Claude Opus 4.6</option>
           <option value="gpt-4o">GPT-4o</option>
           <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
         </select>

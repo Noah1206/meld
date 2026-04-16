@@ -205,13 +205,13 @@ function estimateCost(
   outputTokens: number
 ): number {
   const pricing: Record<string, { input: number; output: number }> = {
-    "claude-sonnet-4": { input: 3, output: 15 },
+    "claude-sonnet-4-6": { input: 3, output: 15 },
     "gpt-4o": { input: 2.5, output: 10 },
     "gemini-2.5-flash": { input: 0.15, output: 0.6 },
     "qwen3-coder": { input: 0.5, output: 1.5 },
   };
 
-  const price = pricing[modelId] ?? pricing["claude-sonnet-4"];
+  const price = pricing[modelId] ?? pricing["claude-sonnet-4-6"];
   return (
     (inputTokens / 1_000_000) * price.input +
     (outputTokens / 1_000_000) * price.output

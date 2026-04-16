@@ -56,7 +56,7 @@ const INITIAL: FormState = {
   description: "",
   pipeline: "three-agent",
   systemPrompt: "",
-  modelId: "claude-sonnet-4-20250514",
+  modelId: "claude-sonnet-4-6-20250514",
   maxTokens: 16384,
   builtinToolIds: BUILTIN_TOOLS.map(t => t.id),
   mcpServerIds: [],
